@@ -1,0 +1,604 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "faction.caldris.brotherhood-of-saint-orro",
+      "name": "Brotherhood of Saint Orro",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Brotherhood of Saint Orro operates across Selucia. Rescue anyone in danger at sea.",
+            "visibility": "public",
+            "goals": [
+              "Rescue anyone in danger at sea."
+            ],
+            "methods": [
+              "The order treats proper knots as a moral issue and hoards navigation logs."
+            ],
+            "assets": [
+              "Reach: Selucia"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "A relic dispute could close the repair dock."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.carrowmere-shipwright-fraternities",
+      "name": "Carrowmere Shipwright Fraternities",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Carrowmere Shipwright Fraternities operates across Carrowmere. Safe work, injury support, and high-quality ships.",
+            "visibility": "public",
+            "goals": [
+              "Safe work, injury support, and high-quality ships."
+            ],
+            "methods": [
+              "Rival yards compete for contracts and disagree over strike tactics."
+            ],
+            "assets": [
+              "Reach: Carrowmere"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The grain fleet deadline approaches."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.company-of-weirs",
+      "name": "Company of Weirs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Company of Weirs operates across Alderwick rivers. Maintain bridges, mills, floodworks, and navigation.",
+            "visibility": "public",
+            "goals": [
+              "Maintain bridges, mills, floodworks, and navigation."
+            ],
+            "methods": [
+              "Uses inherited monopolies and sometimes invents urgent repairs to retain tolls."
+            ],
+            "assets": [
+              "Reach: Alderwick rivers"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Flood-control funding is diverted to court roads."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.free-axle-companies",
+      "name": "Free Axle Companies",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Free Axle Companies operates across Veyr roads. Repair vehicles and aid stranded travellers.",
+            "visibility": "public",
+            "goals": [
+              "Repair vehicles and aid stranded travellers."
+            ],
+            "methods": [
+              "Some companies trade route information to escort firms."
+            ],
+            "assets": [
+              "Reach: Veyr roads"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "False raids raise travel costs."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.glassharbor-furnace-guilds",
+      "name": "Glassharbor Furnace Guilds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Glassharbor Furnace Guilds operates across Seven Lamps. Safe fuel, fair apprenticeships, and high craft standards.",
+            "visibility": "public",
+            "goals": [
+              "Safe fuel, fair apprenticeships, and high craft standards."
+            ],
+            "methods": [
+              "Old masters suppress efficient methods that weaken their control."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Cheap fuel violates forest agreements."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.grey-mantle-houses",
+      "name": "Grey Mantle Houses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Grey Mantle Houses operates across Dunmarrow. Maintain northern defence and veteran support.",
+            "visibility": "public",
+            "goals": [
+              "Maintain northern defence and veteran support."
+            ],
+            "methods": [
+              "Conflate family prestige with public safety and lobby for a standing army."
+            ],
+            "assets": [
+              "Reach: Dunmarrow"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Mine revenue no longer supports fortress budgets."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.honest-weights-guild",
+      "name": "Honest Weights Guild",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Market assessors and craftspeople who defend common measures and small traders while guarding their own authority to certify what counts as honest.",
+            "visibility": "public",
+            "goals": [
+              "Protect reliable public measures.",
+              "Give small traders a fair appeal."
+            ],
+            "methods": [
+              "Public tests and witnessed scales.",
+              "Formal arbitration and apprentice training."
+            ],
+            "assets": [
+              "Honest Weights Hall",
+              "Certified standards",
+              "Regional assessors"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Discover how a hollow standard and counterfeit exemptions entered Bramblebridge without making an unverified public accusation."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.houses-of-rescue",
+      "name": "Houses of Rescue",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Houses of Rescue operates across Carrowmere coast. Maintain lighthouses, boats, shelters, and survivor care.",
+            "visibility": "public",
+            "goals": [
+              "Maintain lighthouses, boats, shelters, and survivor care."
+            ],
+            "methods": [
+              "Protect embarrassing wreck records to preserve public trust."
+            ],
+            "assets": [
+              "Reach: Carrowmere coast"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Several warning signals appear without storms."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.keepers-of-the-mountain-tithe",
+      "name": "Keepers of the Mountain Tithe",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Keepers of the Mountain Tithe operates across Kethria. Preserve an ancient peace and prevent dragon conflict.",
+            "visibility": "public",
+            "goals": [
+              "Preserve an ancient peace and prevent dragon conflict."
+            ],
+            "methods": [
+              "A secretive office allowed one official to double the tithe."
+            ],
+            "assets": [
+              "Reach: Kethria"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Copper disappears before storage."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.kethrian-canal-councils",
+      "name": "Kethrian Canal Councils",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Kethrian Canal Councils operates across Kethria. Maintain snowmelt water through shared labour.",
+            "visibility": "public",
+            "goals": [
+              "Maintain snowmelt water through shared labour."
+            ],
+            "methods": [
+              "Upland and lowland councils hide measurements from one another."
+            ],
+            "assets": [
+              "Reach: Kethria"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Warm night water suggests diverted underground flow."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.lantern-sea-couriers",
+      "name": "Lantern Sea Couriers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Lantern Sea Couriers operates across cross-border. Carry authenticated messages across political boundaries.",
+            "visibility": "public",
+            "goals": [
+              "Carry authenticated messages across political boundaries."
+            ],
+            "methods": [
+              "Couriers protect client confidentiality even when information could prevent harm."
+            ],
+            "assets": [
+              "Reach: cross-border"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Seven-sided seals appear on unauthorized packets."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.league-chairs-secretariat",
+      "name": "League Chair's Secretariat",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "League Chair's Secretariat operates across Seven Lamps. Coordinate diplomacy and member-city obligations.",
+            "visibility": "public",
+            "goals": [
+              "Coordinate diplomacy and member-city obligations."
+            ],
+            "methods": [
+              "Clerks use procedural delay as political leverage."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Chair Ansel Daro and the archive key are missing."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.long-bench-union",
+      "name": "Long Bench Union",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Long Bench Union operates across Dunmarrow. Feed and protect mining households during closures.",
+            "visibility": "public",
+            "goals": [
+              "Feed and protect mining households during closures."
+            ],
+            "methods": [
+              "Some organizers sabotage reopening plans they consider unsafe."
+            ],
+            "assets": [
+              "Reach: Dunmarrow"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Sealed shafts promise work and unknown risk."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.lorn-bell-houses",
+      "name": "Lorn Bell Houses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Lorn Bell Houses operates across Lornesse. Coordinate warning, rescue, worship, and civic time.",
+            "visibility": "public",
+            "goals": [
+              "Coordinate warning, rescue, worship, and civic time."
+            ],
+            "methods": [
+              "Bell families guard patterns as hereditary property."
+            ],
+            "assets": [
+              "Reach: Lornesse"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "False alarms mask activity below Copperdeep."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.low-lantern-dry-sock-fund",
+      "name": "Low Lantern Dry Sock Fund",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Low Lantern Dry Sock Fund operates across Seven Lamps. Mutual aid for dock and ferry workers.",
+            "visibility": "public",
+            "goals": [
+              "Mutual aid for dock and ferry workers."
+            ],
+            "methods": [
+              "Its impeccable records accidentally expose smuggling and espionage."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Three states demand access to its books."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.namar-water-captains",
+      "name": "Namar Water Captains",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Namar Water Captains operates across Namarra. Maintain canals, evacuation, and fair local allocation.",
+            "visibility": "public",
+            "goals": [
+              "Maintain canals, evacuation, and fair local allocation."
+            ],
+            "methods": [
+              "Local loyalties sometimes conceal trade from royal tax offices."
+            ],
+            "assets": [
+              "Reach: Namarra"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Villages disappear from state rolls."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "faction.caldris.honest-weights-guild",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.carrowmere-shipwright-fraternities",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.company-of-weirs",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.free-axle-companies",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.grey-mantle-houses",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.houses-of-rescue",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.long-bench-union",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.lorn-bell-houses",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.namar-water-captains",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.brotherhood-of-saint-orro",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.kethrian-canal-councils",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.glassharbor-furnace-guilds",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.keepers-of-the-mountain-tithe",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.league-chairs-secretariat",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.low-lantern-dry-sock-fund",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.lantern-sea-couriers",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    }
+  ]
+}

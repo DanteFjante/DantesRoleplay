@@ -5,7 +5,7 @@ name: Use this system
 governs: cold-session orientation, capability discovery, and the common operating protocol
 status: active
 createdBy: "seed"
-changeNote: "Routes cold sessions to bounded current operational contracts."
+changeNote: "Routes cold sessions and outer game masters to current play, memory, and preparation contracts."
 ---
 
 ## Description
@@ -19,6 +19,8 @@ how do I use this system
 start a new operator session
 discover the right capability
 get operational context for a task
+act as the dungeon master
+run a game with storytelling and background world preparation
 
 ## Instructions
 ### Cold-session sequence
@@ -33,6 +35,8 @@ get operational context for a task
 4. Read only the exact linked procedure returned by discovery. Use
    `query(kind: "procedures", id: "...")`; keep its revision/section reference with the selected
    capability. A summary or matching phrase is not the contract.
+   When asked to play or run a game, read `procedure.play.storytelling` before the first in-character
+   reply. It is the outer DM contract, including message capture and predictive preparation.
 5. Inspect current owner state and history. For a write, dry-run the identical payload where supported,
    review affected owners and preconditions, then commit once with a stable idempotency identity.
 6. Interpret the structured result before continuing. Preserve task handles, operation receipts,
@@ -40,6 +44,10 @@ get operational context for a task
    before reporting completion.
 
 ### Intent routing
+- Dungeon master behavior, storytelling, player agency, recording the gameplay conversation,
+  dreaming, and dynamic background preparation of quests, people, locations, lore, history, and
+  mechanics: `procedure.play.storytelling`. One lead DM presents the fiction and coordinates
+  bounded preparation agents through available client tools or registered INNER workers.
 - Application registration, sources, schemas, activation, state spaces, readiness, dependencies, and
   derived-cache recovery: `procedure.system.application-lifecycle`.
 - Runtime query/action selection, JavaScript service calls, Atomic commits, durable job handoff, and

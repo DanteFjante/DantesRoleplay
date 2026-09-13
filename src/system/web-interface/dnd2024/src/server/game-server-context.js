@@ -19,6 +19,7 @@ import { contract as worldPeopleHoldingsPageContract } from "./world-people-hold
 import { contract as currentSceneContract } from "./current-scene-contract.js";
 import { contract as campaignResumeContract } from "./campaign-resume-contract.js";
 import { CurrentViewAuthorizationError } from "../data/current-view-error.js";
+import { entityMediaContentUrl } from "../data/media-content-url.js";
 
 export { readRegisteredCampaignSummary } from "./campaign-summary.js";
 
@@ -269,19 +270,6 @@ export function projectMediaVisual(value) {
   // Callers that replace an entire media record need confirmed absence semantics. A partial
   // discovery must not remove a previously confirmed role. Scoped callers can use valid peers.
   return result.complete ? result.visual : null;
-}
-
-function entityMediaContentUrl(value) {
-  if (typeof value !== "string") return null;
-  try {
-    const parsed = new URL(value, "http://media.invalid");
-    if (parsed.origin !== "http://media.invalid" || parsed.hash) return null;
-    if (/^\/api\/read-model-media\/[a-f0-9]{64}\/content$/u.test(parsed.pathname))
-      return parsed.search === "" ? value : null;
-    if (!/^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/(?:entities\/[^/?#\\\s]+\/)?media\/[^/?#\\\s]+\/content$/u.test(parsed.pathname) ||
-        !(parsed.search === "" || /^\?perspective=(?:player|dm)$/u.test(parsed.search))) return null;
-    return value;
-  } catch { return null; }
 }
 
 function projectMediaAttachments(value) {
@@ -4018,10 +4006,19 @@ export async function readCurrentViewPatch({ fetchImpl = fetch, origin, source }
   }
   let knownRoutes = [];
   let routesCoverage = locationWasMissing ? "partial" : "complete";
+  if (source.audience.seat === "dm" && perspective === "dm") {
+    try {
+      patch.worldDirectory = (await readWorldPeopleHoldings({ fetchImpl, origin, source })).worldDirectory;
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+      patch.worldDirectory = { people: [], holdings: [], factions: [] };
+      currentSituation = { ...currentSituation, coverage: "partial",
+        unavailableFields: [...new Set([...(currentSituation.unavailableFields ?? []), "people"])] };
+    }
+  }
   if (currentSituation.status === "ready" && currentSituation.kind === "exploration") {
     const knowledgeStatus = projectedKnowledge?.status;
-    if (!knowledgeStatus || knowledgeStatus === "unavailable" ||
-        (perspective === "player" && knowledgeStatus !== "ready")) {
+    if (perspective === "player" && knowledgeStatus !== "ready") {
       routesCoverage = "unavailable";
     } else {
       try {

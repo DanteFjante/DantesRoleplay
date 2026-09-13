@@ -14,7 +14,9 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
     ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
 {
     private const int MaximumTurnPages = 8;
-    private const int MaximumItemPages = 2;
+    private const int InitialItemPageSize = 4;
+    private const int MaximumItems = 128;
+    private const int MaximumItemRequests = MaximumItems + 2;
     private const int PageSize = 64;
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
@@ -116,19 +118,13 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
             if (selected.ValueKind == JsonValueKind.Undefined)
                 throw Failure("CODEX_CAPTURE_TURN_NOT_AVAILABLE", "The requested turn was not found within the bounded Codex history page limit.");
 
-            var items = new List<JsonElement>();
-            cursor = null;
-            for (var page = 0; page < MaximumItemPages; page++)
+            var items = await ReadItemPagesAsync(async (itemCursor, itemLimit, token) =>
             {
-                await SendAsync(input, requestId, "thread/items/list", new { threadId, turnId, cursor, limit = PageSize, sortDirection = "asc" }, timeout.Token);
-                var result = await ReadResponseAsync(output, requestId++, timeout.Token);
-                if (!result.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
-                    throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid item page.");
-                items.AddRange(data.EnumerateArray().Select(entry => entry.TryGetProperty("item", out var item) ? item.Clone() : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an item without content.")));
-                cursor = NullableString(result, "nextCursor");
-                if (cursor is null) break;
-            }
-            if (cursor is not null) throw Failure("CODEX_CAPTURE_HISTORY_BOUNDED", "The requested turn exceeds the bounded Codex item page limit.");
+                var itemRequestId = requestId++;
+                await SendAsync(input, itemRequestId, "thread/items/list",
+                    new { threadId, turnId, cursor = itemCursor, limit = itemLimit, sortDirection = "asc" }, token);
+                return await ReadResponseAsync(output, itemRequestId, token);
+            }, turnId, timeout.Token);
             return JsonSerializer.SerializeToElement(new { thread = new { id = threadId, turns = new[] { new { id = OptionalString(selected, "id"), status = OptionalString(selected, "status"), items = items.ToArray() } } } });
         }
         finally
@@ -213,6 +209,56 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
             try { process.StandardInput.Close(); } catch (IOException) { }
             if (!process.HasExited) { try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } }
         }
+    }
+
+    internal static JsonElement ReadScopedItem(JsonElement entry, string expectedTurnId)
+    {
+        if (entry.ValueKind != JsonValueKind.Object
+            || !string.Equals(OptionalString(entry, "turnId"), expectedTurnId, StringComparison.Ordinal)
+            || !entry.TryGetProperty("item", out var item) || item.ValueKind != JsonValueKind.Object)
+            throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an item outside the requested turn or without content.");
+        return item.Clone();
+    }
+
+    internal static async Task<IReadOnlyList<JsonElement>> ReadItemPagesAsync(
+        Func<string?, int, CancellationToken, Task<JsonElement>> readPage,
+        string turnId,
+        CancellationToken cancellationToken = default)
+    {
+        var items = new List<JsonElement>();
+        var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+        string? cursor = null;
+        var limit = InitialItemPageSize;
+        var sourceItemCount = 0;
+        for (var request = 0; request < MaximumItemRequests; request++)
+        {
+            JsonElement result;
+            try { result = await readPage(cursor, limit, cancellationToken); }
+            catch (CodexBridgeException error) when (error.Code == "CODEX_PROTOCOL_OVERSIZE" && limit > 1)
+            {
+                // Retry the same cursor with fewer items. The byte cap remains unchanged, and
+                // even a single oversized tool body fails rather than being silently skipped.
+                limit /= 2;
+                continue;
+            }
+            if (!result.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array
+                || data.GetArrayLength() > limit)
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid item page.");
+            sourceItemCount += data.GetArrayLength();
+            if (sourceItemCount > MaximumItems)
+                throw Failure("CODEX_CAPTURE_HISTORY_BOUNDED", "The requested turn exceeds the bounded Codex item limit.");
+            foreach (var entry in data.EnumerateArray())
+            {
+                var item = ReadScopedItem(entry, turnId);
+                if (OptionalString(item, "type") is "userMessage" or "agentMessage") items.Add(item);
+            }
+            cursor = NullableString(result, "nextCursor");
+            if (cursor is null) return items;
+            if (data.GetArrayLength() == 0 || !seenCursors.Add(cursor))
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex item pagination did not advance.");
+            if (sourceItemCount == MaximumItems) break;
+        }
+        throw Failure("CODEX_CAPTURE_HISTORY_BOUNDED", "The requested turn exceeds the bounded Codex item limit.");
     }
 
     private ProcessStartInfo StartInfo(string firstArgument, bool appServer)

@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-sunborrow-house.1",
+      "name": "Sunborrow House — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A communal workroom in Seln with two surviving enchanted panes, one unreliable, and an ordinary replacement where the third once stood. Its summer gathering frame was moved during a later rebuilding. Keepers maintain both fuel stores and an illumination rota. A person to meet: Glass repairer Maelin Sorr understands the panes' physical mounting but needs help interpreting Dara's gathering diagrams. Her greatest worry is breaking a useful object while trying to restore its reputation. Adventure: Trace the displaced gathering frame, obtain compatible copper backing, and choose between restoring one pane or stabilising both at lower capacity. A donor wants a splendid private room; the keepers want longer common-table hours.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-the-copper-kettle.1",
+      "name": "The Copper Kettle — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A modest inn near Boughmeet's orchard road, rebuilt around successive kitchens. Blue pottery fragments form a small hearth mosaic, with replacement pieces documented by later keepers. A working copy of Nivren's boot-drying charm hangs beside the wet-weather bench. Most visitors come for food and shelter rather than the old story. A person to meet: Keeper Dessa Morn inherited the business through a sale within an extended family. She is tired of visitors assuming that an old surname proves an unbroken bloodline or an obligation to give free meals. Adventure: A travelling collector offers enough money to repair the roof in exchange for the mosaic. Establish which pieces came from the cup, negotiate a less destructive arrangement, or find another means to fund repairs. Nivren's possible opinion does not replace the living keeper's choices.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-the-hollow-mint.1",
+      "name": "The Hollow Mint — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: Former mint buildings in Highmead's old commercial quarter, now divided among licensed assayers, metalworkers, and small shops. The original furnaces survive only below one protected floor. The public weighing counter uses renewed standards rather than ancient coins as unquestioned authority. A person to meet: Assayer Bren Vale can identify old alloys but dislikes being expected to judge the morality of every ancestor who handled them. Adventure: Authenticate a mixed hoard before its dispersal. Its valuable clue is a batch sequence connecting wage payments to a specific contractor. Buyers, workers' descendants, and collectors all want different parts of the evidence.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-the-violet-steps.1",
+      "name": "The Violet Steps — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small stone landing beside a secondary channel at Penn's Reach. Mineral staining returns after cleaning. Its steps have been reset several times as the banks changed, and the water-level record is maintained on newer stones beside the oldest surviving marks. A person to meet: Channel keeper Leth Uld wants sound observations of the water creature's movements. She dislikes both baited spectacles and plans to ban ordinary fishing on the strength of a picturesque legend. Adventure: Reconstruct the protected passage after a later flood and negotiate practical access among fishers, a mill tenant, and the Siltwife's needs. A successful settlement can leave all parties somewhat inconvenienced while restoring a living waterway.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-three-reed-bridge.1",
+      "name": "Three-Reed Bridge — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A rebuilt crossing outside Willowrace, connecting workshops with grazing and reed beds. Stone abutments support later spans; annual music gatherings still raise a portion of maintenance costs. Three pipe-shaped posts commemorate the dedication. A person to meet: Music teacher Tovin Dast, adopted into a mixed household, keeps family arrangements without claiming descent from every named composer. He wants a missing regional verse restored to the fair programme. Adventure: Recover Orven's transitions from a dispersed workshop archive, then help communities agree on a performance. The omitted verse names workers whose contribution also appears in a disputed bridge-endowment account.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-gm-truth.1",
+      "name": "The Feast of Names Added Later — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The feast did not settle all disputes. One family declined participation because the proposed account exposed private harm. The keepers retained a restricted record rather than force public reconciliation.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-traces-and-stories.1",
+      "name": "The Feast of Names Added Later — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Paired original and corrected inscriptions; a programme of shared authorship; unresolved-name lists. Future discoveries can add something meaningful without having to overturn everything previous generations knew.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-gm-truth.1",
+      "name": "The Lamp That Waited Through Repairs — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Little Lastlight's hesitation came from unfamiliar surroundings. It imposed no curse on the repaired pier and demanded no costly sacrifice.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-traces-and-stories.1",
+      "name": "The Lamp That Waited Through Repairs — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Two lamp foundations; supply rosters; a fisher's account of the temporary landing. These records provide a practical precedent for later relocation without claiming that a spirit can be moved anywhere against its will.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0527-the-gardens-of-the-farther-window-gm-truth.1",
+      "name": "The Gardens of the Farther Window — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One attributed foreign innovation was independently developed in both places. Comparison reveals shared practical reasoning, not necessarily theft or a secret common teacher.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0527-the-gardens-of-the-farther-window-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0511-the-feast-of-names-added-later-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0519-the-lamp-that-waited-through-repairs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0527-the-gardens-of-the-farther-window-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-sunborrow-house.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-copper-kettle.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-hollow-mint.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-violet-steps.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-three-reed-bridge.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

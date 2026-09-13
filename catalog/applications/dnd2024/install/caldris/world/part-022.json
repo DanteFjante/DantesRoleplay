@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.atlas.connection.818637bdfb5aee6ed2d0",
+      "name": "Footpath: Greyharrow — Cold Barrow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Greyharrow — Cold Barrow: Footpath. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.834d095935d4fefaaae3",
+      "name": "Road: Foxglove Relay — The Courteous Ruin",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Foxglove Relay — The Courteous Ruin: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.85dffae999fb0268a198",
+      "name": "Road: Lastlight Pier — The House of Salt Letters",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lastlight Pier — The House of Salt Letters: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.8648f53bae02545eb614",
+      "name": "Footpath: Leth Sarai — Veyr's Lantern",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Leth Sarai — Veyr's Lantern: Footpath. This connection is usable in either direction. Headland path; the name recalls old carrying ties, not the Veyr Marches' political boundary.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.8782c2d38030896bfbe2",
+      "name": "Road: Oakshield — Dunwarren",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Oakshield — Dunwarren: Road. This connection is usable in either direction.  This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.87ab3dae06328e3a8576",
+      "name": "Road: Veymouth — Nacre Quay",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Veymouth — Nacre Quay: Road. This connection is usable in either direction.  Alternative: Coastal sailing; boat required. Coastal sailing alternative to the shore road.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.887c41f3674887aad3c4",
+      "name": "Road: Crowstep Shelter — The Winter Latch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Crowstep Shelter — The Winter Latch: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.88c20ebf9120ad209324",
+      "name": "Map entrance: Gullstrand — The Closed Launch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Gullstrand — The Closed Launch: Map entrance. This connection is usable in either direction. Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey. This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.890a527e53b922e5c087",
+      "name": "Road: Snowgate — Breadshield Monastery",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Snowgate — Breadshield Monastery: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.89540e3a121b14eee04c",
+      "name": "Road: Dunmere Steps — The Twelve Windows",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Dunmere Steps — The Twelve Windows: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.87ab3dae06328e3a8576",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.818637bdfb5aee6ed2d0",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.834d095935d4fefaaae3",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.887c41f3674887aad3c4",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8648f53bae02545eb614",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.890a527e53b922e5c087",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8782c2d38030896bfbe2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.89540e3a121b14eee04c",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.85dffae999fb0268a198",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.88c20ebf9120ad209324",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

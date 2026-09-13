@@ -1,0 +1,388 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.1515-the-year-of-the-empty-throne-account.1",
+      "name": "The Year of the Empty Throne — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The last reigning Aster sovereign died after a long illness, leaving disputed claimants and an exhausted treasury. Highmead's councils funded essential guards and bridge repairs while neighbouring estates withheld contributions. The interregnum lasted several years despite its name. The eventual sovereign, Queen Ilyen Sorne, came from an upland household whose acceptance depended on written limits and renewed estate agreements. The Crown of Highmead continued, but House Aster's rule ended. Its relatives remained landholders, merchants, religious patrons, and sometimes disappointed conspirators. Ilyen's first progress through the countryside was modest. At Wetherfold she sat beneath a patched awning to hear grazing disputes. Later paintings supplied a pavilion large enough to hide the common she had come to inspect.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1532-the-quiet-fire-at-sallowmere-account.1",
+      "name": "The Quiet Fire at Sallowmere — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A chimney fire spread into Sallowmere's copying rooms during a windy night. Residents saved people first, then whichever books they could reach. Pera Nall, an apprentice preparing ink, carried out a basket of account books because she had been told they were nearest the door and easiest to lift. Several celebrated spell collections burned. The accounts survived, along with lists of borrowers, repair instructions, and letters used as bookmarks. Those humble records later made it possible to locate copies scattered across dozens of households. Rebuilding produced a smaller library with detached cooking rooms and cupboards assigned to different kinds of material. The teachers also began placing copies with distant friends. This preserved knowledge but loosened their control over how it was taught and attributed.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1549-the-ford-of-sleeping-carts-account.1",
+      "name": "The Ford of Sleeping Carts — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A safer northern approach opened through Rovenfell, an upland kingdom of steep valleys and scattered fortified halls. Its rulers controlled several passes but depended on village associations to keep them usable. The new route connected Whitewindow's western trade to grain country beyond the Chalklands. At Tallow Ford, floodwater stranded an autumn caravan for twenty-six days. Merchants hired local households to stable animals and bought food on credit. One dispute over fodder nearly turned violent before Essel Dorn, a Rovenfell road judge, made both sides account for what the animals actually needed. The settlement left a permanent seasonal caravan yard. Local people called it the Ford of Sleeping Carts, though the merchants remembered very little sleep. The road diversified winter supplies and reduced the power of anyone controlling a single southern crossing.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1566-the-apricot-marriage-account.1",
+      "name": "The Apricot Marriage — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Princess Samin of Serevan married Lord Edric Aster, a younger relative of Highmead's reigning household. Their agreement concerned harbour access and guaranteed purchases of upland wool. Its public celebrations promised friendship between peoples whose negotiators had spent most of the winter arguing over freight losses. Samin arrived with attendants, cooks, a physician, two gardeners, and trunks of ordinary belongings. Some returned home within a year. Others settled, married locally, or founded businesses. The exchange made a lasting impression through courtyard gardening, preserved fruit, lending customs within migrant households, and new words for familiar kitchen tools. An apricot grown against a sheltered Highmead wall became a symbol of the marriage. It bore little fruit in cold years.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1566-the-apricot-marriage-account.2",
+      "name": "The Apricot Marriage — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Samin funded a gardeners' lodging house after noticing that the story of its miraculous flourishing was obscuring the labour required to keep it alive.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1583-the-blackglass-garden-account.1",
+      "name": "The Blackglass Garden — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Istravel's glassworkers had once used a Night Garden, an open courtyard with dark pools, observation marks, and shallow channels for cooling prepared glass. Their navigation disks combined an unusual mineral, painstaking alignment under particular stars, and a small enchantment maintained during manufacture. Aveline and the current workshop keeper, Rashan Emet, recovered enough instructions to identify Samir's disk as one of a limited family of instruments. Its makers had lived and worked in ordinary houses. Their workshop was exceptional; it was not evidence that every household in the ancient town possessed effortless magic. The sea had taken an older workshop quarter during a distant coastal subsidence, explaining the story of a drowned city without establishing a lost world empire. Reproducing the disks proved costly. Two usable examples took years, and trained pilots still needed to interpret them.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.1",
+      "name": "The Address Beneath the Blue Paint — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aveline reached Leth Sarai, a Serevan port whose old harbour houses had narrow courtyards filled with washing lines, potted herbs, and arguments audible from the street. The address she carried belonged to a glassworker's shop converted into a communal bakery three generations earlier. Its name survived beneath layers of blue limewash. The baker Hadi Sef helped her trace the former occupants through marriage records and kiln-rental accounts. He accompanied her inland during the bakery's annual repair closure, partly out of curiosity and partly because he had wanted to see the hills since childhood. Aveline assumed he could extend his journey whenever necessary. Hadi pointed out that his sisters were already covering his work. They reached Istravel, a terraced town above an inland basin, with three days remaining before Hadi needed to turn home.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.2",
+      "name": "The Address Beneath the Blue Paint — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A surviving workshop catalogue described dark navigation glass produced there centuries before Samir's lifetime.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1609-the-last-copy-and-the-eastern-road-account.1",
+      "name": "The Last Copy and the Eastern Road — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Sallowmere, Aveline completed a personal copy of the Book of Gentle Arts. She retained practical advice, failed attempts, the limits of enchantments, and Derren's marginal notes. Beside his observation that rain came through a supposedly waterproof hood, she wrote, \"He was right.\" Mira had died long before. Belda, now elderly, arranged the shelves while complaining about Aveline's habit of putting papers wherever a cat was not sitting. Their work had outlived most of its first readers without ever becoming a great academy. At the Seventh Hearth, Aveline left a plain travel cup and took one of Iven's uneven replacements. She then departed east with a caravan carrying dyes, surgical needles, and letters for the farther shore. Her destination was a Serevan town named in a fragmentary address, where someone reportedly knew the origin of Samir's blackglass.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1622-the-orchards-long-sleep-account.1",
+      "name": "The Orchard's Long Sleep — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Guest Beneath the Boughs appeared less often at Harth. Its speech became slow and its spring shelter unreliable. Keepers worried that the compact had been broken. Boughmeet's records showed that the Guest's periods of wakefulness had shortened before, though never within the memory of the current households. At the autumn meal it asked for a long sleep beneath the oldest root ground. Growers negotiated an end to the expectation of annual frost protection while retaining the unpicked strip and nesting habitat as practices valuable in themselves. A small watch of volunteers maintained the resting place without promising when the Guest would return. The orchards endured through ordinary grafting, careful planting, shared reserves, and occasional hardship. In later generations, people disagreed about whether the sleeper was a spirit, a saint, or a story invented to explain an inconvenient boundary.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.1609-the-last-copy-and-the-eastern-road-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1622-the-orchards-long-sleep-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1549-the-ford-of-sleeping-carts-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1566-the-apricot-marriage-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1566-the-apricot-marriage-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1583-the-blackglass-garden-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1515-the-year-of-the-empty-throne-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1532-the-quiet-fire-at-sallowmere-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1532-the-quiet-fire-at-sallowmere-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1549-the-ford-of-sleeping-carts-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1566-the-apricot-marriage-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1566-the-apricot-marriage-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1583-the-blackglass-garden-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1599-the-address-beneath-the-blue-paint-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1609-the-last-copy-and-the-eastern-road-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1622-the-orchards-long-sleep-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1515-the-year-of-the-empty-throne-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

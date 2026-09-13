@@ -1,0 +1,648 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "name": "The Empty Saddle to Copper Rain Terrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Empty Saddle to Copper Rain Terrace in Kethria. The ordinary on-foot journey is 240 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 240
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.eb14b2b9db8066b227fd",
+      "name": "The House of Paired Seals to The Narrow Bell Foundry",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The House of Paired Seals to The Narrow Bell Foundry in Highmead. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.eb4272c8592b9f569fa4",
+      "name": "The Unfinished Palace to Mariselle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Unfinished Palace to Mariselle in Selucia. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.eb44a4c1d1ce4e7e556e",
+      "name": "Highmead to Sevenpost Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Highmead to Sevenpost Field in Chalklands. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.eb9c184ce8ff832b8311",
+      "name": "Thistlewood Arch to Wetherfold Common",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from Thistlewood Arch to Wetherfold Common in Chalklands. The ordinary on-foot journey is 90 minutes. A dead-end pasture path to buried foundations; no portal or onward crossing.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 90
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.ebc8ebc1a7f317181bda",
+      "name": "Veymouth to Nacre Quay",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Veymouth to Nacre Quay in Vey Lowlands. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
+      "name": "Swallowwatch Orchard to Cresset",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Swallowwatch Orchard to Cresset in Bellafont. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
+      "name": "Bellafont to The Rain Parlour",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Bellafont to The Rain Parlour in Bellafont. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
+      "name": "The Honey Parliament to Greywife Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Honey Parliament to Greywife Orchard in Bellafont. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f021553c95a018216775",
+      "name": "Harth Orchard to The South Turning",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Harth Orchard to The South Turning in Orchard March. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f084e93a5a7ce300ddb2",
+      "name": "Mackerel Crown to Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Mackerel Crown to Gullstrand in Carrowmere. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f12faef5eb33182ca9e2",
+      "name": "Bramble Market to Honest Weights Hall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Bramble Market to Honest Weights Hall in Bramblebridge. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
+      "name": "The South Turning to Saint Meret's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The South Turning to Saint Meret's Rest in Orchard March. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f3648556fcfec6ec3153",
+      "name": "Rookwater to Penn's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Rookwater to Penn's Reach in Vey Lowlands. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f3c0954ae913e93948c1",
+      "name": "Blue Step to Kitewife Mesa",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Blue Step to Kitewife Mesa in Tessarane. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f3c44f99e90d00fab13c",
+      "name": "Veyr's Lantern to Leth Sarai",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from Veyr's Lantern to Leth Sarai in Serevan. The ordinary on-foot journey is 90 minutes. Headland path; the name recalls old carrying ties, not the Veyr Marches' political boundary.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 90
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f3fbfa38726dbfd0073d",
+      "name": "Candlefen to Sourapple Ford",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Candlefen to Sourapple Ford in Bramble Country. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f67d2349ba82acbbff60",
+      "name": "The Nine-Mile Inn to Wheelwife Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Nine-Mile Inn to Wheelwife Hollow in Veyr Marches. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f6943c2fb325e4a46467",
+      "name": "Weir Bridge to Bridge House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Weir Bridge to Bridge House in Bramblebridge. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.f7262615cbb1a9cc0c02",
+      "name": "Copperdeep to The Widow's Incline",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Copperdeep to The Widow's Incline in Lornesse. The ordinary on-foot journey is 240 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 240
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "route.caldris.atlas.eb44a4c1d1ce4e7e556e",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb9c184ce8ff832b8311",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3fbfa38726dbfd0073d",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3648556fcfec6ec3153",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ebc8ebc1a7f317181bda",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f084e93a5a7ce300ddb2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f67d2349ba82acbbff60",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f7262615cbb1a9cc0c02",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3c44f99e90d00fab13c",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb4272c8592b9f569fa4",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3c0954ae913e93948c1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f6943c2fb325e4a46467",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f12faef5eb33182ca9e2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb14b2b9db8066b227fd",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    }
+  ]
+}

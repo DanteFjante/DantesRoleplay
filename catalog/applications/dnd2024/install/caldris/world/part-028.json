@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.atlas.connection.dd4ab48d62e3f93a7522",
+      "name": "Road: Bluecup Hollow — Saint Meret's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Bluecup Hollow — Saint Meret's Rest: Road. This connection is usable in either direction.  This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.de1b9e33294f4f2eb305",
+      "name": "Footpath: Tessa — The Thirteen Shadows",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tessa — The Thirteen Shadows: Footpath. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.df3bbbbf346d77fa0329",
+      "name": "Ferry: Reedminster — Veymouth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Reedminster — Veymouth: Ferry; boat required. This connection is usable in either direction. River ferry requiring a boat; no permanent bridge or on-foot crossing is asserted.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.df9f597cea5ebf8a56cb",
+      "name": "Road: Copperdeep — Warmstone Baths",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Copperdeep — Warmstone Baths: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e091596615d964e67ca7",
+      "name": "Road: Old Merecross — Mallow Quay",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Old Merecross — Mallow Quay: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e428d99d7d27b90cb532",
+      "name": "Road: Ragman's Mile — Mallow Abbey",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ragman's Mile — Mallow Abbey: Road. This connection is usable in either direction.  This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e532dc1f63ab506b68ac",
+      "name": "Road: The Open String Hall — Three-Reed Bridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Open String Hall — Three-Reed Bridge: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e65b0bb490f56f78b723",
+      "name": "Road: Greyharrow — Redgate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Greyharrow — Redgate: Road. This connection is usable in either direction.  This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e6e79f58fb463b2bf864",
+      "name": "Map entrance: Boughmeet — The Copper Kettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Boughmeet — The Copper Kettle: Map entrance. This connection is usable in either direction. Entrance between the wider map and the local street or landing. This is a scope transition, not a same-plane on-foot journey. This crosses map scopes; use the named approach when continuing to the next district.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.e7105bb922b88793493e",
+      "name": "Road: Gullstrand — Widow's Beam",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Gullstrand — Widow's Beam: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e091596615d964e67ca7",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.df3bbbbf346d77fa0329",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e7105bb922b88793493e",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.df9f597cea5ebf8a56cb",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.de1b9e33294f4f2eb305",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e65b0bb490f56f78b723",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.dd4ab48d62e3f93a7522",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e428d99d7d27b90cb532",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e532dc1f63ab506b68ac",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e6e79f58fb463b2bf864",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

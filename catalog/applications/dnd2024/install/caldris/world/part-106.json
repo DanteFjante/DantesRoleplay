@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.place-dunmere-steps.1",
+      "name": "Dunmere Steps — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: A steep market settlement in the basin below the hill on which Highmead would later grow. Porters carried goods between three terraces, each controlled by a different authority. Sella's public reference weights were installed on the middle terrace, making it a deliberately neutral place to trade. Present-day form: Dunmere survives as a name for an old lower quarter of Highmead. Most ancient structures have been replaced, but a market stair incorporates original weighing stones. Bakers leave flowers on one step each year without agreeing whose grave it commemorates. A person to meet: Corren Bale, a municipal measurer, is scrupulously honest and painfully aware that his own office's fees are driving small sellers into debt. A story here: A counterfeit weight is discovered during a public festival. Corren needs help proving when the substitution occurred before merchants take their business elsewhere.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-dunmere-steps.2",
+      "name": "Dunmere Steps — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The culprit may be manipulating the date of a real historical fraud to conceal a smaller current one.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-goats-ledger.1",
+      "name": "Goat's Ledger — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A transfer settlement on the southern approach to Aunholt, connecting wagon roads with a managed pack route. Present-day form: Warehouses, animal yards, repair sheds, and lodging cluster around unloading grounds. Its wealth depends on reliable handling rather than ownership of every cargo. Marks on older warehouse beams record different generations of carrying partnerships. A person to meet: Loadmaster Dessa Oss is skilled at balancing fragile cargo and impatient with clients who conceal its weight. She wants to preserve space for small carriers as a large partnership buys adjoining yards. Adventure: A damaged consignment may have been packed incorrectly far away, altered at transfer, or harmed by an unavoidable route failure. Establishing the sequence can save an honest carrier from a ruinous claim.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-greyfold-ridge.1",
+      "name": "Greyfold Ridge — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: The site of the Hollow Cantor's emergence and defeat, overlooking older underground works not fully explored by its hunters. Present-day form: An abandoned deep quarry beside a smaller working stone face. The hunt's sealed approaches have undergone erosion and later interference. Upper chambers contain quarry remains; lower architecture belongs to an older, still-unresolved history. A person to meet: Surveyor Dal Oss has mapped safe working areas and wants a qualified team to inspect a newly opened void before labourers enter it. Adventure: Recover the route slate and investigate the void. Echoes and old warnings create uncertainty, but the dead Cantor need not return. A new occupant, unstable workings, or evidence of the chamber's builders can supply distinct stakes.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-harth-orchard.1",
+      "name": "Harth Orchard — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: The heart of the Orchard Compact, south of the main hill route. Pears, apples, beehives, and grazing beneath the trees support a patchwork of tenant holdings. The Guest's table stands under a bent pear tree; a religious guesthouse faces it across a muddy lane. Present-day form: The orchard boundaries have changed many times, but growers keep renewing the unpicked strip. The founding tree survives only through successive grafts. The guesthouse is now a small hospice whose garden contains the oldest known graft. A person to meet: Sister Annet keeps the hospice accounts and quietly sets a second bowl out every evening. She has never seen the Guest and is unsure whether her habit is faith, courtesy, or something she learned from her mother. A story here: A rare tree disease threatens both the hospice's income and the living continuity of the compact.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-harth-orchard.2",
+      "name": "Harth Orchard — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A cure requires knowledge preserved by an unfriendly commercial nursery. Negotiating its help may accomplish more than seeking a powerful spell.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-hazelstairs.1",
+      "name": "Hazelstairs — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A mixed upland farming settlement founded during favourable seasons and gradually vacated when repeated failures made permanent occupation untenable. Present-day form: Terraces, cellar mouths, and fragments of the mill stand among summer grazing. Later shepherd shelters occupy some foundations. Streams have changed course and roots have shifted retaining walls; exploration requires care around unstable drops. A person to meet: Herd keeper Jessa Vey uses the ruins seasonally and wants visitors to understand which walls still hold back occupied pasture. She has found a cache of keys but no treasure chest that fits them. Adventure: A migration register names a house whose doorframe was carried to another village. Matching it to the old foundation may establish a family connection or locate hidden correspondence left in a wall during the move.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-hearthscar-shelter.1",
+      "name": "Hearthscar Shelter — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: An old hall repaired into an emergency refuge during the Winter of the Pale Roofs. Present-day form: A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work. A person to meet: Shelter keeper Runa Dorn asks departing visitors to report depleted supplies at the next settlement. She has little patience for people who call that mundane request less important than a grand charitable gesture. Adventure: Missing replenishment threatens a group sheltering after an early storm. The cause may involve a broken wagon, a misunderstood closure notice, or competing emergencies along the route.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-istravel.1",
+      "name": "Istravel — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A glassworking town above an inland basin, with small specialist workshops and the courtyard where blackglass instruments were aligned. Present-day form: Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs. A person to meet: Glassworker Temir Emet can judge a furnace load by its colour but distrusts antiquarian claims about miraculous lost techniques. He is willing to learn if experiments are paid for and failures recorded. Adventure: Restoring one navigation disk requires recovering instructions from workshop waste, obtaining a mineral sample, and negotiating temporary access to a sight line. Success yields a specific useful instrument, not mastery over the sea.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-juniper-gate.1",
+      "name": "Juniper Gate — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A fortified toll crossing central to the Open Gate Rebellion and later threatened by griffins nesting above its approaches. Present-day form: A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges. A person to meet: Road captain Vanna Thale wants safer escort schedules and compensation for animal losses. She resents visitors expecting her small guard to behave like the grand company in the ballads. Adventure: Changes in nesting behaviour force a temporary route closure. Investigating disturbed hunting ground can reveal a practical remedy, while travellers and local households need support during the delay.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-dunmere-steps.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-dunmere-steps.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-greyfold-ridge.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-hazelstairs.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-istravel.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-juniper-gate.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-goats-ledger.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-hearthscar-shelter.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

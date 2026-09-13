@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "route.caldris.atlas.5e7872dcea04e57e9d65",
+      "name": "Dunwarren to King's Patience Wood",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from Dunwarren to King's Patience Wood in Alderwick. The ordinary on-foot journey is 90 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 90
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.602bc03cc3b108481376",
+      "name": "Halfprice Bridge to The Fifth Warehouse",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Halfprice Bridge to The Fifth Warehouse in Seven Lamps League. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "name": "Oakshield to The Lantern Hospice",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Oakshield to The Lantern Hospice in Veyr Marches. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.60fef9637a9af4376cc5",
+      "name": "Moorwatch to Greyharrow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Moorwatch to Greyharrow in Dunmarrow. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.6262a34380f99ac84e7b",
+      "name": "Veymouth to Lanterns' End",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Veymouth to Lanterns' End in Vey Lowlands. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "name": "The South Turning to Boughmeet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The South Turning to Boughmeet in Orchard March. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.636588188a2213b6b9f3",
+      "name": "Halfprice Bridge to Pepperglass Yard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Halfprice Bridge to Pepperglass Yard in Seven Lamps League. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.64466e61f56708eb916e",
+      "name": "The House of Salt Letters to The Hall of Unsent Maps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The House of Salt Letters to The Hall of Unsent Maps in Leth Sarai. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.658f0d5efd93ee1d3118",
+      "name": "Bramble Market to The Bent Penny",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Bramble Market to The Bent Penny in Bramblebridge. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
+      "name": "Vintner's Reach to The Honey Parliament",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Vintner's Reach to The Honey Parliament in Bellafont. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6262a34380f99ac84e7b",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60fef9637a9af4376cc5",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.602bc03cc3b108481376",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.636588188a2213b6b9f3",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e7872dcea04e57e9d65",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.658f0d5efd93ee1d3118",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.64466e61f56708eb916e",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    }
+  ]
+}

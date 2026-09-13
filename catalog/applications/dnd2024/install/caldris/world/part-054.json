@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "route.caldris.atlas.203440db45f36e63fad1",
+      "name": "Veymouth to Rookwater",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Veymouth to Rookwater in Vey Lowlands. The ordinary on-foot journey is 180 minutes. The west-bank road continues past the Reedminster ferry landing without entering the island.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
+      "name": "Leth Sarai to Istravel",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Leth Sarai to Istravel in Serevan. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.213a2a0f812687e95b9e",
+      "name": "Blue Step to Orovant",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Blue Step to Orovant in Tessarane. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "name": "The Evening Market to The Dry Exchange",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Evening Market to The Dry Exchange in Brinefold. The ordinary on-foot journey is 15 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 15
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.231e99aa4729eb614d32",
+      "name": "Aster Quay to Chairman's Nap",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Aster Quay to Chairman's Nap in Seven Lamps League. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.23dce63b77d9980a58c1",
+      "name": "Little Quay to Bramble Market",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from Little Quay to Bramble Market in Bramblebridge. The ordinary on-foot journey is 10 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 10
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.2671a20a2d1c08a87f12",
+      "name": "Greyfold Ridge to Reth Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from Greyfold Ridge to Reth Gate in Roven Approaches. The ordinary on-foot journey is 180 minutes. Working surface approach only; deeper quarry passages remain sealed.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "name": "Vessa to The Court of Wet Feet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Vessa to The Court of Wet Feet in Ordelain. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "name": "Copperwell to The Door Valley",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Copperwell to The Door Valley in Kethria. The ordinary on-foot journey is 240 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 240
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.27e20e6a74180353b134",
+      "name": "Bramblebridge to Old Merecross",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Bramblebridge to Old Merecross in Bramble Country. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "route.caldris.atlas.27e20e6a74180353b134",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.203440db45f36e63fad1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2671a20a2d1c08a87f12",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.231e99aa4729eb614d32",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.213a2a0f812687e95b9e",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.23dce63b77d9980a58c1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    }
+  ]
+}

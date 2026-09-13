@@ -235,6 +235,8 @@ function DndInformationHubContent({
   const envelopeRef = useRef(envelope);
   envelopeRef.current = envelope;
   const activeTableScope = tableScope(envelope);
+  const loreLoading = useHubSelector((state) => state.table.scope === activeTableScope &&
+    state.table.requests["deferred:lore"]?.generation === state.table.generation);
   const campaignDetailsLoaded = useHubSelector((state) => state.table.campaignDetailsLoaded);
   const characterParty = useHubSelector(selectCharacterParty);
   const storedCharacterScope = useHubSelector(selectCharacterScope);
@@ -1434,13 +1436,20 @@ function DndInformationHubContent({
   function selectLocationDetails(locationId: string) {
     const location = locationById.get(locationId);
     if (!location) return;
+    const isInCurrentScope = activeLocationScopeId === locationId || activeLocationScope?.childIds.includes(locationId);
+    const targetPath = isInCurrentScope ? locationScopePath : pathToLocation(locationId);
+    const walkToLocation = !isInCurrentScope && targetPath.length > 0;
     setSelectedLocationId(locationId);
     setLocationSection("details");
+    if (walkToLocation) {
+      setLocationScopePath(targetPath);
+      setLocationQuery("");
+    }
     navigateHubRoute("world", "overview", false, {
-      worldSection: "locations", locationScopePath, locationId,
+      worldSection: "locations", locationScopePath: walkToLocation ? targetPath : locationScopePath, locationId,
     });
     setAnnouncement(`${location.name} details opened`);
-    if (loadWorldScope && !loadedWorldScopes.current.has(locationId) &&
+    if (!walkToLocation && loadWorldScope && !loadedWorldScopes.current.has(locationId) &&
         !loadingWorldScopes.current.has(locationId)) void requestWorldScope(locationId);
   }
 
@@ -1756,6 +1765,7 @@ function DndInformationHubContent({
         return (
           <WorldView
             directoriesDeferred={Boolean(loadDeferredSection)}
+            loreLoading={loreLoading}
             deferredNotice={deferredNotice}
             campaign={envelope.campaign}
             currentLocation={currentLocation}
@@ -1872,11 +1882,11 @@ function DndInformationHubContent({
       <div className="information-hub__body">
         <MainNavigation
           activeTab={activeTab}
-          chapter={envelope.campaign.chapter || (loadCampaignDetails
-            ? campaignDetails.status === "loading" || campaignDetails.status === "unloaded"
-              ? "Campaign details loading"
-              : campaignDetails.status === "error" ? "Campaign details unavailable" : "Campaign overview"
-            : "Campaign overview")}
+          chapter={loadCampaignDetails && !campaignDetailsLoaded && (!envelope.campaign.chapter ||
+            ["absent", "invalid"].includes(envelope.campaign.detailFields?.chapters ?? ""))
+            ? campaignDetails.status === "loading" ? "Campaign details loading"
+              : campaignDetails.status === "error" ? "Campaign details unavailable" : "Chapter not yet loaded"
+            : envelope.campaign.chapter || "Campaign overview"}
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">

@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-rookwater.1",
+      "name": "Rookwater — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small settlement in the Vey Lowlands with a ferry landing, harness workshop, modest market, and houses repeatedly adapted to flooding. The working channel has shifted since its foundation. Public access to the water survives through later agreements that residents must still maintain and interpret. A person to meet: Ferry keeper Bera Rusk needs an alternate landing assessed before paying for permanent works. She is also trying to keep access open while neighbouring owners dispute where the reserved path now runs. Adventure: Trace flood marks and later agreements, recover an old mooring survey, or investigate a missing supply cart. A solution must work for the current river rather than reproduce the first settlement's map.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-the-hall-of-unsent-maps.1",
+      "name": "The Hall of Unsent Maps — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A chart collection and copying business in Leth Sarai. Working extracts are updated as reports arrive; historical drafts retain their original qualifications. Restricted charts have custody records, and decorative copies are identified separately from surveys intended for travel. A person to meet: Copyist Teren Orrel needs a disputed coastal section surveyed. He is wary of an investor who wants a completed route drawn before anyone has travelled it. Adventure: Investigate a missing section, trace a misleading copy, or retrieve observations from a failed expedition. Accurate information may still require judgement about its circulation and the people affected by it.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
+      "name": "The Lantern Hospice — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition. A person to meet: Host Dessa Renn must decide whether to accept a generous donation carrying restrictions on who may stay. She wants practical alternatives, not praise for sacrificing the household's winter supplies. Adventure: Secure supplies, mediate between guests, or establish whether a patron's claimed founding rights appear in any recognised later agreement. Keeping the house open may require several modest commitments rather than one heroic donor.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-the-narrow-bell-foundry.1",
+      "name": "The Narrow Bell Foundry — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A working foundry in Highmead with later furnaces and a retained collection of casting marks, failed pieces, and signal tables. Its reputation rests on inspection and repair as much as new bells. Objects attributed to its founders require assessment rather than automatic acceptance. A person to meet: Bell founder Samin Varr is investigating a dangerous casting sold under the old mark. A good account of its travels would help him decide which repairs and compensation claims the workshop should accept. Adventure: Trace a replacement clapper, authenticate a bell, or recover the local meaning of a signal before a public ceremony. The wrong sound can reveal an error, an attempted deception, or a forgotten change in civic practice.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-the-orchard-of-departures.1",
+      "name": "The Orchard of Departures — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A nursery and memorial plot in Boughmeet with propagated descendants of some older trees and replacements for others. Labels distinguish documented continuity from commemorative replanting. The associated collection keeps forwarding notes and recipes contributed by travelling households. A person to meet: Keeper Enna Penn wants to correct several labels before an anniversary gathering. A patron hopes for a simple celebration of successful journeys; Enna wants returning families and incomplete stories included too. Adventure: Trace a household, recover a variety, or reunite a recipe with the people who still make it. An absent family may have made a new life rather than vanished under sinister circumstances.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-gm-truth.1",
+      "name": "The Tables Kept for Strangers — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The agreement never covered every road or guaranteed a place to everyone. Several successful houses later advertised a grander founding promise than the records support. Repairing the custom can require new commitments from living people rather than merely exposing a forgotten obligation.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-traces-and-stories.1",
+      "name": "The Tables Kept for Strangers — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Host marks, food purchases, reciprocal accounts, and complaints from excluded travellers. A present journey might restore contact with a house that has stopped answering, supply a refuge before bad weather, or uncover why one community withdrew from the arrangement.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-gm-truth.1",
+      "name": "Nivren's Unremarkable Journey — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nivren initially found the changed arrangement disappointing. Hearing a beginner complete it altered his response. This was a small change of mind, not a final cure for grief or a permanent lesson he could never forget again. His present whereabouts remain unset.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-traces-and-stories.1",
+      "name": "Nivren's Unremarkable Journey — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A bow-case repair, a travel book, and a score with a food stain beside a difficult passage. These objects can establish a long-lived traveller's route without revealing every year of his life. An ordinary stopping place may hold the most personal surviving account.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0227-the-day-little-lastlight-went-dark-gm-truth.1",
+      "name": "The Day Little Lastlight Went Dark — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Little Lastlight recognised repeated practical activity at the landing more readily than ceremonial language. Its return was a response, not a spell anyone can reproduce by copying Hadi's gestures. The ordinary lamps continued in use because reliance on one spirit left real gaps.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0219-nivren-s-unremarkable-journey-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0227-the-day-little-lastlight-went-dark-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0227-the-day-little-lastlight-went-dark-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0211-the-tables-kept-for-strangers-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-rookwater.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-hall-of-unsent-maps.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-narrow-bell-foundry.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-orchard-of-departures.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

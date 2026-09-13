@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.0143-the-maps-that-were-never-sold",
+      "name": "The Maps That Were Never Sold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Maps That Were Never Sold",
+            "summary": "At Leth Sarai, chart copyist Dena Orrel assembled conflicting harbour and road surveys in a rented hall. Customers expected a definitive atlas. Dena instead marked uncertainty, seasonal restrictions, and information supplied by witnesses she could not yet corroborate. Several patrons withdrew orders when the maps failed to endorse routes they wanted advertised. The collection became known as the Hall of Unsent Maps, although its keepers continued selling useful extracts and correcting them as reports arrived. One chart showed a tempting coastal shortcut that had never been surveyed throughout its entire length. Dena left the missing section blank. A later decorative copy filled it with an attractive line, which circulated more widely than the qualified original.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -73321200,
+            "precision": "era",
+            "dateLabel": "143–136 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0151-the-hound-beside-the-milestone",
+      "name": "The Hound Beside the Milestone",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Hound Beside the Milestone",
+            "summary": "Travellers near the Veyr approaches reported a dark, shaggy hound appearing beside a damaged milestone during heavy weather. It followed stragglers toward a sheltered turn and disappeared before reaching the nearest house. Carrier Tovin Kell recorded several sightings without being able to find an owner. Hosts left water and repaired the path. Some travellers credited the Mile Hound with rescues; others never saw it despite searching. A small roadside custom developed around checking whether anyone had fallen behind before leaving the milestone. When a later flood changed the approach, sightings shifted to the surviving stretch of older road. Guides who insisted that the creature must appear beside the stone itself began leading customers away from the most reliable route.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -77526000,
+            "precision": "era",
+            "dateLabel": "151–144 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0159-three-copies-of-one-promise",
+      "name": "Three Copies of One Promise",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Three Copies of One Promise",
+            "summary": "Delegates concerned about escorts, grain passage, and emergency aid exchanged agreements meant to clarify mutual support. Their copies used similar language but differed in how they described territorial defence, protection of shipments, and the obligations of successor rulers. Clerk Mera Senn circulated a comparison identifying the differences. The delegates accepted practical arrangements for the next season and postponed a complete reconciliation. Carriers benefited immediately; advisers later cited the same papers in support of incompatible positions. These agreements became part of the background to later political tension. They did not compel a future war. Several renewals narrowed disputed terms, and local cooperation continued despite the unresolved language.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -81730800,
+            "precision": "era",
+            "dateLabel": "159–152 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0167-the-host-who-hung-no-banner",
+      "name": "The Host Who Hung No Banner",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Host Who Hung No Banner",
+            "summary": "The orc host Havra Renn opened the Lantern Hospice on a Veyr road used by carriers, pilgrims, and seasonal workers. Its name described hospitality rather than a hospital or a claim to cure illness. Havra accepted travellers from rival districts and declined to display an exclusive patron's banner above the door. A sponsor withdrew support, and the house survived its next winter through smaller contributions, paid lodging, and work shared among residents. Havra enforced rules against violence and intimidation while allowing arguments that other hosts preferred to silence. The house's reputation grew after it sheltered a stranded messenger whose employers were unpopular locally. That welcome did not make the messenger admirable, innocent of every accusation, or grateful forever. It established that a meal and a dry place need not depend on complete agreement.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -85935600,
+            "precision": "era",
+            "dateLabel": "167–160 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0175-the-orchard-of-departures",
+      "name": "The Orchard of Departures",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard of Departures",
+            "summary": "At Boughmeet, households leaving for new work gave grafts to a nursery plot kept by gardener Ilva Penn. The trees were labelled with destinations as well as names. Some families sent letters reporting success; others returned, moved again, or ceased writing. The plot became the Orchard of Departures. It preserved useful varieties and offered a place to remember people whose graves, if any, lay far away. Ilva refused to remove the tree of a family that had returned in debt. Departure had been part of their lives even though the journey had not produced the story their neighbours expected. One annual gathering paired fruit from the orchard with dishes described in travellers' letters. The food was often adapted to local ingredients, producing traditions that belonged fully to neither place of origin.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -90140400,
+            "precision": "era",
+            "dateLabel": "175–168 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0183-the-narrow-bells-of-highmead",
+      "name": "The Narrow Bells of Highmead",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Narrow Bells of Highmead",
+            "summary": "Bell founder Jessa Varr developed a compact bell suitable for roadside houses and small civic towers. The Narrow Bell Foundry obtained several contracts after demonstrating that communities could hear distinct signals without paying for a monumental casting. Different customers assigned different meanings to the same number of strokes. Travellers mistook a fire signal for a market announcement, and one carrier group approached a closed crossing after hearing what it understood as permission to proceed. Several road districts agreed on a limited shared signal for immediate danger while preserving local customs for ordinary business. Foundry marks spread farther than Jessa's actual production. Later bells copied the shape, some competently and some with concealed cracks. A recognizable silhouette became useful evidence, but never complete proof of origin.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -94345200,
+            "precision": "era",
+            "dateLabel": "183–176 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0191-the-voices-beneath-glasswinter-tarn",
+      "name": "The Voices Beneath Glasswinter Tarn",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Voices Beneath Glasswinter Tarn",
+            "summary": "Surveyors in the Lornesse uplands reported faint speech and music beneath the first clear ice of Glasswinter Tarn. Surveyor Bren Tallow returned with a local guide and found that certain sounds made beside the water reappeared after freezing. A shouted name might return broken into syllables; a tune might lose every pause. Visitors treated the phenomenon as an oracle. Two people died crossing ice whose apparent clarity disguised dangerous thin patches. The nearest households established a viewing place on firm ground and refused to guide paying visitors onto the tarn merely because they believed the voices were calling them. Careful notebooks distinguished echoes of recent visitors from unexplained older fragments. The tarn became a place of curiosity, mourning, and occasional music, with winters when it produced no discernible voices at all.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -98550000,
+            "precision": "era",
+            "dateLabel": "191–184 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0199-the-ferry-village-at-rookwater",
+      "name": "The Ferry Village at Rookwater",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Ferry Village at Rookwater",
+            "summary": "A shifting channel in the Vey Lowlands made a minor ferry unexpectedly useful. Ferry keeper Sella Rusk added a covered waiting place, and a wheelwright and two trading households settled nearby. The cluster acquired the name Rookwater, after birds nesting above the landing. Traffic brought work and disputes. Older grazing households objected when temporary cart yards became permanent enclosures. A local agreement reserved access to the water and required the ferry business to contribute to maintenance of the muddy approach. It was revised after the first serious flood demonstrated how little the new settlement controlled the river. Rookwater became a modest stopping place rather than a great port. Its first school occupied a room rented above a harness shop, and its market depended on travellers choosing this particular crossing.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -102754800,
+            "precision": "era",
+            "dateLabel": "199–192 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0211-the-tables-kept-for-strangers",
+      "name": "The Tables Kept for Strangers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Tables Kept for Strangers",
+            "summary": "Hosts along several northern and coastal routes adopted a modest agreement to keep a few places available for delayed carriers during difficult weather. Host Sera Kell coordinated the first surviving set of reciprocal promises, accepting that some houses would provide more shelter than they received in return. The arrangement required communication, stored food, and occasional payments between households. It broke down in places where sponsors treated the promise as free labour from innkeepers. Elsewhere it endured through revised contributions and limits clearly explained to travellers. At two hundred years ago, a marked table could mean a chance to wait out rain among strangers with different destinations. The custom carried stories, recipes, warnings, and songs as effectively as the freight travelling beside them.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -108010800,
+            "precision": "era",
+            "dateLabel": "211–200 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0219-nivren-s-unremarkable-journey",
+      "name": "Nivren's Unremarkable Journey",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Nivren's Unremarkable Journey",
+            "summary": "Nivren Sael joined a small carrier group crossing from the Boughmeet country toward Willowrace. He carried no urgent royal message and sought no lost fortress. A damaged bow case needed repair, and he wanted to hear how the bridge musicians were arranging Orven's work after his death. Carrier Lessa Morn charged the usual fare and asked him to share the cooking. Along the way, Nivren taught a child the first part of the boot-drying charm and learned a local bean dish from a driver who disliked travelling meals that tasted identical every night. At Willowrace, he found that one of Orven's simplified teaching versions had become more widely played than the difficult arrangement he remembered. He bought a copy. The journey survives because Lessa kept a detailed household travel book, not because contemporaries thought it especially important.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -113266800,
+            "precision": "era",
+            "dateLabel": "219–212 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0227-the-day-little-lastlight-went-dark",
+      "name": "The Day Little Lastlight Went Dark",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Day Little Lastlight Went Dark",
+            "summary": "Little Lastlight failed to appear at the repaired pier in Leth Sarai. The household tending the lamp had changed, and the replacement keeper faithfully performed a ceremony learned from a popular printed account. Fishers installed ordinary lamps while neighbours investigated. Lamp keeper Hadi Renn compared older maintenance notes with accounts from people who had known previous keepers. The bracket had been turned toward a handsome new approach that the local fishing boats did not use. After several evenings of patient work at the working landing, the light returned. The episode weakened a fashionable story that the spirit's aid depended on an elaborate ancient rite. It also reminded the district that accommodating a local wonder required noticing the place where it actually lived.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -117471600,
+            "precision": "era",
+            "dateLabel": "227–220 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0235-the-hearing-beneath-the-old-banner",
+      "name": "The Hearing Beneath the Old Banner",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Hearing Beneath the Old Banner",
+            "summary": "An ageing road grant was invoked to collect payments from settlements now served by several different routes. Highmead's regional court heard claims from landholders, carriers, maintenance houses, and towns whose practical obligations had diverged over generations. Judge Tessa Dorn refused to treat the earliest document as the complete answer. The court compared later renewals, actual repair work, and agreements made by successor authorities. The resulting settlement preserved some payments, ended others, and required fresh negotiation where the evidence was contradictory. Petitioners lodged in the city for months. Bakers, hosts, and money changers benefited from the gathering, while families at home absorbed the cost of absent workers. The hearing became a political landmark and a collection of private disappointments.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -121676400,
+            "precision": "era",
+            "dateLabel": "235–228 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0243-the-letters-that-wintered-abroad",
+      "name": "The Letters That Wintered Abroad",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Letters That Wintered Abroad",
+            "summary": "Bad weather and disrupted sailings stranded a collection of private correspondence in Leth Sarai. Host and copyist Mira Vell rented a dry room where carriers could deposit letters awaiting a reliable route. Senders paid small fees; local households sponsored deliveries for people without ready money. The arrangement grew into the House of Salt Letters, named for the journeys its contents had yet to cross. Mira kept letters sealed unless a sender had explicitly commissioned a copy. When a recipient died, she sought instructions from the sender or a recognised household representative rather than treating grief as permission to publish private words. Some letters finally arrived after their urgent business had passed. Others established new friendships between people who wrote replies explaining why the intended recipient could no longer answer.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -125881200,
+            "precision": "era",
+            "dateLabel": "243–236 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0251-the-evening-market-of-brinefold",
+      "name": "The Evening Market of Brinefold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Evening Market of Brinefold",
+            "summary": "Brinefold set aside a quay-side yard for the sale of used equipment, small return cargoes, and household goods. Its Evening Market opened when workers finished their daily labour. A carpenter could sell spare fittings, a sailor trade an unfamiliar cooking pot, and a widow dispose of business stock without renting a permanent warehouse stall. Market keeper Jori Fen required disputed goods to remain available for inspection instead of vanishing into immediate resale. The rule inconvenienced honest sellers as well as thieves. Regular traders developed a habit of asking an object's journey before asking its price. The market became a place where foreign fashions arrived piecemeal. A damaged warming cup from Solasca might sit beside an ordinary northern blanket, both carrying more history than their sellers knew.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -130086000,
+            "precision": "era",
+            "dateLabel": "251–244 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0259-salt-without-sails",
+      "name": "Salt Without Sails",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Salt Without Sails",
+            "summary": "A dispute over harbour charges on the Serevan coast led several merchant houses to withhold sailings. Officials expected a short concession struggle. Instead, the interruption lasted through an important preserving season, raising salt prices in some inland markets while salt workers near idle quays struggled to sell their stock. Caravan organiser Dema Noll arranged smaller shipments through secondary landings and inland roads. The journeys were costly and exposed carriers to theft. Some officials tolerated them; others seized goods to demonstrate that the embargo still meant something. The eventual settlement reduced selected charges and changed how harbour repairs were funded. The temporary routes did not all disappear. A handful of overlooked villages acquired inns, workshops, and customers, while the older route lost part of its dependable trade.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -134290800,
+            "precision": "era",
+            "dateLabel": "259–252 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0267-the-birds-in-cinder-meadow",
+      "name": "The Birds in Cinder Meadow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Birds in Cinder Meadow",
+            "summary": "A dry-season fire crossed part of Boughmeet's nursery country. Growers saved cuttings and tools, but several plots burned. During the first rains, witnesses saw slender birds with ember-bright throats searching the ash. Their footprints cooled into faint glassy impressions in exposed sand. Nursery keeper Pera Elven fenced a small nesting patch rather than allowing collectors to chase the birds through newly planted ground. Most departed within weeks. One pair remained until its young could fly, and the damaged plot acquired the name Cinder Meadow. The nursery recovered through ordinary planting and exchanged stock. The birds became a symbol of renewal, although their appearance had neither prevented the fire nor restored the lost trees. Families whose livelihoods had burned did not all welcome cheerful songs about the disaster.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -138495600,
+            "precision": "era",
+            "dateLabel": "267–260 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0275-the-opening-of-ashglass-house",
+      "name": "The Opening of Ashglass House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Opening of Ashglass House",
+            "summary": "In Istravel, glassmaker Sena Dorr and mage Arvel Senn founded Ashglass House, a workshop specialising in the repair and repurposing of small enchanted glass objects. They studied records of the glass-moth failures and avoided several older binding pigments where reliable alternatives existed. Their most useful product was an ordinary-looking vessel that released a little stored warmth gradually. It could keep a drink pleasant during a short journey; it could not heat a house or make winter travel safe by itself. Producing consistent vessels proved harder than making a spectacular demonstration piece. The founders sold conventional glass to support experiments. Apprentices learned to label unreliable batches, and some failed objects were dismantled rather than sold with optimistic explanations.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -142700400,
+            "precision": "era",
+            "dateLabel": "275–268 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0283-the-last-measure-in-willowrace",
+      "name": "The Last Measure in Willowrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Last Measure in Willowrace",
+            "summary": "The dwarven musician and instrument maker Orven Dast died peacefully in 279 years before the campaign present, after a life extending across more than three centuries. His final workshop instructions concerned unfinished repairs, deposits to return, and which instruments had been lent rather than sold. His former pupil Ilda Kett completed a plain travelling fiddle he had left unfinished. The workbench became known as the Last Measure Workshop, although Orven had repeatedly objected to the idea that his last work must be his finest. Ilda preserved both his celebrated arrangements and the easier teaching versions he made after retiring from public performance. The first memorial gathering at Three-Reed Bridge included several awkward young players. Their teachers insisted that a tribute to someone who had spent decades teaching should make room for people still learning.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -146905200,
+            "precision": "era",
+            "dateLabel": "283–276 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0291-the-winter-latch",
+      "name": "The Winter Latch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter Latch",
+            "summary": "Heavy snow trapped travellers near the lower approach to the Unfinished Stair. Aurr, still living in the Veyr uplands during this period, opened a stone shelter used for storing tools and fodder. The giant could move a fallen lintel that the travellers could not, but could not supply enough food for everyone. Carrier Ossa Renn led two journeys down a sheltered descent, bringing provisions and returning with help. Aurr marked safe footholds at a scale human travellers could use. After the thaw, valley households built a smaller refuge nearby, called the Winter Latch, and arranged seasonal stores. The stair above remained unfinished. Successful cooperation did not persuade Aurr to surrender the burial shelf that had stopped the earlier road. The refuge supported a modest route, not the unrestricted passage its most enthusiastic sponsors advertised.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -151110000,
+            "precision": "era",
+            "dateLabel": "291–284 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0299-the-wool-that-arrived-too-late",
+      "name": "The Wool That Arrived Too Late",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Wool That Arrived Too Late",
+            "summary": "A wet season damaged stored fleeces in the northern valleys just as Highmead cloth merchants had promised large deliveries to coastal buyers. Wool factor Teren Bale bought substitute stock farther away, paying advances that several smaller workshops could not match. Cloth prices rose while growers with spoiled wool struggled to buy winter grain. Spinner Edda Rusk organised workshop purchases of mixed-quality fleece and accepted slower, less profitable work. Their coarse blankets sold to carriers and shelters that could not afford fine cloth. Several workshops survived, although their workers earned less and some households left the trade. The following year brought abundant wool and falling prices. Growers who had expanded on borrowed money discovered that a good harvest could also bring ruin. Later songs remembered the wet winter and often omitted the difficult summer that followed.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -155314800,
+            "precision": "era",
+            "dateLabel": "299–292 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.0291-the-winter-latch",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0299-the-wool-that-arrived-too-late",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0251-the-evening-market-of-brinefold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0259-salt-without-sails",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0267-the-birds-in-cinder-meadow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0275-the-opening-of-ashglass-house",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0283-the-last-measure-in-willowrace",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0211-the-tables-kept-for-strangers",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0219-nivren-s-unremarkable-journey",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0227-the-day-little-lastlight-went-dark",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0235-the-hearing-beneath-the-old-banner",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0243-the-letters-that-wintered-abroad",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0191-the-voices-beneath-glasswinter-tarn",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0199-the-ferry-village-at-rookwater",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0151-the-hound-beside-the-milestone",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0159-three-copies-of-one-promise",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0167-the-host-who-hung-no-banner",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0175-the-orchard-of-departures",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0183-the-narrow-bells-of-highmead",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0143-the-maps-that-were-never-sold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

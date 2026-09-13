@@ -1,0 +1,482 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.doorhaven",
+      "name": "Doorhaven",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A small riverland settlement whose oldest lanes follow the original raised camp areas. Houses contain reused materials from several places. Flood preparedness is a practical community concern, and door carvings preserve stories whose details are not always reliable.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 740,
+            "y": 460
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.goats-ledger",
+      "name": "Goat's Ledger",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Warehouses, animal yards, repair sheds, and lodging cluster around unloading grounds. Its wealth depends on reliable handling rather than ownership of every cargo. Marks on older warehouse beams record different generations of carrying partnerships.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 720,
+            "y": 470
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.aunholt",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.greyfold-ridge",
+      "name": "Greyfold Ridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "An abandoned deep quarry beside a smaller working stone face. The hunt's sealed approaches have undergone erosion and later interference. Upper chambers contain quarry remains; lower architecture belongs to an older, still-unresolved history.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 810,
+            "y": 640
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.harth-orchard",
+      "name": "Harth Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "The orchard boundaries have changed many times, but growers keep renewing the unpicked strip. The founding tree survives only through successive grafts. The guesthouse is now a small hospice whose garden contains the oldest known graft.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 490,
+            "y": 300
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.hazelstairs",
+      "name": "Hazelstairs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Terraces, cellar mouths, and fragments of the mill stand among summer grazing. Later shepherd shelters occupy some foundations. Streams have changed course and roots have shifted retaining walls; exploration requires care around unstable drops.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 180,
+            "y": 615
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.hearthscar-shelter",
+      "name": "Hearthscar Shelter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 315,
+            "y": 370
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.1",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.2",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-greyfold-ridge.1",
+      "toEntityId": "location.caldris.lore.greyfold-ridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-hazelstairs.1",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-doorhaven.1",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-goats-ledger.1",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-hearthscar-shelter.1",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1449-the-choir-below-greyfold",
+      "toEntityId": "location.caldris.lore.greyfold-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1266-the-winter-of-returned-keys",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0799-the-spring-of-floating-doors",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0822-the-goat-path-and-the-painted-road",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0622-the-mile-of-little-bridges",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.bellwade",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.celandine-house",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.reth-road-fork",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.goats-ledger",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.2b633bd8c87b36318310",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.7f941aff563ffb44af1d",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.d48fc258aa45fc41bdd9",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.9bc81637f10dcd5307a5",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.443801fb266076d4ef4d",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.840e3615785c79a6fa35",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2b633bd8c87b36318310",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7f941aff563ffb44af1d",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a272a2ec930bdc9f33c0",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e902950e726bc5080e7b",
+      "toEntityId": "location.caldris.lore.doorhaven",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4e6d30a7927b73bc6843",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a65deea4688e362b5bc6",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b654a22621670954ae2a",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2671a20a2d1c08a87f12",
+      "toEntityId": "location.caldris.lore.greyfold-ridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fd2b89f232c148fdc62",
+      "toEntityId": "location.caldris.lore.greyfold-ridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3d02fc28ee579ceaf5c9",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d48fc258aa45fc41bdd9",
+      "toEntityId": "location.caldris.lore.goats-ledger",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

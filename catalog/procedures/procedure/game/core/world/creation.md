@@ -62,10 +62,13 @@ media, campaign, action, and storytelling contracts without taking ownership awa
 13. Verify play through intent. Exercise at least one movement or travel action, one rule-system
     check when applicable, one clock advance, and one changing world pressure such as a faction
     agenda. Supply declared roles and closed inputs; never narrate success before the mechanic does.
-14. After each play turn, preserve the exact player text and player-visible assistant reply in the
-    durable play conversation. Update the typed situation with participants and location when the
-    response establishes them, and persist only justified durable truths with their establishing
-    message and situation. Mechanic effects remain authoritative over narrative continuity.
+14. Follow `procedure.play.storytelling` for ongoing narration, predictive preparation, and message
+    recording. For outer-client play, explicitly link capture through
+    `procedure.system.conversation-memory` and verify actual visible-message delivery. That private
+    journal does not automatically write the internal play conversation, situations, or truths.
+    When using the internal play conversation host, its typed situation records participants and
+    location established by the response and only justified truths linked to that message/situation.
+    Mechanic effects remain authoritative over either form of narrative continuity.
 15. If intent resolution or the Inner AI cannot complete the requested operation, do not invent a
     successful receipt. Teach a reusable route only after a verified execution exists; create or
     revise an owning action only when no suitable action exists; otherwise submit an immutable

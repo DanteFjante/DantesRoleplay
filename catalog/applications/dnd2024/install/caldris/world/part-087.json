@@ -1,0 +1,726 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-traces-and-stories.1",
+      "name": "The Agreement on the Violet Steps — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Water-level marks, trap diagrams, and clauses renewed under later authorities. A current dispute could require proving where the protected passage moved after a flood. Cooperation with the creature is possible, but restoring a familiar arrangement may work better than demanding obedience to an old document.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-gm-truth.1",
+      "name": "The Summer the Wards Went Thin — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The moths were real and dangerous, but they could not devour every kind of magic. They preferred one family of persistent bindings associated with particular mineral pigments. A second sealed vessel was sent to an unnamed coastal collector; locating it remains a potential quest. Its opening has not already happened.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-traces-and-stories.1",
+      "name": "The Summer the Wards Went Thin — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Kiln waste, emergency timberwork, damaged charms, and lists of structures inspected after the swarm. A present expedition might need to identify a vulnerable ward before a small surviving brood reaches it. Safe containment requires learning the moths' preferences rather than bringing ever stronger enchantments into reach.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-gm-truth.1",
+      "name": "The Succession of Black Ribbons — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The warehouse fire destroyed collateral records for loans held by supporters of both claimants. Its organiser was a grain factor protecting an insolvent partnership, not either heir. Evidence could expose a commercial dynasty whose founders profited from the political confusion.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-traces-and-stories.1",
+      "name": "The Succession of Black Ribbons — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Revenue assignments, ribbon-fastened chests, rival genealogies, and the toll victim's burial entry. A later lawsuit might depend on which obligations passed to successor governments. An old claim alone does not overturn modern law, but renewals and later recognitions may keep part of it effective.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-gm-truth.1",
+      "name": "The Reply Kept in the Wrong Ledger — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The reply is authentic. Its lost passage concerns payment owed to a second assistant, not a hidden romance or a spell. The assistant's identity and whether that payment was ever made remain unresolved. Leris's refusal to offer easy absolution was deliberate.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-traces-and-stories.1",
+      "name": "The Reply Kept in the Wrong Ledger — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Later copies establish the reply's existence even if the original has since moved. A quest can recover the damaged wording, trace ownership, or restore credit in a current exhibition. Discovering the recipient's name is now established history rather than an endlessly postponed mystery.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-gm-truth.1",
+      "name": "The Bridge of Three Versions — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One work party wanted its rivals' verses removed because they named an unpopular labour organiser. Orven preserved them deliberately. No verse contains a magical command; its dangerous power is the possibility that someone may understand the words and ask who was excluded.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-traces-and-stories.1",
+      "name": "The Bridge of Three Versions — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Three regional songbooks, bridge subscriptions, and a score that travelled with an instrument maker's family. Recovering the transition pages can restore a performance while also identifying which community originally contributed to a disputed maintenance fund.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0467-the-breach-at-brinefold-gm-truth.1",
+      "name": "The Breach at Brinefold — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The animal was the Pale Breaker, a rare coastal creature that sought a sheltered spawning channel blocked by the quay. Its actions helped the evacuation without being undertaken for human salvation. One deep chamber beneath the drowned quay may still attract its descendants during particular tides; their presence is an encounter possibility, not an activated event.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0467-the-breach-at-brinefold-traces-and-stories.1",
+      "name": "The Breach at Brinefold — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Submerged doorways, salt leases, tide records, and the names missing from the rescue monument. At exceptionally low water, an expedition can enter the old counting house before the tide closes its streets. Recovering household goods may conflict with a company's claim to everything on its drowned lease.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0475-the-hollow-mint-affair-gm-truth.1",
+      "name": "The Hollow Mint Affair — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hessa authorised the debasement to keep transport and provisioning contracts functioning, then concealed its scale. Petren exposed the assay results but accepted a settlement that left poor claimants waiting. Both accomplished something useful and left people with good reason to resent them.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0475-the-hollow-mint-affair-traces-and-stories.1",
+      "name": "The Hollow Mint Affair — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Coins of the same face with different silver content, rejected wage petitions, and cancelled building contracts. A hoard can be valuable as evidence of how wages were paid even when its metal disappoints treasure hunters. Counterfeiters may exploit collectors' confusion between genuine bad coin and modern imitation.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-gm-truth.1",
+      "name": "The Winter of Borrowed Sunlight — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The panes preserve illumination, not the moments in which it was gathered. They cannot show the dead. One pane contains a flaw that slowly wastes its charge; recognising the defect can prevent a patron from spending a fortune on the wrong repair.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-traces-and-stories.1",
+      "name": "The Winter of Borrowed Sunlight — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Pane diagrams, illumination schedules, and requests for subsidised seats. A surviving pane may need exposure at a particular old gathering frame before it can shine again. Finding that frame could lead through a ruined roof garden rather than a wizard's tomb.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-gm-truth.1",
+      "name": "The Guest Who Returned to the Copper Kettle — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nivren is eligible to survive into the campaign present, but his whereabouts and involvement remain unset. He was not the keeper's secret lover. They had been friends, and he had underestimated how much that friendship mattered until returning became impossible in the way he remembered.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-traces-and-stories.1",
+      "name": "The Guest Who Returned to the Copper Kettle — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A register with an elven annotation, several versions of the boot charm, and blue pottery incorporated into later hearths. A traveller seeking Nivren can follow places that preserve something useful he taught. Recovering a missing section of the charm might matter more to a flooded village than finding his impressive battle magic.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-gm-truth.1",
+      "name": "The Ferry That Charged Six Pennies — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Merren initially rounded conversions in her own favour to cover losses she could not document. The pupil, Tessa Kell, discovered this and insisted on a published fee instead. Neither the later saintly ferryman tale nor the story of a wholly fraudulent ferry is accurate.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-traces-and-stories.1",
+      "name": "The Ferry That Charged Six Pennies — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Overpainted rate boards, ferry tokens, and the pupil's arithmetic exercises survive in several collections. A present dispute could hinge on whether a quoted price included exchange charges. An heirloom token might also redeem a crossing promised by an institution that still honours successor obligations.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0500-0400-place-brinefold.1",
+      "name": "Brinefold — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small harbour and salt-working settlement in the Vey Lowlands. Its active waterfront stands inland of the drowned old quay. Certain low tides reveal walls and slippery thresholds. A rebuilt bell house keeps copies of the subscription chest's later rules. A person to meet: Boatwright Ossa Fen maintains a chart of safe approaches and wants the old rescue monument's unnamed workers identified. Her rival operates profitable low-tide tours with a less cautious timetable. Adventure: Reach the old counting house, recover records or possessions, and return before the tide cuts off the route. A nesting coastal creature can complicate the expedition without being an enemy that must be killed. Whether the recovered papers support a living claim depends on later history as well as age.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0499-the-ferry-that-charged-six-pennies-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-brinefold.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0467-the-breach-at-brinefold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0467-the-breach-at-brinefold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0475-the-hollow-mint-affair-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0475-the-hollow-mint-affair-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0475-the-hollow-mint-affair-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0475-the-hollow-mint-affair-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0435-the-summer-the-wards-went-thin-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0443-the-succession-of-black-ribbons-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

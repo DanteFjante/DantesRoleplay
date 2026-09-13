@@ -185,6 +185,7 @@ public sealed class CaptureMemoryTool : ITool
         var client = clientFactory(new(context.Option("codex") ?? "codex", captureBinding.RepositoryRoot));
         if (client is not ICodexThreadTurnDiscoveryClient discovery)
             return Invalid(context, "capture-memory --watch requires a client with bounded turn discovery.");
+        CodexCaptureVersions.RequireSupported(await client.GetVersionAsync(cancellationToken));
         var memoryBinding = new ConversationMemoryBinding(
             new(principal, application, stateSpace, gameplaySession),
             "codex", project, captureBinding.RepositoryRoot, thread);
@@ -215,7 +216,7 @@ public sealed class CaptureMemoryTool : ITool
                     spool.InitializeWatch(completedTurnIds);
                     await CodexCaptureCheckpointFile.SaveAsync(checkpointPath, spool.Snapshot(), cancellationToken);
                 }
-                else
+                else if (completedTurnIds.Count > 0 || spool.Count > 0)
                 {
                     foreach (var turnId in completedTurnIds)
                     {

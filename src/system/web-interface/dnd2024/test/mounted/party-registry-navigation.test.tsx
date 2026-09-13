@@ -42,7 +42,7 @@ async function mount(options: { hash?: string; emptyParty?: boolean; sparseHeade
     member.sheet = [];
     member.sheetState = { status: "loading", data: null };
   }
-  const calls = { page: 0, definition: 0, recipe: 0, header: [] as string[] };
+  const calls = { page: 0, recipePage: 0, definition: 0, recipe: 0, header: [] as string[] };
   const control = { itemName: record.name, denied: false };
   const store = createHubStore();
   const { createRoot } = await import("react-dom/client");
@@ -64,7 +64,10 @@ async function mount(options: { hash?: string; emptyParty?: boolean; sparseHeade
         calls.definition++;
         return { record, details: { ...itemData(), quantity: null, container: null } };
       }}
-      loadRecipeRegistryPage={async () => ({ records: [recipe], resolutionFingerprint: fingerprint, totalCount: 1, nextCursor: null })}
+      loadRecipeRegistryPage={async () => {
+        calls.recipePage++;
+        return { records: [recipe], resolutionFingerprint: fingerprint, totalCount: 1, nextCursor: null };
+      }}
       loadRecipeDefinition={async () => {
         calls.recipe++;
         return { record: recipe, entry: { ...recipeData().makes.entries[0], name: recipe.name }, linkedItems: [record] };
@@ -165,6 +168,22 @@ test("a denied Registry refresh clears all confirmed collection bodies without a
     assert.match(document.body.textContent ?? "", /not available for this audience/);
     await act(tick);
     assert.equal(view.calls.page, 2);
+    await click('.party-registry__tabs button:nth-child(2)');
+    assert.doesNotMatch(document.body.textContent ?? "", /Loading recipe definitions/);
+    assert.match(document.querySelector('.recipe-registry [role="alert"]')?.textContent ?? "", /not available for this audience/);
+    assert.equal(view.calls.recipePage, 0, "Opening another directory must not retry a denied scope.");
+    await click('[data-character-section="overview"]');
+    await click('[data-character-section="registry"]');
+    assert.doesNotMatch(document.body.textContent ?? "", /Loading item definitions/);
+    assert.match(document.querySelector('.party-registry [role="alert"]')?.textContent ?? "", /not available for this audience/);
+    assert.equal(view.calls.page, 2);
+    await perform(() => navigateItemRoute(registryRoute));
+    assert.match(document.querySelector('.item-page [role="alert"]')?.textContent ?? "", /not available for this audience/);
+    assert.equal(view.calls.definition, 0);
+    await perform(() => navigateItemRoute({ kind: "registry-recipe", campaignId: registryRoute.campaignId,
+      perspective: registryRoute.perspective, collection: record.collection, recipeId: recipe.id, contentFingerprint: fingerprint }));
+    assert.match(document.querySelector('.recipe-page [role="alert"]')?.textContent ?? "", /not available for this audience/);
+    assert.equal(view.calls.recipe, 0);
   } finally { await view.cleanup(); }
 });
 

@@ -83,15 +83,16 @@ function emptyCopy(section: PartySectionId, member: PartyMemberReadModel) {
   }
 }
 
-function SectionHeader({ count, member, section, sectionState }: {
+function SectionHeader({ count, member, section, sectionState, detailUnavailable = false }: {
   count: number;
   member: PartyMemberReadModel;
   section: PartySectionId;
   sectionState?: SectionState<unknown> | null;
+  detailUnavailable?: boolean;
 }) {
   const state = sectionState ?? (section === "sheet" ? member.sheetState
     : section === "inventory" ? member.inventoryState : null);
-  const unavailable = state?.status === "error" || state?.status === "forbidden" ||
+  const unavailable = detailUnavailable || state?.status === "error" || state?.status === "forbidden" ||
     state?.status === "idle" || state?.status === "loading" && state.data === null;
   return (
     <header className="character-section-heading">
@@ -425,7 +426,8 @@ export function CharacterWorkspace({
               <p>This character could not be loaded. No missing details are inferred.</p></div>
             <button type="button" onClick={retryCharacter}>Retry character</button>
           </div> : null}
-          <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state} />
+          <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state}
+            detailUnavailable={(detailFailed || detailBusy) && entries.length === 0 && requiredDetailKind === "details"} />
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
             // Inventory is independently confirmed. A slow header/sheet read
@@ -477,7 +479,7 @@ export function CharacterWorkspace({
               : <DossierEntries entries={filteredEntries as PartyDossierEntry[]} />
           ) : entries.length ? (
             <EmptySection copy="Try a broader search." title="No matching entries" />
-          ) : (
+          ) : detailFailed || detailBusy ? null : (
             <EmptySection copy={emptyCopy(section, selectedMember)} title={`No ${section} recorded`} />
           )}
         </>

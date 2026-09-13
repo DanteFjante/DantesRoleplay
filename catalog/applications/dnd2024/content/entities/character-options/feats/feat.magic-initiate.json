@@ -3,6 +3,16 @@
   "name": "Magic Initiate",
   "archetype": "dnd2024.archetype.feat-definition",
   "components": {
+    "dnd2024.character.content-definition": {
+      "kind": "feature",
+      "contentKey": "magic-initiate",
+      "contentVersion": 1,
+      "status": "active",
+      "sourceRef": {
+        "sourceId": "dnd2024.source.srd-5.2.1",
+        "locator": "Feats > Magic Initiate (SRD 5.2.1, pages 87-87)"
+      }
+    },
     "dnd2024.core.source": {
       "citations": [
         {

@@ -1,0 +1,370 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0015-the-porch-at-the-last-mile-account.1",
+      "name": "The Porch at the Last Mile — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Near Bramblebridge's approach on the Lantern Road, host Dessa Kell added a covered porch where carriers could wait, repair straps, and compare local information before entering town. The Last Mile Porch served a practical arrival point at the road's end; it did not extend the Lantern Road beyond Bramblebridge under the same name. Visitors exchanged directions, warnings about temporary closures, and news of households farther away. A message board carried requests for deliveries and repairs. Hosts removed claims they could show were false while marking uncertain reports rather than presenting every rumour as fact. The porch grew familiar through repeated use. A traveller might remember a conversation there more clearly than the important building they had come to visit. Its household depended on paid food and lodging nearby, and keeping the waiting space available required labour.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0021-the-open-ledger-room-account.1",
+      "name": "The Open Ledger Room — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Highmead, disputes over old obligations brought clerks, craftspeople, and household representatives together in the Open Ledger Room. Reader Samin Vell taught visitors how to compare dates, seals, units, renewals, and copies before drawing conclusions from an impressive document. Some younger officials admired the Lantern Concord's apparent administrative consistency. The room's collections showed useful shared practices alongside evidence of coercion, exclusion, and claims made stronger simply because they fitted the accepted forms. The teaching did not produce agreement about the Concord. It gave people better questions. A seven-sided seal could identify a tradition, but authority still depended on provenance, adoption, jurisdiction, and later history. The difference became increasingly important as questionable sealed instruments circulated.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0025-two-workshops-through-one-winter-account.1",
+      "name": "Two Workshops through One Winter — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ashglass House in Istravel and keepers of the older light panes near Seln exchanged repair notes through carriers already moving ordinary goods. A shipment of compatible backing material reached the northern workshops late, delaying work until the coldest part of the season. Glass repairer Mera Dorr and keeper Ilren Sorr agreed to complete a smaller repair that existing materials could support. The restored pane gave limited daylight at shared worktables. A donor who had expected a spectacular reopening instead attended a meal served beside ordinary lamps. Both workshops kept copies of what had actually been altered. Their correspondence also included recipes, complaints about freight charges, and news of pupils. A practical exchange became a friendship between households that had never met in full.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
+      "name": "The Orchard that Counted Birds — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Growers in Bellafont established Swallowwatch Orchard, a working plot where gardener Tessa Brin recorded flowering, insect activity, bird arrivals, and yields. Most entries were mundane. Neighbours contributed observations because comparisons helped them understand why adjoining plots behaved differently. The records included mistakes, missed days, and disagreements over names for insects and plants. Tessa retained corrections alongside the first observations. Income came from fruit and propagation stock, with a small contribution for keeping the shared notes. The orchard became a pleasant stopping place for travellers interested in growing things. Its most useful legacy was a run of ordinary years against which later disruption could be compared. Nobody founded it knowing that the Summer Without Swallows would make such comparisons urgent.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0033-the-tables-after-the-council-meeting-account.1",
+      "name": "The Tables after the Council Meeting — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "In the Seven Lamps League, interpreters and representatives arriving from distant communities often had little time to compare what they had heard in formal sessions. Host Jori Amat rented the Long Table Rooms, offering meals, modest lodging, and a place to discuss the day's proceedings in several languages. Some delegates remembered the older compromise known as the Meal Between Minutes. Their informal meals echoed that incident without restoring the procedural protection later chairmen had removed. A conversation over supper could prepare a petition; it could not guarantee that the council would hear it. The rooms became useful to small delegations unable to hire permanent agents. They also attracted intermediaries selling introductions. Jori's household had to distinguish paid services from claims that buying a meal purchased influence.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0037-the-hearing-at-the-closed-launch-account.1",
+      "name": "The Hearing at the Closed Launch — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "After the remembered Grain Fleet Refusal in Carrowmere, an inquiry revisited the condition of vessels held ashore during a famine emergency. Shipwrights produced repair assessments showing that urgency had not made the hulls seaworthy. Officials disputed costs, authority, and responsibility for delayed supplies. Shipwright Bera Noll preserved measurements and witness accounts in a small shelter beside the slip called the Closed Launch. The site became associated with the argument that workers who understood a vessel should have a meaningful way to stop an unsafe departure. Several local contracts gained clearer inspection terms. Those gains required later enforcement and renewal; they did not permanently resolve disputes over hours, injury support, or the approaching season's grain fleet. The current Carrowmere controversy has its own participants and circumstances.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0041-the-lists-carried-by-water-account.1",
+      "name": "The Lists Carried by Water — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "In Namarra, difficulties following a disastrous census left some inhabited delta communities absent from official rolls. This period's accounts follow boat crews carrying supplies and household messages between places that administrative copies no longer described reliably. At Reedname Landing, boat organiser Sera Nemm kept a practical list of departures, deliveries, and people seeking relatives. Her record was useful precisely because it concerned where people actually lived. It did not automatically settle their tax position or restore legal recognition. The landing became one place where a traveller could ask careful questions about a changing delta. Some households welcomed documentation; others feared that renewed attention would bring seizures before protection. The difficulty survived beyond the immediate census dispute.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0045-the-toll-collected-after-the-repairs-account.1",
+      "name": "The Toll Collected after the Repairs — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A charge introduced to restore a damaged approach remained in force after the contracted work was complete. Local collectors argued that future maintenance justified retaining it. Carriers objected that the original authorisation described a temporary payment, while neighbouring crossings worried about losing traffic if they charged less. Carrier advocate Elna Vask obtained a comparison of collections and actual expenditure. One district replaced the old charge with a smaller, explicitly reviewed contribution. Others retained their arrangements, citing different grants or postponed work. The dispute produced a useful local precedent and no universal reform. Over subsequent decades, the practice of keeping temporary tolls became familiar in more places. Travellers learned to ask when a charge had last been reviewed, although the answer seldom made a cart move faster that day.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0049-the-witness-who-corrected-the-monument-account.1",
+      "name": "The Witness Who Corrected the Monument — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A proposed memorial inscription described a wartime convoy as having reached its destination intact. Nera Coal, the dwarven former quartermaster working with the Names House, supplied records of losses, replacements, and drivers who had completed the journey after the original wagons failed. The organisers feared that changing the inscription would diminish the achievement. Nera argued that getting the supplies through had required precisely the work their wording erased. The revised text named repairers and substitute crews alongside the escort commander. Some original participants disliked her account, and not every disputed detail could be settled. The Names House retained the evidence separately from the inscription. A public monument could commemorate the journey without becoming the sole record of everything that happened.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0057-the-congress-after-the-harvest-account.1",
+      "name": "The Congress after the Harvest — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Delegates returning for a regular congress under the Lantern Sea Accord encountered a generation of clerks who had learned its procedures through employment rather than wartime experience. Interpreter Dena Vell assembled cases showing where protected passage worked and where local charges had quietly narrowed it. The meeting renewed useful commitments, resolved several practical disputes, and postponed others. A proposed uniform fee failed because it would have burdened poorer crossings disproportionately. Local arrangements continued, requiring records and people willing to challenge a charge that had become habitual. At fifty years ago, the peace had lasted thirty-three years. Its achievements were substantial: journeys completed, prisoners long returned, children raised without seeing the war. Its maintenance still depended on choices that a signed accord could encourage but never make automatically.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0057-the-congress-after-the-harvest-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0057-the-congress-after-the-harvest-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0045-the-toll-collected-after-the-repairs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0045-the-toll-collected-after-the-repairs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0049-the-witness-who-corrected-the-monument-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0049-the-witness-who-corrected-the-monument-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0025-two-workshops-through-one-winter-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0025-two-workshops-through-one-winter-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0033-the-tables-after-the-council-meeting-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0033-the-tables-after-the-council-meeting-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0037-the-hearing-at-the-closed-launch-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0037-the-hearing-at-the-closed-launch-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0041-the-lists-carried-by-water-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0015-the-porch-at-the-last-mile-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0021-the-open-ledger-room-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0021-the-open-ledger-room-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

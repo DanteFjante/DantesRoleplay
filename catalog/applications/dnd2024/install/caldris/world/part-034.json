@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
+      "name": "The Orchardback — Approach from Mariselle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Orchardback — Mariselle: Boat passage. A small-boat passage to the currently observed resting bay, subject to the keeper's daily invitation. This is not a permanent island crossing or a route aboard a controllable conveyance.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.custom",
+      "name": "The Orchardback — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Visitors bring freshwater, compost or repair help within the keeper's carrying limits. One part of the orchard is left for birds. No chain is fixed to the shell, and nobody sells a permanent berth. Before stepping onto the pontoon, a visitor asks whether the Orchardback is receiving people that day.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.gmtruth",
+      "name": "The Orchardback — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The animal responds to water temperature and feeding opportunities, not to a prophecy about the campaign. A recent deeper mooring stake is irritating a resting flipper and should be moved before the harvest dispute is resolved. The oldest donor book includes a graft from a household erased from later registers, creating a modest evidentiary link to living people rather than proof of an ancient royal heir. No party can command it as a conveyance.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.hooks",
+      "name": "The Orchardback — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "An old agreement promises fruit to a household that has split into three distant branches. The tortoise begins waking during harvest, leaving growers to choose between valuable fruit and a safe departure. A customs official argues that a travelling orchard should pay import duty every time it swims back into the bay.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.lore",
+      "name": "The Orchardback — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The creature is far older than the surviving orchard agreement, but neither keepers nor scholars can responsibly give it an exact age. Travellers arriving around the Festival of Unfinished Journeys donated several grafts whose descendants still grow here. The fruit travelled farther than many of those donors did. Later records show the Orchardback sometimes leaving the bay for years; names, tending arrangements and boats changed between visits. Current keeper Nella Orro maintains an ordinary lookout and accepts that care cannot buy control over the animal. Historical threads: The Festival of Unfinished Journeys; The Orchard Compact.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
+      "name": "Rain Crown of Orovant — Approach from Red Cup Spring",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Rain Crown of Orovant — Red Cup Spring: Footpath. A marked water-carriers' path reaches the cistern and ends there. No bridge, flight route, or climb to the floating crown is registered.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.approach.c8bb5b07e6",
+      "name": "Rain Crown of Orovant — Approach from Red Cup Spring",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Rain Crown of Orovant — Red Cup Spring: Footpath. A marked water-carriers' path reaches the cistern and ends there. No bridge, flight route, or climb to the floating crown is registered.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.custom",
+      "name": "Rain Crown of Orovant — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The first daily jar is kept for a traveller arriving without a full water skin. Empty jars are counted as carefully as full ones, because demand matters during dry weather. Prayers may be offered from the cistern steps, but nobody is promised rain for buying a ribbon or a place beneath one particular stone.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.gmtruth",
+      "name": "Rain Crown of Orovant — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Soot from the kiln has fouled the veils, while an unnoticed storage leak accounts for a second portion of the loss. Both problems can be repaired without blaming the crown's magic. One original tablet records a smaller, excluded carrying community whose claim was never translated into the dominant trade language. The floating stones do not offer a controllable means of flight.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.hooks",
+      "name": "Rain Crown of Orovant — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A new translation turns an old right to draw water into a claim to own the cistern. The crown's veils gather much less mist after a profitable kiln begins work upwind. An elderly veil-weaver can repair the oldest knotting pattern, but her estranged apprentice owns the only suitable mesh.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.approach.c8bb5b07e6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

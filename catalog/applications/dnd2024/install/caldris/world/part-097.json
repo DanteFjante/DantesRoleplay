@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.1249-the-lantern-road-turns-south-traces-and-stories.1",
+      "name": "The Lantern Road Turns South — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Two abandoned milestones with conflicting distances; old inn cellars beside a narrow track; a maintenance list containing payments in roofing work. Following the older alignment can reveal places modern road maps omit.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-gm-truth.1",
+      "name": "The Winter of Returned Keys — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Some people returned seasonally for grazing, charcoal, and salvage. Hazelstairs was gradually abandoned as a permanent village, not sealed in an instant. Its ruins contain later occupation as well as the founding period.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-traces-and-stories.1",
+      "name": "The Winter of Returned Keys — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Keys found in later deposits around the mill; reused doorframes; a migration register with destinations. A family can seek an ancestor's house through records rather than assuming the abandoned village contains untouched wealth.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-gm-truth.1",
+      "name": "The Marriage of the Two Harbours — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The agreement depended on periodic renewal and a workable way to share costs. It is an ancestor of possible modern cooperation, not an unbroken treaty immune to twelve centuries of change.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-traces-and-stories.1",
+      "name": "The Marriage of the Two Harbours — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Paired harbour seals; a shared signal manual; cakes shaped like badly piloted boats. Restoring one harbour's old light could harm the other's modern approaches if the historical scheme is copied without accounting for the changed coastline.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-gm-truth.1",
+      "name": "The Griffin Above Juniper Gate — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The solution was costly and imperfect. Its later reputation as a bloodless triumph omits both the dead travellers and the killed griffin. The participants' own records are more honest.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-traces-and-stories.1",
+      "name": "The Griffin Above Juniper Gate — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Bolts set into cliff paths; compensation rolls; a feathered crest adopted by the road guard. Later griffins may nest in the same region, but they are descendants or new arrivals, not automatically the original animal.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1315-the-school-with-no-master-gm-truth.1",
+      "name": "The School with No Master — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hollis could work no spells. The school's survival depended on organisation, trust, and labour as much as magical talent. The lullaby vessel may survive through a stated chain of custody; widespread household sound archives are not established.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1315-the-school-with-no-master-traces-and-stories.1",
+      "name": "The School with No Master — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Meal rosters; letters practised on the backs of failed experiments; a vessel catalogue recording whose voice was captured and when. A cracked recording can become a restoration task whose stakes are personal rather than military.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-gm-truth.1",
+      "name": "The King Who Pawned the Rain — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Odran understood the financial terms but underestimated how aggressively his creditors would enforce them. His officials' claim that he was tricked by an impossibly clever contract is self-serving.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-traces-and-stories.1",
+      "name": "The King Who Pawned the Rain — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A satirical rain crown; water-use schedules; a mill bell rung when a channel was closed for maintenance. A present dispute over a later renewal may depend on the distinction between rights to collect dues and rights to divert water.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-gm-truth.1",
+      "name": "The Sleeper Opens One Eye — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The Guest remembers selectively and can confuse generations. Its testimony about early Caldris needs interpretation. This awakening does not establish continuous wakefulness or renewed annual obligations in the present.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-traces-and-stories.1",
+      "name": "The Sleeper Opens One Eye — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Elen's testimony in later copies; a small bowl repaired before the visit; a named pear graft called One Good Morning. A new waking can present the problem of introducing an ancient neighbour to a changed community without promising its service on the community's behalf.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1366-the-white-salt-marsh-gm-truth.1",
+      "name": "The White Salt Marsh — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Bellwade's actual bell is not submerged and is not related to Merecross's ancient magical warning bell. Sounds heard across the marsh have several possible ordinary causes; later authors should establish any new supernatural source rather than assume one from the song.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1366-the-white-salt-marsh-traces-and-stories.1",
+      "name": "The White Salt Marsh — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Orchard stumps in tidal mud; reused lintels bearing inland street names; a bell with repair marks from its overland journey. A low-water survey can recover household objects before erosion destroys them.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1383-the-open-gate-rebellion-gm-truth.1",
+      "name": "The Open Gate Rebellion — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Brenna used the coalition partly to recover her family's influence. Several other leaders knew this and worked with her anyway. The settlement's practical gains do not depend on every participant having pure motives.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1383-the-open-gate-rebellion-traces-and-stories.1",
+      "name": "The Open Gate Rebellion — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Cut chains displayed above gates; conflicting casualty lists; a pass shrine built from burnt tollhouse stone. A recovered account can establish that a village had already paid a levy later remembered as rebellion against all taxation.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1399-the-mapmakers-daughter-gm-truth.1",
+      "name": "The Mapmaker's Daughter — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Omren's memory was valuable and fallible. Tarin's decision to correct one of his proudest drawings cost her a patron who preferred the celebrated older version.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1399-the-mapmakers-daughter-traces-and-stories.1",
+      "name": "The Mapmaker's Daughter — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Maps with different symbols for certainty; sketches of small ferries omitted from royal surveys; guide payments in the margins. Reconciling two editions can reveal a deliberately removed safe route without making every cartographic discrepancy a conspiracy.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1415-avelines-last-winter-gm-truth.1",
+      "name": "Aveline's Last Winter — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Her death was real. No hidden bargain, replacement body, or waiting resurrection is established. Her contribution to present-day stories can be complete without her becoming an immortal source of answers. One intended recipient never received their parcel; its contents remain an open adventure seed.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.1383-the-open-gate-rebellion-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1383-the-open-gate-rebellion-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1399-the-mapmakers-daughter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1399-the-mapmakers-daughter-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1415-avelines-last-winter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1315-the-school-with-no-master-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1315-the-school-with-no-master-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1366-the-white-salt-marsh-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1366-the-white-salt-marsh-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1249-the-lantern-road-turns-south-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1399-the-mapmakers-daughter-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1415-avelines-last-winter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1266-the-winter-of-returned-keys-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1283-the-marriage-of-the-two-harbours-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1299-the-griffin-above-juniper-gate-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1315-the-school-with-no-master-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1315-the-school-with-no-master-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1332-the-king-who-pawned-the-rain-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1349-the-sleeper-opens-one-eye-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1366-the-white-salt-marsh-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1366-the-white-salt-marsh-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1383-the-open-gate-rebellion-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1383-the-open-gate-rebellion-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1399-the-mapmakers-daughter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1249-the-lantern-road-turns-south-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.1499-the-meadows-that-moved-uphill-traces-and-stories.1",
+      "name": "The Meadows That Moved Uphill — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Abandoned upper terraces; a millstone reused as a doorstep; water turns preserved in a counting game. An old channel could restore a failing village supply but also drain a wet meadow now important to downstream households.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-gm-truth.1",
+      "name": "The Year of the Empty Throne — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ilyen accepted a restriction she disliked: emergency levies needed witnesses from the affected districts. She obeyed it during her reign. Later rulers' attempts to weaken it belong to their own choices, not a secret defect in her original promise.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-traces-and-stories.1",
+      "name": "The Year of the Empty Throne — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Cancelled court appointments; crown furniture sold into private houses; a renewed commons roll. An apparent royal heirloom may have entered a family through a public sale rather than theft.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-gm-truth.1",
+      "name": "The Quiet Fire at Sallowmere — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The fire was an accident. Pera did not foresee the accounts' future importance. She followed sensible instructions under frightening conditions and deserved recognition without being made a prophet.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-traces-and-stories.1",
+      "name": "The Quiet Fire at Sallowmere — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Heat-cracked shelf tiles; borrower lists; a charred book cover enclosing an unrelated later text. Following a loan record can turn a supposed lost masterpiece into a set of recipes still used by a family unaware of its scholarly reputation.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-gm-truth.1",
+      "name": "The Ford of Sleeping Carts — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Essel's fair settlement relied on the village accepting delayed payment. Later accounts praise her judgement while overlooking the households that assumed the risk. Some never received everything owed.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-traces-and-stories.1",
+      "name": "The Ford of Sleeping Carts — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Raised tether stones; measurements scratched on stable walls; a song about a mule eating a king's tax. A washed-out bridge sends modern travellers looking for the older ford, whose bed has shifted since the surviving map was drawn.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1566-the-apricot-marriage-gm-truth.1",
+      "name": "The Apricot Marriage — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Samin and Edric developed genuine affection while disagreeing about policy. Neither secretly controlled the other. Their correspondence is valuable because it records the negotiation of a shared life, including homesickness that public portraits omitted.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1566-the-apricot-marriage-traces-and-stories.1",
+      "name": "The Apricot Marriage — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Wall gardens; recipes using cheaper local substitutes; household letters written in two languages. Restoring a migrant family's burial inscriptions can reveal a different account of the celebrated arrival.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1583-the-blackglass-garden-gm-truth.1",
+      "name": "The Blackglass Garden — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The recovered instructions deliberately used an obsolete trade name for the mineral to protect the makers' livelihood. It is identifiable from workshop waste. The missing ingredient is difficult to source, not the blood of a vanished people.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1583-the-blackglass-garden-traces-and-stories.1",
+      "name": "The Blackglass Garden — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Glazed basin fragments; star marks beneath later paving; a furnace account recording many failures. A commission to repair a disk requires expertise from several trades and gives an expedition a concrete reason to visit the old mineral workings.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-gm-truth.1",
+      "name": "The Address Beneath the Blue Paint — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hadi was neither a secret prince nor a disguised spirit. His practical help made the discovery possible. Aveline later paid for the bakery's lost labour instead of giving him a valuable object he could not readily use.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-traces-and-stories.1",
+      "name": "The Address Beneath the Blue Paint — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A bakery wall preserving the old sign; a route list with bread prices beside distances; workshop emblems on fragments sold as jewellery. A copied address can lead present travellers into a lived-in neighbourhood whose residents have their own reasons to help or refuse entry.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-gm-truth.1",
+      "name": "The Last Copy and the Eastern Road — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "She left because she wanted to see something new and finally felt able to go. There was no prophecy summoning her. At this point she had lived for several centuries, not two millennia; her eventual fate remains open.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-traces-and-stories.1",
+      "name": "The Last Copy and the Eastern Road — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Three imperfectly related copies; a plain cup with a repaired handle; a farewell letter whose practical directions occupy more space than its sentiments. A long campaign can follow the eastern journey through later centuries, discovering what happened without requiring Aveline to be alive in the present.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1622-the-orchards-long-sleep-gm-truth.1",
+      "name": "The Orchard's Long Sleep — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The Guest was tired, not secretly murdered or punishing the villagers. Its long sleep can extend across centuries. Later history must establish any awakening; present-day stories need not assume that it still appears at the annual feast.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1622-the-orchards-long-sleep-traces-and-stories.1",
+      "name": "The Orchard's Long Sleep — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A low root mound; songs sung quietly during blossom; nursery books recording frost damage after the shelter ceased. Construction threatens the resting ground, raising the question of whether to seek contact, protect its sleep, or move a project elsewhere.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-gm-truth.1",
+      "name": "The War of the Two Bridges — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Dama had prepared the stores for flood relief, not for a brilliant military manoeuvre. Her celebrated strategy began as an improvised response using years of unglamorous preparedness.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-traces-and-stories.1",
+      "name": "The War of the Two Bridges — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Isolated piers; a shared graveyard; a bridge keeper's key too large for any surviving lock. A submerged construction camp becomes accessible after a channel shift, exposing stolen material from several jurisdictions.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1648-the-winter-teeth-gm-truth.1",
+      "name": "The Winter Teeth — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A clutch of mineral-encrusted stones displayed as the drake's eggs was a profitable misidentification. The creature left no offspring at the quarry. Its genuine tooth retains a faint chill but is not automatically a powerful weapon.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1622-the-orchards-long-sleep-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1622-the-orchards-long-sleep-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1648-the-winter-teeth-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1566-the-apricot-marriage-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1566-the-apricot-marriage-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1583-the-blackglass-garden-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1583-the-blackglass-garden-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1499-the-meadows-that-moved-uphill-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1549-the-ford-of-sleeping-carts-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1566-the-apricot-marriage-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1566-the-apricot-marriage-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1583-the-blackglass-garden-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1583-the-blackglass-garden-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1599-the-address-beneath-the-blue-paint-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1609-the-last-copy-and-the-eastern-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1622-the-orchards-long-sleep-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1622-the-orchards-long-sleep-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1635-the-war-of-the-two-bridges-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1648-the-winter-teeth-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1499-the-meadows-that-moved-uphill-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1515-the-year-of-the-empty-throne-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1532-the-quiet-fire-at-sallowmere-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

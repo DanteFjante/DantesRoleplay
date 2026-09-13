@@ -1,0 +1,1119 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.atlas.morrow-strait",
+      "name": "Morrow Strait",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Morrow Strait fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Morrow Strait fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The crossing between the Lower Vey coast and historic Serevan, marked by the Halfway Light. Pilotage and weather shape passage between its opposing shores.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 330
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.lantern-sea",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont",
+      "name": "Bellafont",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bellafont fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/bellafont.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bellafont fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/bellafont.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Bellafont is a kingdom of Eredane. Its present pressure: An orchard blight and rival claims over irrigation monasteries strain a famously charming court.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere",
+      "name": "Carrowmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Carrowmere fantasy atlas map",
+                "caption": "Carrowmere",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/carrowmere.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Carrowmere fantasy atlas map",
+                "caption": "Carrowmere",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/carrowmere.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Carrowmere is a kingdom of Eredane. Its present pressure: Shipwright labour disputes threaten the grain fleet before a dangerous sailing season.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow",
+      "name": "Dunmarrow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Dunmarrow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/dunmarrow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Dunmarrow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/dunmarrow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Dunmarrow is a kingdom of Eredane. Its present pressure: Iron wealth declines while border forts and old military families demand more funding.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria",
+      "name": "Kethria",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Kethria fantasy atlas map",
+                "caption": "Kethria",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Kethria fantasy atlas map",
+                "caption": "Kethria",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Kethria is a kingdom of Solasca. Its present pressure: Copper tithe records suggest someone has paid a sleeping dragon for generations.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 680,
+            "y": 245
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lornesse",
+      "name": "Lornesse",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lornesse fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lornesse.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lornesse fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lornesse.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Lornesse is a kingdom of Eredane. Its present pressure: Mine closures expose older tunnels, unpaid obligations, and possible dragon signs.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra",
+      "name": "Namarra",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namarra fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namarra fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Namarra is a kingdom of Solasca. Its present pressure: Delta villages vanish from tax rolls while their grain still appears in foreign markets.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 555,
+            "y": 755
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain",
+      "name": "Ordelain",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Ordelain fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Ordelain fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Ordelain is a kingdom of Solasca. Its present pressure: River law and royal law conflict after the Aur changes course around a wealthy estate.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 560,
+            "y": 500
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia",
+      "name": "Selucia",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selucia fantasy atlas map",
+                "caption": "Selucia",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selucia fantasy atlas map",
+                "caption": "Selucia",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Selucia is a island kingdom of Solasca. Its present pressure: A royal wedding could settle maritime claims, if the families, sailors, weather, and missing cook cooperate.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 235,
+            "y": 775
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league",
+      "name": "Seven Lamps League",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seven Lamps League fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seven Lamps League fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Seven Lamps League is a merchant city league of Solasca. Its present pressure: The League's rotating chair has disappeared with the key to a sealed Concord archive.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 245,
+            "y": 390
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane",
+      "name": "Tessarane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tessarane fantasy atlas map",
+                "caption": "Tessarane",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tessarane fantasy atlas map",
+                "caption": "Tessarane",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Tessarane is a kingdom of Solasca. Its present pressure: Astronomers predict an ordinary comet; the court insists it confirms three incompatible prophecies.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 770,
+            "y": 440
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.solasca",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches",
+      "name": "Veyr Marches",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Veyr Marches fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/veyr-marches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Veyr Marches fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/veyr-marches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ada-penn",
+      "name": "Ada Penn",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict rescue-house keeper. Immediate want: expose false storm signals. Hidden depth: hid one refugee convoy record.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ansel-daro",
+      "name": "Ansel Daro",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "charming League Chair, currently missing. Immediate want: survive long enough to reveal archive truth. Hidden depth: wrote three resignations for three anticipated kidnappers.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.architect-sola-mere",
+      "name": "Architect Sola Mere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Cringeworthy palace guide with elaborate gestures, incorrect heroic poses, and excellent structural judgment. Wants the Unfinished Palace kept public; understands load paths and encoded measurements; longs for noble patronage. Directs pageants with Sera Lark by letter. Refusing a lucrative private commission becomes her proof of maturity.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.auditor-celyn-marr",
+      "name": "Auditor Celyn Marr",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "the sponsor above the minister. A pleasant, forgettable policy adviser who never carries a weapon and rarely tells a direct lie. Celyn leads a Seventh Ledger restoration cell and supplied Vane with convincing analyses, forged precedents, and real evidence of approaching instability. Celyn views people as entries that should be made legible for their own protection. Celyn answers to a Council of Margins distributed across both continents. The Council itself is divided: restorationists want Concord authority, custodians want dangerous archives contained, and reformers want public standards without inherited debt. “The boss” becomes a political network, not an infinite line of stronger combatants.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.auntie-brin-sallow",
+      "name": "Auntie Brin Sallow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Dry realist and elected Mackerel Crown harbour speaker who calls everyone “captain” when annoyed. Wants the fleet moving despite the dual seals; remembers customary law and every household's boat; fears compromise will look like weakness. Her rival speaker is her former closest friend. Shared danger can restore practical trust before affection.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.basto-inkhand",
+      "name": "Basto Inkhand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Gentle grump and Inkfish Wharf maker whose hands, sleeves, and household goat are permanently black. Wants the fading-document panic stopped; understands pigments and paper; once sold poor ink during hardship and expects suspicion. Supplies the Vessa Open Archive League. He confesses his old fault when others distinguish it from the current sabotage.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.bera-flint",
+      "name": "Bera Flint",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Tired authority and elected goat judge who prepares legal opinions while her decorated goat eats the ribbons. Wants missing animals returned without a border incident; understands grazing law and kinship networks; worries outsiders see her court as ridiculous. Respected by Oath Rope Lodges. Serious engagement with the ritual makes her an inventive negotiator.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.borin-well",
+      "name": "Borin Well",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "gentle grump smelter. Immediate want: stop copper theft. Hidden depth: hears Karsh speaking through furnace drafts—or thinks he does.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "faction.caldris.aur-river-judges",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.bellafont-water-courts",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.carrowmere-shipwright-fraternities",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.free-axle-companies",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.grey-mantle-houses",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.houses-of-rescue",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.long-bench-union",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.lorn-bell-houses",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.namar-water-captains",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.nine-march-moot",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.oath-rope-lodges",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.seed-mothers-compact",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.society-of-the-silver-pear",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.vessa-open-archive-league",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.brotherhood-of-saint-orro",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.kethrian-canal-councils",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.open-roof-society",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.selucian-dock-assemblies",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.tessa-sky-college",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.glassharbor-furnace-guilds",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.keepers-of-the-mountain-tithe",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.league-chairs-secretariat",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.low-lantern-dry-sock-fund",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

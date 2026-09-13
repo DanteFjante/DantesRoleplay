@@ -1,0 +1,726 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-traces-and-stories.1",
+      "name": "The Winter of False Harbour Seals — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Counterfoil bundles, wax recipes, and fictitious ship names repeated in later family stories. A supposed ancestral voyage may originate in a fraudulent order. Recovering genuine counterparts can rescue an honest claim from a batch of forged documents.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0335-orven-s-last-public-performance-gm-truth.1",
+      "name": "Orven's Last Public Performance — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The younger musician meant the proposed speeches kindly. Orven initially mistook the suggestion for an attempt to remove him. Their eventual correspondence records an apology on each side; neither needed to lose the other's friendship for the misunderstanding to matter.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0335-orven-s-last-public-performance-traces-and-stories.1",
+      "name": "Orven's Last Public Performance — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Simplified scores, altered instruments, and recordings in ordinary written notation. Recovering an early arrangement might help a musician adapt a treasured work to a changed body. A competition demanding the supposedly original version could be challenged using Orven's own revisions.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-gm-truth.1",
+      "name": "The Pension Chest with Two Locks — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Eren's sister was among the excluded unmarried dependants. That personal interest helped him notice the problem and also influenced which petitions he pursued first. His reform deserves neither dismissal as selfishness nor a legend of perfect impartiality.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-traces-and-stories.1",
+      "name": "The Pension Chest with Two Locks — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Paired keys, claimant rolls, and a series of petitions with increasingly worn folds. A missing key can be an inconvenience rather than a magical barrier; the real mystery may concern who was entitled to hold it. A forgotten allowance could still matter if its terms were renewed by successor institutions.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-gm-truth.1",
+      "name": "The First Rain at Rainbell Orchard — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The inherited effect is real and limited. Its original source remains unknown; no ancient deity's return is required to explain its survival. Taking every viable cutting from one tree could destroy the very lineage a collector hopes to preserve.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-traces-and-stories.1",
+      "name": "The First Rain at Rainbell Orchard — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Grafting records, fragile seed instruments, and lists of failed cuttings. A present search might recover compatible rootstock from an unremarkable household garden. Restoring the festival instrument can require patient growing and cooperation rather than a spell cast over dead wood.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-gm-truth.1",
+      "name": "The Name Beside the Second Hand — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nen accepted the late payment without treating it as full settlement. The account includes money intended for someone else's supplies, making the total easy to overstate. A descendant's later claim that Aveline secretly funded Nen's entire workshop is unsupported and became popular because it made reconciliation simpler.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-traces-and-stories.1",
+      "name": "The Name Beside the Second Hand — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Workshop recipes, payment fragments, pottery signatures, and teaching endowments. Future quests can authenticate an object, follow Nen's independent career, or protect a neglected teaching place. They need not repeatedly withhold the assistant's identity after the evidence has settled it.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-gm-truth.1",
+      "name": "The War of the Shorter Road — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Neither route could handle all seasonal traffic safely. Several negotiators knew this while publicly insisting that their opponents' road was unnecessary. The settlement worked because carriers quietly used both. A later restoration that ignores seasonal capacity could revive the original danger.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-traces-and-stories.1",
+      "name": "The War of the Shorter Road — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Confiscation lists, damaged boundary stones, fodder debts, and testimony from households absent from the formal treaty. An old road claim may matter today through later recognised renewals. A buried culvert can be more useful evidence than a noble family's heroic history.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-gm-truth.1",
+      "name": "The Kitchens of Saffron Court — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hadi used the prestigious name to attract customers and openly admitted that most dishes contained no saffron. The real deception came later, when a lease-holder described reserved newcomer stalls as private property in a loan agreement.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-traces-and-stories.1",
+      "name": "The Kitchens of Saffron Court — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Oven bookings, annotated recipes, lease renewals, and words borrowed between trading languages. A lost recipe can identify a migration route or lead to a household keeping an older version. A disputed stall allocation offers an adventure in negotiation, evidence, and making sure someone can still earn supper.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-gm-truth.1",
+      "name": "The Stair the Giant Would Not Finish — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Aurr understood more of the negotiations than the carriers realised. The refusal was deliberate, not a failure to grasp money. This chapter does not establish whether Aurr survives into the present. The graves contain personal belongings and worked stone, not a giant's hidden treasury.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-traces-and-stories.1",
+      "name": "The Stair the Giant Would Not Finish — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Oversized tool marks, abandoned gallery sockets, and two versions of Dema's plan. A present expedition can assess a less invasive route or recover equipment left beyond the unfinished span. The graves deserve consideration even if nobody is available to enforce it.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-gm-truth.1",
+      "name": "The Night of the Unlocked Doors — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "This was the missing coastal vessel from the previous century. Its custody mystery is resolved here. Most of its brood was destroyed; a small surviving sealed sample remained for study. Whether that sample survives into the present must be established by later custody evidence, not assumed because danger would be convenient.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-traces-and-stories.1",
+      "name": "The Night of the Unlocked Doors — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Kiln ledgers, injury settlements, and a catalogue listing where the other objects went. A present commission can trace a dangerous acquisition before its new owner repeats the mistake. A locked room may be safely opened by understanding its ward, without releasing live moths to do the work.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-gm-truth.1",
+      "name": "The Dry Exchange of Brinefold — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The boat owner initially believed the advances covered separate shares. A broker concealed how much had already been pledged and purchased distressed claims through a relative. Their partnership left a trail in warehouse rent payments rather than in the polished exchange accounts.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-traces-and-stories.1",
+      "name": "The Dry Exchange of Brinefold — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Pledge books, cargo seals, and receipts for payments made in work. A family may possess a genuine claim whose value depends on a later renewal. Recovering the missing register can reveal duplicate pledges without making every debtor a criminal.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-mothwatch-kiln.1",
+      "name": "Mothwatch Kiln — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A pottery workshop and small examination room in Leth Sarai. Its older kiln is maintained with ordinary masonry, and dangerous objects are handled in rooms with mechanical closures. The public collection includes harmless fired vessels and copies of historical warnings. A person to meet: Potter Venn Seli can reproduce the sacrificial binding medium but refuses commissions that omit the object's custody history. Adventure: Trace an inherited sealed vessel before anyone attempts to open it. Establish whether it contains a dead specimen, a harmless imitation, or a surviving brood; its appearance alone is insufficient. Containment and restitution can matter more than ownership.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0399-the-dry-exchange-of-brinefold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-mothwatch-kiln.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0359-the-name-beside-the-second-hand-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0367-the-war-of-the-shorter-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0383-the-stair-the-giant-would-not-finish-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0335-orven-s-last-public-performance-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0335-orven-s-last-public-performance-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0335-orven-s-last-public-performance-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0335-orven-s-last-public-performance-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0343-the-pension-chest-with-two-locks-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

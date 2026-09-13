@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.1709-the-first-lantern-league-traces-and-stories.1",
+      "name": "The First Lantern League — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Lead seals bearing a lamp and paired initials; courier rest stones; copied settlement rolls. A sealed packet preserves a private letter that someone paid dearly to keep travelling even after its recipient moved away.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-gm-truth.1",
+      "name": "The Listening Stones of Cairn Moss — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The ring preserves fragments of sound under particular conditions. It contains no captive souls and provides no complete historical replay. Who first built it and why remain intentionally unresolved.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-traces-and-stories.1",
+      "name": "The Listening Stones of Cairn Moss — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Belda's phonetic transcriptions; a peat-stained survey cord sealed in a later reliquary; one silent stone. Adventurers can help reconstruct a damaged arrangement or identify a repeated phrase whose meaning has been badly mistranslated.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1735-the-night-harbour-gm-truth.1",
+      "name": "The Night Harbour — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nacre's celebrated first welcome to all ships was conditional on fees few small local fishers could afford. Its openness was real and unevenly distributed.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1735-the-night-harbour-traces-and-stories.1",
+      "name": "The Night Harbour — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Lamp towers with shutter fittings; pottery impressed with a shell; a waterfront street bearing an inland dialect name. A false coastal signal draws a vessel toward danger, and the investigators must distinguish deliberate wrecking from a mistaken restoration of an obsolete code.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-gm-truth.1",
+      "name": "The House of Unfinished Spells — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One genuine experiment could briefly preserve a sound in a prepared ceramic cavity. Aveline hoped to reconstruct Derren's voice, but there was no original recording. The work could preserve future speech, never retrieve an unrecorded past.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-traces-and-stories.1",
+      "name": "The House of Unfinished Spells — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Cautions written in red beside household charms; test tiles; a scorched bronze spoon preserved as an instructional object. A dangerous copied spell can be corrected by recovering its discarded preparation notes.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-gm-truth.1",
+      "name": "The Summer of Ragged Pennants — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Rook knowingly let one band escape in return for releasing hostages. Some later attacked a distant hamlet. He was an effective protector whose decision had consequences beyond the people he could see.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-traces-and-stories.1",
+      "name": "The Summer of Ragged Pennants — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Shield fittings under a rebuilt weir; paired memorial stones on opposite banks; a marching tune used as a rowing song. A grave disturbed during repairs contains evidence that the celebrated victor's banner was carried by a unit omitted from official accounts.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-gm-truth.1",
+      "name": "The Dispute of Open Doors — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The agreement's most disputed prohibition arose from a human landlord's practice of inheritable service, not from a spirit demanding children. Some later religious polemics reversed the story.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-traces-and-stories.1",
+      "name": "The Dispute of Open Doors — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A door carved with an unfastened latch; guest rules copied beside prayers; a small landing reserved for visitors unwilling to enter the abbey. A sanctuary asks for mediators when two protected guests accuse each other of coercion.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1787-the-blackglass-pilot-gm-truth.1",
+      "name": "The Blackglass Pilot — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Samir made the disk from a salvaged shard whose maker he never identified. The claim that it came from a drowned city is possible but unproven, left as a thread for later exploration.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1787-the-blackglass-pilot-traces-and-stories.1",
+      "name": "The Blackglass Pilot — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Sight grooves in coastal stonework; observation books preserved through later copying; a children's rhyme about keeping the chimney downwind. Recovering the disk helps only if its inscriptions and the relevant coastal changes can also be understood.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-gm-truth.1",
+      "name": "The Blue-Sailed Visitors — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Several blue sails were patched with locally dyed cloth within a decade. Colour alone cannot identify a wreck's origin, although treasure dealers confidently claim otherwise.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-traces-and-stories.1",
+      "name": "The Blue-Sailed Visitors — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Blue pigment in an old harbour mural; foreign needles in inland graves; paired-language cargo labels. A letter stored as a meaningless curiosity turns out to contain directions to a family grave on the farther shore.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1809-the-first-high-market-gm-truth.1",
+      "name": "The First High Market — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The owner of the original disputed cellar had hidden ordinary stolen goods, not a terrible relic. Later history may place something else there, but the old crime does not predetermine it.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1809-the-first-high-market-traces-and-stories.1",
+      "name": "The First High Market — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The cistern's earliest lining; stair stones bearing two masons' traditions; a lamp shelf incorporated into a later wall. Restoring a blocked water channel might save a neighbourhood from shortages but requires entering a cellar its owner will not open.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1822-the-year-of-two-springs-gm-truth.1",
+      "name": "The Year of Two Springs — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Aveline's failure was a failure of scale and timing. She subsequently copied the limits of a spell as carefully as its instructions. Later editors often removed those passages.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1822-the-year-of-two-springs-traces-and-stories.1",
+      "name": "The Year of Two Springs — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Twice-marked planting tallies; emergency pits beneath later barns; a harvest song with a missing celebratory verse. An archive hunt for the ripening charm can recover a valuable agricultural tool without producing a solution to every future famine.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1835-the-guest-winter-at-whitewindow-gm-truth.1",
+      "name": "The Guest Winter at Whitewindow — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "An earlier landslide, followed by competing road investments, had severed the route. There was no ancient betrayal to avenge. A later lord promoted that story to justify intercepting trade through his own pass.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1809-the-first-high-market-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1809-the-first-high-market-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1822-the-year-of-two-springs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1822-the-year-of-two-springs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1835-the-guest-winter-at-whitewindow-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1735-the-night-harbour-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1787-the-blackglass-pilot-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1787-the-blackglass-pilot-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1709-the-first-lantern-league-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1735-the-night-harbour-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1761-the-summer-of-ragged-pennants-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1774-the-dispute-of-open-doors-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1787-the-blackglass-pilot-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1787-the-blackglass-pilot-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1799-the-blue-sailed-visitors-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1809-the-first-high-market-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1809-the-first-high-market-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1822-the-year-of-two-springs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1822-the-year-of-two-springs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1835-the-guest-winter-at-whitewindow-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1709-the-first-lantern-league-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1722-the-listening-stones-of-cairn-moss-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1735-the-night-harbour-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1735-the-night-harbour-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1748-the-house-of-unfinished-spells-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

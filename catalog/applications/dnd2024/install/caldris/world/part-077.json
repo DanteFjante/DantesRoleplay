@@ -1,0 +1,720 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-traces-and-stories.1",
+      "name": "The Porch at the Last Mile — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Message slips, repairs paid for by passing households, and directions corrected after local changes. A present errand can begin with a modest delivery or a question about someone who passed through recently.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0021-the-open-ledger-room-gm-truth.1",
+      "name": "The Open Ledger Room — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One genuine old seal was copied legitimately for teaching. At least one later impression associated with the teaching copy was used outside that purpose. This creates a specific provenance question; it does not establish that all current counterfeit seals came from this room or share a single maker.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0021-the-open-ledger-room-traces-and-stories.1",
+      "name": "The Open Ledger Room — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Teaching exercises, comparative seal casts, and documents whose impressive appearance conceals weak authority. A present case can begin with an ordinary reader noticing a mismatch that a patron's experts overlooked or chose not to discuss.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-gm-truth.1",
+      "name": "Two Workshops through One Winter — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The successful alteration reduced the pane's maximum brightness in exchange for reliability. Later publicity omitted the reduction. Restoring the advertised brilliance could undo the repair that allowed the pane to remain useful.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-traces-and-stories.1",
+      "name": "Two Workshops through One Winter — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Paired repair diagrams, carrier receipts, and letters separating proposed work from completed work. A present malfunction can be understood by tracing the last repair rather than assuming the oldest surviving instructions describe the current object.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
+      "name": "The Orchard that Counted Birds — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Tessa favoured one pruning method and initially interpreted ambiguous results in its favour. A neighbour's separate notes prompted a correction. The collection is valuable because it can be checked, not because its first keeper was incapable of bias.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
+      "name": "The Orchard that Counted Birds — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Seasonal notebooks, graft labels, and observations supplied by neighbouring households. A present investigation can recover missing years or test whether a claimed pattern actually appears across several gardens.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-gm-truth.1",
+      "name": "The Tables after the Council Meeting — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One intermediary advertised access that Jori had never promised. Several customers nevertheless obtained useful help from ordinary interpreters working in the rooms. The fraud lies in the claimed privileged connection, not in every service the visitors received.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-traces-and-stories.1",
+      "name": "The Tables after the Council Meeting — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Meal accounts, interpreter bookings, and private drafts of public petitions. A present visitor can find a useful contact, discover an altered translation, or trace the older meal-pause provision through copies held elsewhere.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-gm-truth.1",
+      "name": "The Hearing at the Closed Launch — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The earlier clerk who quietly altered deadlines to prevent arrests remains missing from the formal record, as established elsewhere in Caldris. Bera possessed evidence of the altered dates but no reliable account of the clerk's later life. This chapter does not resolve that quest by inventing a convenient confession.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-traces-and-stories.1",
+      "name": "The Hearing at the Closed Launch — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hull measurements, hearing copies, and amendments in later shipbuilding contracts. A present commission might recover a witness's notes, establish which protections survived renewal, or inspect a vessel whose paperwork looks better than its timber.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0041-the-lists-carried-by-water-gm-truth.1",
+      "name": "The Lists Carried by Water — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The established hidden history remains intact: water captains concealed communities with quiet royal consent so emergency grain would not be seized for debt. The public landing does not disclose the protected households' identities. Sera's complete list was divided among custodians rather than displayed for casual inspection.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0041-the-lists-carried-by-water-traces-and-stories.1",
+      "name": "The Lists Carried by Water — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Boat tallies, forwarding instructions, and maps whose named channels no longer match the water. A present journey can establish a community's continuity through several independent records. Publishing names indiscriminately may expose the households the investigation is meant to help.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-gm-truth.1",
+      "name": "The Toll Collected after the Repairs — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Elna's own carrier association supported a similar charge elsewhere because its members benefited from the funded storehouse. Comparing both positions can expose selective argument without invalidating the evidence behind the successful challenge.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-traces-and-stories.1",
+      "name": "The Toll Collected after the Repairs — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Completed repair accounts, collection tallies, and notices with their original expiry terms. A present investigation may establish an obligation to hold a hearing rather than an immediate right to refuse every charge.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-gm-truth.1",
+      "name": "The Witness Who Corrected the Monument — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nera initially misremembered which crossing the replacement wagons used. A younger copyist corrected her using dated receipts. Her willingness to amend her own recollection is part of her value as a witness, not evidence that all testimony from her must be discarded.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-traces-and-stories.1",
+      "name": "The Witness Who Corrected the Monument — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Rejected inscription drafts, convoy accounts, and letters from households seeking recognition. A present commission can identify an omitted worker or establish why a familiar monument differs from an old photograph or drawing.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-reedname-landing.1",
+      "name": "Reedname Landing — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A modest public landing in Namarra with boat moorings, a covered waiting place, and a forwarding service. Its working records track changing channels and actual deliveries. The landing's visibility does not make confidential household lists public or settle the legal recognition of the communities its crews serve. A person to meet: Boat organiser Miri Nemm needs a route checked after water levels change. She can explain how to reach the next agreed meeting point without exposing every household in her records. Adventure: Deliver supplies, trace a missing boat, or gather independent evidence that a community has remained inhabited. Agree on how information will be used before turning a search into a published list of vulnerable people.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
+      "name": "Swallowwatch Orchard — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration. A person to meet: Observer Enna Brin is gathering reliable accounts of the Summer Without Swallows and wants ordinary records from neighbouring gardens as well as striking stories. Adventure: Recover missing notebooks, compare sightings, investigate a costly remedy, or help obtain healthy propagation stock. A useful result may be a modest change supported by evidence rather than a grand explanation of every absence.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-closed-launch.1",
+      "name": "The Closed Launch — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A shipyard slip and small record shelter in Carrowmere associated with the historical Grain Fleet Refusal and later hearings. Working vessels and timber stores have changed repeatedly. Surviving measurements and contract copies are kept alongside later inspection records, rather than treated as substitutes for examining a current hull. A person to meet: Shipwright Tessa Noll wants an independent comparison of a disputed vessel's condition and the work its owner has actually paid for. Her concerns about safe work and injury support are practical and justified. Adventure: Inspect timber, recover a missing assessment, or trace later use of the altered deadlines associated with the old clerk. The current labour dispute can be investigated without assuming that either its costs or its risks are imaginary.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0049-the-witness-who-corrected-the-monument-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-reedname-landing.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-closed-launch.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0033-the-tables-after-the-council-meeting-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0037-the-hearing-at-the-closed-launch-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0045-the-toll-collected-after-the-repairs-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0021-the-open-ledger-room-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0021-the-open-ledger-room-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0021-the-open-ledger-room-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0021-the-open-ledger-room-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0025-two-workshops-through-one-winter-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

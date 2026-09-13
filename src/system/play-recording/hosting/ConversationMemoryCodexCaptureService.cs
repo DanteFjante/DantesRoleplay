@@ -11,7 +11,6 @@ namespace DantesRoleplay.DataAccess;
 /// </summary>
 public sealed class ConversationMemoryCodexCaptureService : IConversationMemoryHostBinding
 {
-    private const string Provenance = "codex-app-server/turn-items@0.153.4";
     private readonly IConversationMemoryStore memory;
     private readonly CodexCaptureAdapter capture;
     private readonly TimeProvider clock;
@@ -78,11 +77,11 @@ public sealed class ConversationMemoryCodexCaptureService : IConversationMemoryH
                             : ConversationMemoryMessageKinds.AssistantFinal,
                     value.Content,
                     sourceAt)).ToArray();
-            var result = memory.AppendTurn(new(
+            var result = AppendWithReplayRecovery(new(
                 Binding,
                 delivery.Turn.TurnId,
                 messages,
-                Provenance,
+                "codex-app-server/turn-items@" + delivery.SourceVersion,
                 clock.GetUtcNow().UtcDateTime,
                 DeliveryToken(Binding.SourceThreadId, delivery.Turn.TurnId)));
             capture.Acknowledge(delivery);
@@ -97,6 +96,41 @@ public sealed class ConversationMemoryCodexCaptureService : IConversationMemoryH
 
     private bool IsConnected() =>
         memory.GetState(Binding.Scope, includeArchived: true)?.Status == ConversationMemoryStatuses.Connected;
+
+    private ConversationMemoryAppendResult AppendWithReplayRecovery(ConversationMemoryTurnAppend append)
+    {
+        try { return memory.AppendTurn(append); }
+        catch (ConversationMemoryException error) when (error.Code == "CONVERSATION_MEMORY_REPLAY_CONFLICT")
+        {
+            // The journal can commit before the local checkpoint is acknowledged. A later
+            // supported client upgrade must replay that receipt with its original provenance.
+            // The unchanged store still verifies the complete binding/token/payload fingerprint.
+            var journal = memory.GetState(Binding.Scope);
+            if (journal is null) throw;
+            IReadOnlyList<ConversationMemoryMessageDocument> retained;
+            try
+            {
+                retained = memory.GetSourceMessages(Binding.Scope, journal.Revision,
+                    append.Messages.Select(message => message.SourceMessageId).ToArray());
+            }
+            catch (ConversationMemoryException readError) when (readError.Code == "CONVERSATION_MEMORY_SOURCE_INVALID")
+            {
+                retained = [];
+            }
+            var provenance = retained.FirstOrDefault()?.CaptureProvenance;
+            const string prefix = "codex-app-server/turn-items@";
+            if (provenance == append.CaptureProvenance
+                || (provenance != prefix + CodexCaptureVersions.SupportedCliVersion
+                    && provenance != prefix + CodexCaptureVersions.SupportedDesktopVersion)
+                || retained.Any(message => message.SourceTurnId != append.SourceTurnId
+                    || message.CaptureProvenance != provenance || message.Status != "captured")
+                || !retained.Select(message => new ConversationMemoryCapturedMessage(
+                    message.SourceMessageId, message.Role, message.SourceKind, message.Text!, message.SourceAtUtc))
+                    .SequenceEqual(append.Messages))
+                throw;
+            return memory.AppendTurn(append with { CaptureProvenance = provenance! });
+        }
+    }
 
     public static string DeliveryToken(string threadId, string turnId)
     {

@@ -6,9 +6,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { WorldLore } from "../../src/components/WorldLore";
 import type { WorldReadModel } from "../../src/data/hub-types";
 
-function render(lore: WorldReadModel["lore"]) {
+function render(lore: WorldReadModel["lore"], loading = false) {
   const world = { id: "world.fixture", name: "Fixture", lore, loreCoverage: "partial" } as WorldReadModel;
-  return renderToStaticMarkup(<WorldLore world={world} onOpenLocation={() => {}}
+  return renderToStaticMarkup(<WorldLore world={world} loading={loading} onOpenLocation={() => {}}
     onOpenFaction={() => {}} onOpenHistory={() => {}} />);
 }
 
@@ -21,6 +21,14 @@ test("partial Lore still renders its usable entry and a local coverage notice", 
   assert.match(markup, /A useful tale/);
   assert.match(markup, /Some lore fields or records are unavailable/);
   assert.doesNotMatch(markup, /No lore matches/);
+});
+
+test("a loading Lore prefix never claims its partial count is the full collection", () => {
+  const markup = render([], true);
+  assert.match(markup, /0 shown · 0 loaded so far/);
+  assert.match(markup, /Loading more lore/);
+  assert.match(markup, /aria-busy="true"/);
+  assert.doesNotMatch(markup, /0 of 0 visible|Lore unavailable|Some lore fields or records are unavailable|No lore matches/);
 });
 
 test("partial Lore with no usable entries never presents a confirmed empty collection", () => {

@@ -1,0 +1,622 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "name": "Saint Vey's Crutch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A narrow pass with an inn built around a bent pine said to have supported a wandering saint. Present pressure: An avalanche has closed the official road while an escort company monopolizes the safer goat path.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 815,
+            "y": 650
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.stonewake",
+      "name": "Stonewake",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Stonewake is a northern port built behind a long breakwater of fitted dark stone. Ore, smoked fish, timber, and soldiers pass through it; so do rumours from beyond the Greyward Ocean.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 280,
+            "y": 190
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.the-iron-choir",
+      "name": "The Iron Choir",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "abandoned mine in Dunmarrow. Wind through shafts sounds like formal harmony.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 690,
+            "y": 790
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.breadshield-monastery",
+      "name": "Breadshield Monastery",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Fortified bakery and refuge storing grain against snow closures; loaves are stamped like little shields. Present pressure: Its flour reserve is infested just before winter.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 295,
+            "y": 295
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.copper-rain-terrace",
+      "name": "Copper Rain Terrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Vineyard and ore-washing terraces where runoff stains stone green beneath dry-season storms. Present pressure: Crops fail below a newly reopened wash channel.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 720,
+            "y": 460
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.copperwell",
+      "name": "Copperwell",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Copperwell serves mines, smelters, metalworkers, and caravan brokers. Its deep communal well is lined with donation plaques spanning four centuries.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 710,
+            "y": 645
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "name": "Karsh's Sleeping Ridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "volcanic mountain in Kethria. Copper tithe route and warm caves; climbing prohibited without three permits.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 810,
+            "y": 160
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.snowgate",
+      "name": "Snowgate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Snowgate controls the northern pass and its avalanche shelters. Summer markets are brief and intense; winter life moves into connected stone halls.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 440,
+            "y": 190
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.the-door-valley",
+      "name": "The Door Valley",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "terraced villages in Kethria. Every house door carved with a family water history.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 340,
+            "y": 690
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.the-empty-saddle",
+      "name": "The Empty Saddle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 285
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.dunmarrow.greyharrow",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.moorwatch",
+      "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "toEntityId": "location.caldris.dunmarrow.the-iron-choir",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.penross",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.breadshield-monastery",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copperwell",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.snowgate",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e933bacc6abe268a94c5",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.7c739f2d575ce160d961",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.7fde9d8c4a0d3d973b84",
+      "toEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.890a527e53b922e5c087",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a3fef9b212f673c7f80e",
+      "toEntityId": "location.caldris.kethria.breadshield-monastery",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.ade6498903d95cbde2b5",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0bb8355644eb8aa13944",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cbfa59ee927feea4f78e",
+      "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a99b7b36df5781d9a672",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.closed.47e02359e65637604337",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.580c080c240d76a18032",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e933bacc6abe268a94c5",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b75b3adb0dda53f6997",
+      "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ac72c081f510cb197f20",
+      "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6d20534f2e8fca660ee3",
+      "toEntityId": "location.caldris.dunmarrow.the-iron-choir",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fee944aba76483f03b79",
+      "toEntityId": "location.caldris.dunmarrow.the-iron-choir",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.500eee28b10f7eec4f95",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.500eee28b10f7eec4f95",
+      "toEntityId": "location.caldris.kethria.breadshield-monastery",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.890a527e53b922e5c087",
+      "toEntityId": "location.caldris.kethria.breadshield-monastery",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.890a527e53b922e5c087",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3d2f340480be9662f280",
+      "toEntityId": "location.caldris.kethria.breadshield-monastery",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e67f887eda38449e0a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e67f887eda38449e0a9",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
+      "toEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a3fef9b212f673c7f80e",
+      "toEntityId": "location.caldris.kethria.breadshield-monastery",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ade6498903d95cbde2b5",
+      "toEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ade6498903d95cbde2b5",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d03f1f260b9a584e17bb",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d03f1f260b9a584e17bb",
+      "toEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "toEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7c739f2d575ce160d961",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dd9a10b96b304cd50fe0",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.kethria.copperwell",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

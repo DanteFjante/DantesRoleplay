@@ -93,11 +93,13 @@ function LoreCard({
 
 export function WorldLore({
   world,
+  loading = false,
   onOpenLocation,
   onOpenFaction,
   onOpenHistory,
 }: {
   world: WorldReadModel;
+  loading?: boolean;
   onOpenLocation: (locationId: string) => void;
   onOpenFaction: (factionId: string) => void;
   onOpenHistory: () => void;
@@ -122,18 +124,22 @@ export function WorldLore({
   const partial = world.loreCoverage === "partial" || selected.omittedCount > 0;
 
   return (
-    <div className="world-directory-view">
+    <div className="world-directory-view" aria-busy={loading}>
       <header className="atlas-heading">
         <div>
           <span className="eyebrow">An encyclopedia of {world.name}</span>
           <h1 id="main-view-heading" tabIndex={-1}>Lore</h1>
         </div>
-        <p>{entries.length} of {selected.records.length} visible</p>
+        <p>{loading
+          ? `${entries.length} shown · ${selected.records.length} loaded so far`
+          : `${entries.length} of ${selected.records.length} visible`}</p>
       </header>
       <p className="world-directory-introduction">
         Customs, relics, places, rumours, and established truths available in this perspective.
       </p>
-      {partial ? <p role="status" className="directory-completeness-notice">
+      {loading ? <p role="status" className="directory-completeness-notice">
+        Loading more lore. The complete count will appear when loading finishes.
+      </p> : partial ? <p role="status" className="directory-completeness-notice">
         Some lore fields or records are unavailable. The readable entries are shown below.
       </p> : null}
       <WorldDirectoryControls
@@ -177,9 +183,11 @@ export function WorldLore({
       ) : (
         <div className="directory-empty">
           <Icon name="BookOpen" size={26} />
-          <strong>{partial && selected.records.length === 0 ? "Lore unavailable" : "No lore matches"}</strong>
-          <p>{partial && selected.records.length === 0
-            ? "This response does not establish an empty lore collection." : "Try another phrase, category, or status."}</p>
+          <strong>{loading && selected.records.length === 0 ? "Loading lore"
+            : partial && selected.records.length === 0 ? "Lore unavailable" : "No lore matches"}</strong>
+          <p>{loading && selected.records.length === 0 ? "Readable entries will appear as they arrive."
+            : partial && selected.records.length === 0
+              ? "This response does not establish an empty lore collection." : "Try another phrase, category, or status."}</p>
         </div>
       )}
     </div>

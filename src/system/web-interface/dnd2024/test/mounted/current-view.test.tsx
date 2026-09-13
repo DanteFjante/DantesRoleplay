@@ -222,12 +222,20 @@ test("Current tactical board warns when omitted geometry is not confirmed clear 
 });
 
 test("Current keeps the location illustration, heading and description together inside one card", async () => {
+  const { normalizeCurrentViewUpdate } = await import("../../src/data/current-deferred-projection");
+  const { currentDisplayFromUpdate } = await import("../../src/data/current-resource-owner");
   const initial = envelope();
   const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
-  const image = { imageUrl: "/api/applications/fixture/location/media/setting/content",
+  const image = { imageUrl: `/api/applications/dnd2024/state-spaces/main/entities/${location.id}/media/visual-0/content?perspective=dm`,
     alt: "The current settlement", width: 800, height: 600 };
-  const mounted = await mount(<CurrentViewPreview image={image} location={location}
-    situation={{ status: "ready", kind: "exploration", locationId: location.id }} />);
+  const update = await normalizeCurrentViewUpdate({ section: "current",
+    currentSituation: { status: "ready", kind: "exploration", locationId: location.id },
+    world: { locations: [{ ...location, media: { setting: image } }] },
+  });
+  assert.ok(update);
+  const display = currentDisplayFromUpdate(update);
+  const mounted = await mount(<CurrentViewPreview image={display.location?.media?.setting ?? null}
+    location={display.location} situation={display.situation} />);
   try {
     const card = mounted.container.querySelector(".current-scene-card");
     assert.equal(card?.querySelector("img")?.getAttribute("src"), image.imageUrl);
@@ -237,6 +245,36 @@ test("Current keeps the location illustration, heading and description together 
     assert.equal([...mounted.container.querySelectorAll("p")]
       .filter((node) => node.textContent === location.description).length, 1);
   } finally { await mounted.cleanup(); }
+});
+
+test("Current preserves scoped audience media and rejects unrelated or malformed content URLs", async () => {
+  const { normalizeCurrentViewUpdate } = await import("../../src/data/current-deferred-projection");
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const contentPath = `/api/applications/dnd2024/state-spaces/main/entities/${location.id}/media/visual-0/content`;
+  for (const [imageUrl, accepted] of [
+    [contentPath, true],
+    [`${contentPath}?perspective=dm`, true],
+    [`${contentPath}?perspective=player`, true],
+    ["/api/read-model-media/" + "a".repeat(64) + "/content", true],
+    [`${contentPath}?perspective=unknown`, false],
+    [`${contentPath}?perspective=dm&extra=1`, false],
+    [`${contentPath}#fragment`, false],
+    [`https://foreign.example${contentPath}`, false],
+    ["/api/applications/unrelated/content", false],
+  ] as const) {
+    const image = { imageUrl, alt: "Authorized scene", width: 800, height: 600 };
+    const update = await normalizeCurrentViewUpdate({ section: "current",
+      currentSituation: { status: "ready", kind: "conversation", locationId: location.id, scene: image,
+        conversation: { id: "conversation.current", name: "The current conversation", participants: [] } },
+      world: { locations: [{ ...location, media: { setting: image } }] },
+    });
+    assert.ok(update);
+    const projectedLocation = update.world.locations[0];
+    assert.equal(projectedLocation.media?.setting?.imageUrl, accepted ? imageUrl : undefined, imageUrl);
+    assert.equal("scene" in update.currentSituation ? update.currentSituation.scene?.imageUrl : undefined,
+      accepted ? imageUrl : undefined, imageUrl);
+  }
 });
 
 test("Current keeps conversation identity when its location is unavailable", async () => {

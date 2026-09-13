@@ -1,0 +1,726 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-traces-and-stories.1",
+      "name": "The Grain Houses with Empty Lofts — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Loft measurements, spoiled-grain disposal records, and duplicated pledges. A present claim may require distinguishing deliberate concealment from a shipment lost after an honest agreement. Recovering a measuring tool can help interpret an account written in an obsolete local unit.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-gm-truth.1",
+      "name": "The Last Crossing of Aurr — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The report is accurate: Aurr died naturally after the departure, and this chapter closes the question of survival into the present. The tools travelled to kin. A later claim that they were hidden beneath the stair is a treasure story, not an unresolved fact waiting to be confirmed.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-traces-and-stories.1",
+      "name": "The Last Crossing of Aurr — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A provisions list, accounts of the farewell, and the visitor's recorded message. A quest can establish what became of Aurr's tools or trace the later giant household. The abandoned upper works remain a practical and historical question.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-gm-truth.1",
+      "name": "The Maps That Were Never Sold — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Dena removed one accurate landing from publicly sold extracts after learning it was being used to locate fleeing debtors and their families. The restricted original survives in the collection's custody history. Its accuracy does not settle whether publishing the location would be a good decision now.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-traces-and-stories.1",
+      "name": "The Maps That Were Never Sold — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Annotated drafts, cancelled commissions, and later copies with different confidence marks. A present expedition can investigate a missing section rather than assume that a beautifully drawn road exists. Finding the original may explain where a previous traveller went wrong.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-gm-truth.1",
+      "name": "The Hound Beside the Milestone — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The Mile Hound is a local spirit associated with repeated journeys along a particular surviving route. It is not a transformed lost child or a creature anyone can own by taking the milestone home. Its continued activity in the present depends on later conditions that a quest can investigate.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-traces-and-stories.1",
+      "name": "The Hound Beside the Milestone — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Sighting notes, old path surfaces, and descriptions of a distinctive white patch beneath the jaw. A present encounter can reward attention to the road and its travellers. The hound's behaviour may help locate an overlooked shelter, but it is not a guaranteed escort.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0159-three-copies-of-one-promise-gm-truth.1",
+      "name": "Three Copies of One Promise — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Mera's comparison was received and read. The problem was not that nobody noticed a hidden clause; influential delegates preferred an incomplete agreement to losing the immediate benefits. Later claims of pure surprise conceal that conscious tradeoff.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0159-three-copies-of-one-promise-traces-and-stories.1",
+      "name": "Three Copies of One Promise — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Divergent copies, Mera's comparison, and later qualifications attached to individual renewals. A missing page may explain why two households sincerely remember different promises. Authenticity alone cannot decide which version an institution actually adopted.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-gm-truth.1",
+      "name": "The Host Who Hung No Banner — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Havra quietly refused one traveller who had repeatedly threatened workers and later claimed political persecution. The founding custom was conditional hospitality with enforceable conduct rules, not an obligation to expose residents to anyone who demanded entry.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-traces-and-stories.1",
+      "name": "The Host Who Hung No Banner — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Lodging lists, cancelled sponsorship terms, and repairs funded by many small households. A present dispute can test which parts of the welcome remain affordable and what limits are necessary to protect other guests.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0175-the-orchard-of-departures-gm-truth.1",
+      "name": "The Orchard of Departures — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One family stopped writing because its members disagreed about whether to return. They remained alive elsewhere during this period. Later descendants may have inherited several incompatible accounts of an ordinary but painful separation.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0175-the-orchard-of-departures-traces-and-stories.1",
+      "name": "The Orchard of Departures — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Graft labels, forwarding addresses, and recipes copied from letters. A quest can trace an absent household, identify a living tree under a changed name, or restore a lost variety without assuming that every silence conceals a crime.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-gm-truth.1",
+      "name": "The Narrow Bells of Highmead — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A foreman sold one rejected casting to settle a private debt. The resulting dispute nearly destroyed the young foundry. Jessa replaced the bell but concealed the foreman's identity, leaving a compensation payment that later readers could mistake for an admission that every bell in the batch was defective.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-traces-and-stories.1",
+      "name": "The Narrow Bells of Highmead — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Casting accounts, signal tables, and bells with mismatched clappers. A present commission can establish why a warning was misunderstood, identify a dangerous replacement, or recover the local meaning of a forgotten sequence.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-gm-truth.1",
+      "name": "The Voices Beneath Glasswinter Tarn — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The effect preserves fragments of physical sound under particular water and freezing conditions. It contains no souls, knows no future, and cannot hold a conversation. A few older fragments remain unexplained because their original speakers were never identified, not because an unseen intelligence is necessarily withholding the truth.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-traces-and-stories.1",
+      "name": "The Voices Beneath Glasswinter Tarn — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Weather notes, copied fragments, and the paths used by the rescue party. A present investigation can identify a recorded speaker or compare a melody with regional songs. Observing several freeze cycles may be more useful than an expensive attempt to demand an answer.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-gm-truth.1",
+      "name": "The Ferry Village at Rookwater — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Sella understated the expected cart traffic when negotiating the first agreement. The affected households subsequently secured better terms because their observations proved accurate. Her importance to the village does not make every complaint against her a misunderstanding.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-traces-and-stories.1",
+      "name": "The Ferry Village at Rookwater — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ferry permits, grazing agreements, flood marks, and a school exercise naming the earliest households. A present quarrel over access may turn on later renewals of the reserved river path. An old mooring ring can reveal where the working channel once lay.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0200-0100-place-glasswinter-tarn.1",
+      "name": "Glasswinter Tarn — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: An upland tarn in Lornesse, approached by a marked path and a viewing place on firm ground. Local notes record irregular acoustic phenomena during certain freezes. Conditions vary, and clear ice is not treated as proof that the surface can bear travellers. A person to meet: Guide Mera Tallow wants help comparing current observations with older notebooks. She refuses commissions that require leading visitors onto untested ice to satisfy a theory. Adventure: Identify a fragment of speech or music, locate a lost observation notebook, or determine whether a claimed recording actually originated here. The answers can be historical and personal without turning the tarn into an oracle.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-glasswinter-tarn.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0151-the-hound-beside-the-milestone-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0159-three-copies-of-one-promise-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0159-three-copies-of-one-promise-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0159-three-copies-of-one-promise-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0159-three-copies-of-one-promise-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0167-the-host-who-hung-no-banner-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0175-the-orchard-of-departures-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0175-the-orchard-of-departures-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0175-the-orchard-of-departures-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0175-the-orchard-of-departures-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0135-the-last-crossing-of-aurr-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0143-the-maps-that-were-never-sold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

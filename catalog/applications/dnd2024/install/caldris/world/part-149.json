@@ -1,0 +1,622 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.amberstile",
+      "name": "Amberstile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A modest market town whose wax sheds serve candle makers, craftspeople, and local households. Seasonal trading fills a broad yard behind the old gate. The honey cakes sold to visitors are good enough that residents forgive the inaccurate stories printed on their wrappers.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 660,
+            "y": 730
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.ash-salt",
+      "name": "Ash Salt",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Working stalls, smokehouses, net sheds, and lamps arranged around a tidal landing. The market's busiest hours change with local water conditions. It is a place of honest work, occasional opportunism, and visitors who mistake informality for lawlessness.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 750,
+            "y": 730
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.bellwade",
+      "name": "Bellwade",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "An inland village facing a tidal marsh where fragments of its first site occasionally emerge. Some houses incorporate old lintels, though many claimed originals are later commemorations. The communal bell has been recast since its relocation, preserving portions of earlier metal and its inherited name.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 270
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.bluecup-hollow",
+      "name": "Bluecup Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small protected patch amid working land near the routes between the orchard country and the northern foothills. Propagated plants grow in a nearby nursery, but the wild pocket retains conditions difficult to reproduce elsewhere. The ancient companions' exact collecting spot is only approximately known.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 730
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.boughmeet",
+      "name": "Boughmeet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Boughmeet fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/boughmeet.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Boughmeet fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/boughmeet.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Location: On the southern approach to Harth Orchard. Livelihood: Grafting stock, seedlings, cider, and practical teaching. Plots bear names of villages that no longer exist. The oldest varieties persist through deliberate propagation, not immortal trees. A row of training pears grows against a warm stone wall, each labelled with both its market name and the name used by the person who brought it.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 450,
+            "y": 650
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.brinefold",
+      "name": "Brinefold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "c58c1fea190d0f45b7dbc1c4852e9ffa938ecc6cded93a92b02a8c40f9d4f12d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Brinefold fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/brinefold.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "c58c1fea190d0f45b7dbc1c4852e9ffa938ecc6cded93a92b02a8c40f9d4f12d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Brinefold fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/brinefold.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A small harbour and salt-working settlement in the Vey Lowlands. Its active waterfront stands inland of the drowned old quay. Certain low tides reveal walls and slippery thresholds. A rebuilt bell house keeps copies of the subscription chest's later rules.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 790,
+            "y": 865
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-boughmeet.1",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-amberstile.1",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-bellwade.1",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-ash-salt.1",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-bluecup-hollow.1",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1861-the-orchard-that-could-not-grow",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1622-the-orchards-long-sleep",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1466-the-honey-road",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0961-the-scent-of-a-house-that-was-gone",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-brinefold.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0467-the-breach-at-brinefold",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0467-the-breach-at-brinefold-account.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0467-the-breach-at-brinefold-gm-truth.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0467-the-breach-at-brinefold-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0411-the-second-bell-of-brinefold",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0411-the-second-bell-of-brinefold-account.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-gm-truth.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.sevenpost-field",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.amberstile",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.ash-salt",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.vintners-reach",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.brinefold",
+      "toEntityId": "location.caldris.seven-lamps-league.glassharbor",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4b70dcb13722b94506aa",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a85e64d10c5dce967096",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3e867bed930c842685c1",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.dd4ab48d62e3f93a7522",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fd559227f43804e8bfc9",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e6e79f58fb463b2bf864",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.69fd284ed87b9a1da664",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.921b0ea35bfe4cf87ad9",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e7a2cfddc5f4782b0879",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4b70dcb13722b94506aa",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b34a90b003d3b82adff2",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b34a90b003d3b82adff2",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fad707f6f376d5187930",
+      "toEntityId": "location.caldris.lore.boughmeet",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7f941aff563ffb44af1d",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e902950e726bc5080e7b",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5a2113d51ddfb4148ea2",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.719b5648bc3011f68877",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fcb0163ba4d4a2c766f",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fcb0163ba4d4a2c766f",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a85e64d10c5dce967096",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a85e64d10c5dce967096",
+      "toEntityId": "location.caldris.lore.brinefold",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.crownroot-cathedral",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.access.699a86203a",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.77dd6854b428c4044ccc",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.d343c660f076af484452",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

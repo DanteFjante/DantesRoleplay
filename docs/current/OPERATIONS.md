@@ -8,7 +8,8 @@ The ordinary Windows launcher uses a saved, byte-verified release. On a new chec
 default profile and runtime data are both absent, it first validates the .NET 10 SDK and Node.js
 22.13 or newer with `npm` on `PATH`. It then prepares one frozen host, source, and browser bundle, invokes
 the generic offline catalog installer, verifies the resulting runtime and readiness pins, and saves
-the default profile. This initialization does not contact an AI provider or import an existing game.
+the default profile. The default fresh world is The Lantern Vale. This initialization does not
+contact an AI provider or import an existing game.
 
 ```powershell
 .\run-mcp-server.cmd
@@ -124,6 +125,52 @@ policy fingerprint for a public request. Explicit `-Replace` retains the previou
 ordinary startup never rewrites its selection. Copy only deployable host files (including shared
 BrowserComponents), not an output directory's incidental `data/` tree. No catalog import, state
 migration, page publication, or database restoration is performed by ordinary startup.
+
+## Build a fresh Caldris installation
+
+The installation package builder selects the complete authored Caldris world with `--profile caldris`.
+This profile includes Ganji, the reviewed opening, the full location and lore inventory, the current
+clean maps, referenced images, and Caldris homebrew. Omitting `--profile` selects The Lantern Vale.
+The launcher's `-Profile` argument instead selects a saved runtime launch file; it does not choose
+an authored world.
+
+From the repository root, create a new installation with the normal package builder and generic
+installer. The example uses an absent release directory and sibling package, source, and runtime
+directories. The runtime target must be absent and outside both the source and package trees.
+
+```powershell
+$repo = (Get-Location).Path
+$release = Join-Path $env:LOCALAPPDATA 'DantesRoleplay/caldris-fresh'
+if (Test-Path -LiteralPath $release) { throw 'Choose an absent release directory.' }
+npm --prefix src/system/web-interface/dnd2024 ci --no-audit --no-fund
+npm --prefix src/system/web-interface/dnd2024 run build:server
+node src/system/web-interface/scripts/build-installation.mjs `
+  --repository $repo --output "$release/package" --profile caldris
+. "$repo/src/system/web-interface/scripts/FirstRun.ps1"
+Copy-FirstRunCatalog $repo "$release/source"
+dotnet run --project DantesRoleplay.MCPServer --no-launch-profile -- `
+  "--Installation:Manifest=$release/package/installation.json" `
+  "--Installation:Root=$release/runtime" `
+  "--Installation:SourceRoot=$release/source"
+```
+
+The installer verifies source, world-package, page, and media pins before producing the runtime's
+`installation.json` readiness receipt. Select the verified release through the saved-profile workflow
+above. Each state space permits at most 256 world packages; each individual world synchronization
+still has its existing 128-effect limit.
+
+Installation templates declare `application.extensionPackages` as repository-relative package paths
+and `application.selectedExtensionIds` as the extensions to activate. The builder pins each package
+with its path and SHA-256 hash; the installer registers it before preview and activation. An extension's
+sources remain registered in `application.sources`, while `application.selectedSourceIds` contains
+only base sources. The extension registration owns its source membership and homebrew classification.
+
+Caldris setup inputs live in `catalog/applications/dnd2024/install/caldris/`. After a reviewed change
+to the authored baseline, `python catalog/applications/dnd2024/install/caldris/generate_profile.py`
+regenerates the committed packages. The complete atlas supplies the location inventory; the newer
+map packet owns replacement backgrounds and reviewed child coordinates. Places without reviewed
+coordinates on a replacement background remain in the directory without an invented map marker.
+Normal package builds consume the committed profile directly.
 
 ## Update a saved installation
 

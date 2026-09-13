@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.1161-the-queen-of-the-second-table",
+      "name": "The Queen of the Second Table",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Queen of the Second Table",
+            "summary": "The final Sorne sovereign of Highmead died after a reign marked by disputed levies and a failed succession arrangement. The most credible claimant, Queen Maressa of House Merrow, secured recognition through renewed estate agreements and the support of several market councils. Maressa held formal audiences at the great table of her predecessors. She also kept a smaller table near the household kitchens where petitioners with urgent practical complaints could be heard. Its usefulness depended on her time and judgement, not an automatic right of access available to everyone. She confirmed selected common rights, paid down part of the crown's arrears, and accepted that some collectors appointed by her own supporters should be removed. House Sorne survived as several lesser families. Highmead's crown continued under a new household, rather than requiring one dynasty to govern unchanged through every century.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -607068000,
+            "precision": "era",
+            "dateLabel": "1,161–1,149 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
+      "name": "The Road of Bitter Leaves",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Road of Bitter Leaves",
+            "summary": "Caravans from Serevan's eastern neighbour, the Principality of Selvar, began attending the markets at Istravel in greater numbers. They brought a dried leaf brewed into a bitter, fragrant drink, alongside dyestuffs, woven mats, and pottery well suited to long transport. The drink's popularity spread first among affluent households and people working late in counting rooms. Most Chalklands villages still preferred familiar herbs or ordinary ale. An expensive imported taste did not immediately become a universal custom. Rima Dast, a Selvari carrier who owned three mules with two relatives, kept a route book describing wells, guesthouses, and the difference between advertised shelter and a dry place to sleep. She made good money for several years, then lost much of it when buyers favoured a fashionable rival district's leaves.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -613900800,
+            "precision": "era",
+            "dateLabel": "1,174–1,162 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1187-the-lantern-at-the-end-of-the-pier",
+      "name": "The Lantern at the End of the Pier",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lantern at the End of the Pier",
+            "summary": "At Leth Sarai, an elderly lamplighter named Faris Nemm maintained a small light on a disused pier because his brother's boat had once returned there in a fog. Ships no longer unloaded at that landing, but fishers and people walking the mudbanks used it to find their way home. After Faris died, the light appeared on several evenings when nobody admitted tending it. A small spirit had settled in the lamp housing, accustomed to the repeated act of welcome. It could coax a remaining ember and shield a flame from a modest wind. It could not create oil, withstand any storm, or guide ships through unknown channels. Neighbours agreed to leave supplies. The spirit acquired the name Little Lastlight, and the pier became a place where travellers said goodbye without attracting the bustle of the main harbour.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -620733600,
+            "precision": "era",
+            "dateLabel": "1,187–1,175 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1199-the-fair-beneath-the-sailcloth",
+      "name": "The Fair Beneath the Sailcloth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Fair Beneath the Sailcloth",
+            "summary": "An autumn storm damaged Alderwake's covered market shortly before its largest fair. Harbour merchants sent used sailcloth inland in exchange for future stall rents. For six weeks the market traded beneath patched blue, brown, and cream canvas, its roof rising and falling with every gust. Fairkeeper Hessa Varn arranged common kitchens while carpenters worked above occupied stalls. Visiting Serevan merchants found customers for goods they had expected to sell nearer the coast. Inland makers discovered that foreign buyers wanted ordinary woollen blankets and reliable tool handles more than exotic curiosities. The fair became an annual meeting between inland and maritime traders. It remained seasonal; the greater traffic did not turn Alderwake overnight into a wealthy metropolis. Families rented out rooms, argued over prices, and learned enough unfamiliar words to praise or insult breakfast.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -627303600,
+            "precision": "era",
+            "dateLabel": "1,199–1,188 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
+      "name": "The Book of Roads Left Open",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Book of Roads Left Open",
+            "summary": "At the end of these centuries, the sanctuary at Saint Meret's Rest assembled a practical collection of routes, shelters, ferry customs, burial notices, and places where assistance had ceased. Its contributors included pilots, drovers, hosts, scholars, and people who had recently lost a home. The Book of Roads Left Open was not a single perfect atlas. It was a set of regional books with instructions to date corrections and keep superseded pages. One compiler, Arda Linn, wrote that an obsolete road could still explain where someone had gone. Several copies travelled outward. One reached Istravel, where a later keeper added information about the dispersed blackglass workshops. Another reached the Roven Marches. A third remained in the Chalklands and gradually acquired household letters between its pages.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -634662000,
+            "precision": "era",
+            "dateLabel": "1,215–1,200 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1232-the-summer-of-the-travelling-stage",
+      "name": "The Summer of the Travelling Stage",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Summer of the Travelling Stage",
+            "summary": "A company led by Ilren Moss, a carpenter and actor, travelled between the two harbours, Highmead, and the northern fairs with a folding stage. Its most popular play joined Branna's hunt, the Eighty-Day Crown, and the Blackglass Pilot into one improbable lifetime. Local historians objected. Audiences laughed, bought food, and sometimes learned names they would otherwise never have heard. The company also collected songs from people unable to read, preserving regional verses absent from sanctuary collections. At Saint Meret's Rest, a clerk named Abel Rinn negotiated permission to copy the company's songbook in return for repairing its wagon. The manuscript distinguished performance inventions from accounts supplied by named singers. Later copies did not always preserve the distinction.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -643334400,
+            "precision": "era",
+            "dateLabel": "1,232–1,216 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1249-the-lantern-road-turns-south",
+      "name": "The Lantern Road Turns South",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lantern Road Turns South",
+            "summary": "Bank erosion and the cost of an old bridge forced a section of the inland road onto a southern alignment. Two established inns lost passing trade. A new stopping place near the orchard branch grew quickly, while the old path became a local track. The detour further isolated the Seventh Hearth, whose approach had already become inconvenient centuries earlier. A committee proposed moving its threshold stone and hearth to a busier site. The spirit declined. It knew its rooms through repair, smell, and habit; being useful to more travellers was not the only thing it wanted. Local households instead arranged occasional visits and essential maintenance. The decision preserved an out-of-the-way neighbour without compelling it to operate a public inn forever. The regional name Lantern Road survived the shift and still denotes the route ending at Bramblebridge in the campaign present.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -652269600,
+            "precision": "era",
+            "dateLabel": "1,249–1,233 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1266-the-winter-of-returned-keys",
+      "name": "The Winter of Returned Keys",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter of Returned Keys",
+            "summary": "Colder growing seasons and repeated upland crop failures made several high settlements difficult to sustain. Hazelstairs' remaining households negotiated departure to lower land. Some held on, hoping for improvement; others left before the last harvest because waiting meant losing their animals too. The departing villagers hung keys in the mill house so neighbours could use shelter and stored materials. The image became a regional emblem of loss, later misrepresented as everyone vanishing on the same night. The actual movement took years and involved contracts, arguments, marriages, and wagons borrowed from relatives. Sela Dorn, who kept the final communal accounts, listed debts owed to the village as carefully as debts owed by it. Receiving towns wanted workers but did not always welcome their claims to compensation or common land.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -661204800,
+            "precision": "era",
+            "dateLabel": "1,266–1,250 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1283-the-marriage-of-the-two-harbours",
+      "name": "The Marriage of the Two Harbours",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Marriage of the Two Harbours",
+            "summary": "Veymouth and Nacre Quay agreed to share selected pilot services, maintain compatible signals, and recognise each other's inspected cargo seals. Merchants called it the Marriage of the Two Harbours. There was no literal royal wedding and no merger of the towns. The agreement followed several lean years and a costly sequence of duplicated works. Harbour Speaker Resha Pell of Veymouth and Master Pilot Omin Sare of Nacre negotiated for months over which channel repairs benefited whom. Fishers won seats in the maintenance hearings after demonstrating that official charts omitted their busiest landing places. Rowing races and insulting pastries continued. The new arrangement made cooperation sufficiently routine that people could enjoy rivalry without needing every grievance resolved first.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -670140000,
+            "precision": "era",
+            "dateLabel": "1,283–1,267 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1299-the-griffin-above-juniper-gate",
+      "name": "The Griffin Above Juniper Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Griffin Above Juniper Gate",
+            "summary": "A griffin nested above the principal pass through the Roven Marches. It took sheep first, then pack animals, and struck a mule train on a narrow ledge. The resulting fall killed two travellers. The road guard could protect individual parties only at considerable cost. Hunter Mera Oss and Whitewindow animal keeper Boran Thale investigated the nesting cliff. They found that a quarry had disturbed the creature's former hunting slope. The griffin was an animal with dangerous habits, not a judge punishing the valley. Moving the quarry's refuse helped restore prey habitat but did not make the established attacks stop immediately. The eventual response combined temporary convoy closures, guarded passage, and relocating the unattended eggs to an isolated ledge while the adults were away. One adult died attacking the work party. The surviving adult used the new nest after several uncertain days.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -678812400,
+            "precision": "era",
+            "dateLabel": "1,299–1,284 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1315-the-school-with-no-master",
+      "name": "The School with No Master",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The School with No Master",
+            "summary": "A succession of difficult years left Sallowmere unable to support a resident magical teacher. Its caretaker, Hollis Wren, kept the rooms open for visiting practitioners and ordinary copyists. Neighbours supplied meals in exchange for reading letters, measuring fields, and teaching children. The school continued without a permanent master because enough people could do parts of its work. Instruction varied, some experiments stopped, and rare skills were lost when no suitable teacher returned. Its resilience had real limits. A visiting musician adapted the sound-preserving vessel into a commission for a dying singer. The result preserved one short lullaby in her own voice. It required a prepared vessel, a deliberate recording, and careful storage; it could not answer her child or supply words she had never recorded.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -687222000,
+            "precision": "era",
+            "dateLabel": "1,315–1,300 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1332-the-king-who-pawned-the-rain",
+      "name": "The King Who Pawned the Rain",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The King Who Pawned the Rain",
+            "summary": "King Odran Sorne of Highmead borrowed heavily to support a border campaign, court rebuilding, and overdue repairs. One contract pledged future revenue from three watermills and their associated water dues. A popular song accused him of pawning the rain. The financiers received collection rights, not ownership of weather or every stream. Their agents nevertheless pressed ambiguous wording against small users. Millers resisted, councils appealed, and the crown discovered that selling a revenue stream did not free it from the consequences of how that revenue was collected. Nessa Dain, a miller's advocate, assembled evidence of customary household use. The resulting settlement protected specified small uses and required public inspection of the three contracted weirs. It also left some large debts unpaid and harmed lenders who had not participated in the overreach.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -695894400,
+            "precision": "era",
+            "dateLabel": "1,332–1,316 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1349-the-sleeper-opens-one-eye",
+      "name": "The Sleeper Opens One Eye",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Sleeper Opens One Eye",
+            "summary": "After almost three centuries of sleep, the Guest Beneath the Boughs woke briefly at Harth. It recognised the root ground and failed to recognise most of the people tending it. It asked for Tessa Brin, who had been dead for roughly five centuries. The current keeper, Elen Carrow, explained the nursery records and the old compact's revisions. The Guest wandered the unpicked strip, listened to the names of new grafts, and accepted a meal prepared without knowing its former favourites. It offered a little shelter to one frost-struck row, then slept again. The encounter became important because it did not restore an age of guaranteed protection. Elen recorded that the growers had cared for the orchard through the absence and could continue doing so. Later pilgrims sometimes found this account disappointingly modest.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -704829600,
+            "precision": "era",
+            "dateLabel": "1,349–1,333 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
+      "name": "The White Salt Marsh",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The White Salt Marsh",
+            "summary": "A severe coastal storm changed the channels near Nacre Quay and drove salt water across low fields. Some farms recovered; others became marsh. The community of Bellwade moved inland over several seasons, carrying door lintels, household shrines, seed, and whatever could be loaded on borrowed carts. The old settlement's small warning bell was moved with them. Only later songs placed it ringing beneath the water. Fishers used the submerged lanes as seasonal fishing grounds, while former landholders disagreed over whether old field boundaries meant anything in a tidal creek. Nacre's harbour gained one deeper channel and lost another. Merchants celebrated an advantage born from other people's displacement. Relief contributions eventually helped rebuild Bellwade around a common drying ground.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -713764800,
+            "precision": "era",
+            "dateLabel": "1,366–1,350 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
+      "name": "The Open Gate Rebellion",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Open Gate Rebellion",
+            "summary": "Rovenfell's ruler attempted to collect several years of arrears after failed military ventures beyond the northern valleys. Gate officials began seizing pack animals, including those carrying seed and winter supplies. Village associations blocked collections and opened an unlicensed pass to divert trade. The conflict became the Open Gate Rebellion. Its leaders included mule drivers, a disinherited noblewoman named Lady Brenna Oss, and two valley judges who disagreed about nearly everything except the seizures. Fighting at Juniper Gate killed people on both sides and burned the records of several households' obligations. A settlement replaced the failing royal administration in the affected valleys with the Roven Marches, a compact of local jurisdictions maintaining a shared road guard. Rovenfell's outer districts took different paths. The old kingdom did not become a single, harmonious republic overnight.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -722700000,
+            "precision": "era",
+            "dateLabel": "1,383–1,367 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
+      "name": "The Mapmaker's Daughter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Mapmaker's Daughter",
+            "summary": "Tarin Hesh, a surveyor from Leth Sarai, travelled inland with her father Omren, whose eyesight was failing. He could remember a coastline he could no longer see clearly; she could measure a channel but did not know all its seasonal warnings. They argued through two years of work and produced a practical atlas of selected ferry routes, coast approaches, and market roads. Their atlas marked uncertainty openly. It distinguished a measured distance from a traveller's estimate and a seasonal ford from a permanent crossing. Buyers sometimes preferred more confident rival maps. After Omren died, Tarin continued inland, adding the road to Whitewindow and marginal notes from local guides. Her later work reached Rovenfell. It offers evidence of travel and contact, not a definitive map of every land in Caldris.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -731372400,
+            "precision": "era",
+            "dateLabel": "1,399–1,384 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1415-avelines-last-winter",
+      "name": "Aveline's Last Winter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Aveline's Last Winter",
+            "summary": "Aveline died at Sallowmere 1,410 years before the campaign present, aged 688. This places her birth 2,098 years before the present and her first journeys with Derren a little over a century into her life. She died after a period of declining health, attended by friends and people paid to provide the practical care she needed. Her final months included irritation, unfinished correspondence, several good afternoons, and a dispute about where her papers should go. She divided her working collection between Sallowmere, the House of Returning Names, and a correspondent in Istravel. Her plain travel cup remained at the Seventh Hearth, where she had left it two centuries earlier. She asked for a modest burial above the lake and for Derren's practical notes to remain with the spells. Her companions planted a pear graft from the lineage associated with his tree. Neither the graft nor the grave was given an enchantment of eternal preservation.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -739782000,
+            "precision": "era",
+            "dateLabel": "1,415–1,400 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1432-the-supper-of-unremembered-faces",
+      "name": "The Supper of Unremembered Faces",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Supper of Unremembered Faces",
+            "summary": "Aveline returned to the Chalklands after many journeys between the two shores and the northern roads. She found herself greeted as an ancestor's friend by people who had never met her. Some expected intimacy she did not feel; others wanted explanations for promises she had never made. At the Seventh Hearth she hosted a supper for people preserving fragments of the old road's history. Lysa Marr, a potter who had purchased rather than inherited Iven's former kiln site, brought cups. A sanctuary copyist brought versions of Derren's letters. A shepherd arrived with a song whose final verse Aveline had never heard. She corrected some stories, admitted uncertainty about others, and asked to keep the new verse. The supper established no magical order. Its influence came from the copies and ordinary friendships carried away by the guests.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -748454400,
+            "precision": "era",
+            "dateLabel": "1,432–1,416 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1449-the-choir-below-greyfold",
+      "name": "The Choir Below Greyfold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Choir Below Greyfold",
+            "summary": "Quarry workers near Rovenfell opened a sealed chamber beneath Greyfold Ridge. From within it came singing in voices resembling people the listeners loved. Three workers entered and did not return. The chamber's occupant learned further names by listening to the search parties outside. The predator became known as the Hollow Cantor. It was an old, intelligent thing that borrowed remembered voices and used the underground passages as a hunting ground. Its first language remains unknown. It was capable of speech and bargains, but promises of reunion were deliberate lures. Serit Vale, a Rovenfell scout unrelated to any established Vale lineage, led the final approach with written signals, waxed ear coverings, and rehearsed routes. Aveline and a local ward-maker weakened the voice's supernatural pull. The company killed the creature and sealed two unstable lower passages.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -757389600,
+            "precision": "era",
+            "dateLabel": "1,449–1,433 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1466-the-honey-road",
+      "name": "The Honey Road",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Honey Road",
+            "summary": "Beekeepers from the Chalklands and Serevan began exchanging wax, hive-making methods, and suitable flowering plants through a chain of inland fairs. Fine wax commanded good prices among scribes, metalworkers, households, and religious communities; adulteration became a recurring problem. The route's busiest meeting place, Amberstile, grew around a pasture gate and a sheltered wagon ground. Marel Thenn, a travelling wax tester, persuaded several buyers to compare samples in public instead of trusting prestigious seals. She became famous enough that fraudulent sellers began using her name. People called the route the Honey Road, though much of its value lay in wax and returning cargoes of needles, cloth, and salt. Its inns were remembered for sweet cakes partly because travellers arriving with honey could settle small expenses in kind.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -766324800,
+            "precision": "era",
+            "dateLabel": "1,466–1,450 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.1449-the-choir-below-greyfold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1466-the-honey-road",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1432-the-supper-of-unremembered-faces",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1283-the-marriage-of-the-two-harbours",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1299-the-griffin-above-juniper-gate",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1315-the-school-with-no-master",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1332-the-king-who-pawned-the-rain",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1349-the-sleeper-opens-one-eye",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1199-the-fair-beneath-the-sailcloth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1232-the-summer-of-the-travelling-stage",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1249-the-lantern-road-turns-south",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1266-the-winter-of-returned-keys",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1161-the-queen-of-the-second-table",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1187-the-lantern-at-the-end-of-the-pier",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

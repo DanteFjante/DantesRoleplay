@@ -336,7 +336,9 @@ export function CurrentViewPreview({
                 </article>
               ))}
             </div>
-          ) : <p className="current-scene-empty">No co-present people are visible in this projection.</p>}
+          ) : <p className="current-scene-empty">{situation.unavailableFields?.includes("people")
+            ? "People here are unavailable for this read."
+            : "No co-present people are visible in this projection."}</p>}
         </section>
         <section className="current-scene-panel" aria-labelledby="current-routes-title">
           <header><Icon name="Route" size={18} /><h2 id="current-routes-title">Known ways onward</h2></header>

@@ -1,0 +1,488 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.sallowmere",
+      "name": "Sallowmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Sallowmere fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/sallowmere.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Sallowmere fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/sallowmere.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Location: A shallow lake west of the orchard country, linked to it by a local cart road. Livelihood: Fishing, reeds, copying, and a small guesthouse. The original teaching house is partly incorporated into a later library and partly a garden of low foundations. Its collection has been dispersed and reassembled more than once. A narrow room is still called the Spoon Room after an object that may now be a replacement of a replacement.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 180,
+            "y": 600
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.seln",
+      "name": "Seln",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seln fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seln fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Workshops stand among managed woodland. The original hollow trunks have died or changed; younger trees and carefully maintained structures preserve parts of the soundscape. The Listener's presence is intermittent and tied to the place, not guaranteed at every performance.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 245,
+            "y": 735
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.aunholt",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.tallow-ford",
+      "name": "Tallow Ford",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A working caravan yard beside a newer bridge, with remnants of older crossings visible at low water. Local farms depend on visitors but must retain enough fodder for their own animals. Its largest stable incorporates tether stones from several building phases.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 390,
+            "y": 805
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-closed-launch",
+      "name": "The Closed Launch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A shipyard slip and small record shelter in Carrowmere associated with the historical Grain Fleet Refusal and later hearings. Working vessels and timber stores have changed repeatedly. Surviving measurements and contract copies are kept alongside later inspection records, rather than treated as substitutes for examining a current hull.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 600,
+            "y": 580
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere.gullstrand",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-long-table-rooms",
+      "name": "The Long Table Rooms",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Lodging and dining rooms in the Seven Lamps League used by small delegations, interpreters, and travellers conducting civic business. Meals and language services have stated prices. Informal discussion can prepare a formal case but confers no automatic authority over council proceedings.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 575,
+            "y": 490
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league.aster-quay",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-sallowmere.1",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-tallow-ford.1",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seln.1",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1748-the-house-of-unfinished-spells",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1609-the-last-copy-and-the-eastern-road",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1532-the-quiet-fire-at-sallowmere",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1315-the-school-with-no-master",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0999-the-stonecutters-spring",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0861-the-crown-carried-in-a-bread-cart",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0648-the-library-in-the-laundry-loft",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0599-the-last-lesson-in-seln",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0609-the-festival-of-unfinished-journeys",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0635-the-year-the-music-stayed-home",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-closed-launch.1",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-long-table-rooms.1",
+      "toEntityId": "location.caldris.lore.the-long-table-rooms",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.boughmeet",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.hazelstairs",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.reth-gate",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.tallow-ford",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.saltmere",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gullstrand",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-long-table-rooms",
+      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b642422efd8879a5285f",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1a97569b6048b4db8f8d",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.72f7f05fc3012bc6b0d9",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4b70dcb13722b94506aa",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fad707f6f376d5187930",
+      "toEntityId": "location.caldris.lore.sallowmere",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.be8a297ac7986175a5d9",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4e6d30a7927b73bc6843",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

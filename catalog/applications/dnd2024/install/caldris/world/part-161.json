@@ -1,0 +1,590 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.mothwatch-kiln",
+      "name": "Mothwatch Kiln",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A pottery workshop and small examination room in Leth Sarai. Its older kiln is maintained with ordinary masonry, and dangerous objects are handled in rooms with mechanical closures. The public collection includes harmless fired vessels and copies of historical warnings.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 765,
+            "y": 220
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.leth-sarai",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.rainbell-orchard",
+      "name": "Rainbell Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small nursery plot within Boughmeet's growing district. Ordinary fruit trees support the maintenance of a few carefully propagated rainbell pears. A sheltered festival instrument sounds only when rainwater reaches its dried seed cases; replacement parts are recorded by harvest year.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 570,
+            "y": 395
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.boughmeet",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.rusk-hollow",
+      "name": "Rusk Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rusk Hollow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rusk-hollow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rusk Hollow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rusk-hollow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "The original homes lie beneath pasture. A younger village occupies the hollow's sheltered edge, and shepherds still uncover hearthstones after heavy rain. The old kitchen can be entered through a collapsed smoke vent. Later building phases explain why a cellar may contain objects separated by centuries.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 680,
+            "y": 570
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick.the-button-hills",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.saffron-court",
+      "name": "Saffron Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A busy courtyard market in Namar Vale with shared ovens, washing places, and a mixture of permanent and daily stalls. Its name remains grander than most of its meals. The reserved newcomer places survive through later lease renewals that vendors must occasionally defend.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 335,
+            "y": 550
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.namar-vale",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.seven-scripts-court",
+      "name": "Seven Scripts Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Small workrooms around a courtyard, occupied by translators, copyists, and several unrelated businesses. The old name survives despite changes in its languages and organisation. Its oldest records are mostly later copies with identifiable chains of transmission.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 680,
+            "y": 355
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.namar-vale",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.sunborrow-house",
+      "name": "Sunborrow House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A communal workroom in Seln with two surviving enchanted panes, one unreliable, and an ordinary replacement where the third once stood. Its summer gathering frame was moved during a later rebuilding. Keepers maintain both fuel stores and an illumination rota.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 665,
+            "y": 665
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.seln",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-copper-kettle",
+      "name": "The Copper Kettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A modest inn near Boughmeet's orchard road, rebuilt around successive kitchens. Blue pottery fragments form a small hearth mosaic, with replacement pieces documented by later keepers. A working copy of Nivren's boot-drying charm hangs beside the wet-weather bench. Most visitors come for food and shelter rather than the old story.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 440,
+            "y": 190
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.boughmeet",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.1",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.2",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seven-scripts-court.1",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1822-the-year-of-two-springs",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-sunborrow-house.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-copper-kettle.1",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0483-the-winter-of-borrowed-sunlight",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0483-the-winter-of-borrowed-sunlight-account.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-gm-truth.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0391-the-night-of-the-unlocked-doors",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0391-the-night-of-the-unlocked-doors-account.1",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-gm-truth.1",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0391-the-night-of-the-unlocked-doors-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-mothwatch-kiln.1",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-rainbell-orchard.1",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-saffron-court.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0351-the-first-rain-at-rainbell-orchard",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0375-the-kitchens-of-saffron-court",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0351-the-first-rain-at-rainbell-orchard-account.1",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0375-the-kitchens-of-saffron-court-account.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-gm-truth.1",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0351-the-first-rain-at-rainbell-orchard-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-gm-truth.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.rainbell-orchard",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.boughmeet",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.cinder-meadow",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.namar-vale",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.saffron-court",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0c4fb5c4741db6a4faf2",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8ed9ba1d08fdfd56113b",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.98800f1bba10c3311608",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.862423084c4f31c274a4",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.bb80046299442051b354",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0c4fb5c4741db6a4faf2",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.37a56dfb9fc7f1a20750",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3add01673ce6c5036862",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b3664a2fbf864514fb5",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b3664a2fbf864514fb5",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8ed9ba1d08fdfd56113b",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8ed9ba1d08fdfd56113b",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.95902d670a3bb9e80c51",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.98800f1bba10c3311608",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a654ac3518964ffb1d99",
+      "toEntityId": "location.caldris.lore.rainbell-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.40cc9587edaab785ecc5",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7be6939656c88b10726c",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7be6939656c88b10726c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e83220fb494177a6a9c6",
+      "toEntityId": "location.caldris.lore.mothwatch-kiln",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0e8cf8bef168251e8812",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e14e0f6dcb13ed244e0",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

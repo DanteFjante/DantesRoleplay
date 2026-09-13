@@ -1,0 +1,367 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "actor.caldris.provost-halwen-drail",
+      "name": "Provost Halwen Drail",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "the superior who calls exploitation reform. Regional revenue provost, severe, controlled, and convinced that predictable extraction is kinder than arbitrary local privilege. Drail sponsors selective toll chaos so favored carriers and new central offices appear necessary. Rusk believes Drail is the top of the network. Drail actually receives policy packages from Chancellor Sera Vane's office and resents the implied supervision. Defeating Drail may mean public proof, removal, forced testimony, loss of patronage, or a negotiated reform. Drail's fall exposes higher authority but still matters: regional coercion decreases and several honest officials are freed to act.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.pru-damas",
+      "name": "Pru Damas",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Earnest eccentric preserve-maker who catalogs anonymous Rain Letters by emotional weather. Wants threatening messages stopped without ending the custom; notices handwriting, fruit seasons, and reused jars; overshares other people's harmless sentiments. Sends preserves to Merrit Vale. She learns discretion when one confidence protects a vulnerable child.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-arshala",
+      "name": "Queen Arshala",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "precise, warm, burdened ruler. Immediate want: find who doubled tithe. Hidden depth: dynasty's dragon pact is real and morally ambiguous.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-ione",
+      "name": "Queen Ione",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "direct, amused, politically agile ruler. Immediate want: stop comet factions harming observers. Hidden depth: secretly loves prophecies as literature.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-mother-eda",
+      "name": "Queen-Mother Eda",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict regent with dry humour. Immediate want: protect young king from debt claims. Hidden depth: once belonged to Open Archive League.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-samira-iii",
+      "name": "Queen Samira III",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "composed, intellectually playful ruler. Immediate want: resolve river claims credibly. Hidden depth: correspondence with Queen Adela about heir law.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-ysabet",
+      "name": "Queen Ysabet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "dry, legally formidable ruler. Immediate want: sail grain fleet safely. Hidden depth: personally supports strikers but fears famine.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.rhea-axlebright",
+      "name": "Rhea Axlebright",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Laid-back wheelwright who whistles during emergencies and becomes ferociously concise when safety fails. Wants proof of road sabotage; can diagnose a wheel from its sound; hates formal testimony after being mocked for her accent. Cousin to a Free Axle captain implicated in the scheme. Respectful preparation helps her testify anyway.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.sabine-thatch",
+      "name": "Sabine Thatch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Dramatic romantic and Quince Ladder mule driver who narrates deliveries as doomed expeditions. Wants the stair-road kept public; can load animals and read orchard weather flawlessly; avoids discussing a sibling who left for court. Delivers Mothglass sand and Rain Parlour preserves. A letter proving her sibling tried to return softens her theatrical resentment.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.sella-knot",
+      "name": "Sella Knot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back rescue master. Immediate want: stop counterfeit oath ropes. Hidden depth: her missing sister works in Kethria.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.sister-dema-voss",
+      "name": "Sister Dema Voss",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Strict Mosquito Abbey healer who labels everything, including chairs, and secretly writes sentimental bird poems. Wants remedies distributed by need; tracks fever patterns and drainage; fears reform will empty stores before the worst month. Debates the Seed Mothers' Compact. Reliable resupply and transparent triage move her from restriction to coalition.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.suri-knot",
+      "name": "Suri Knot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "overprepared rescue apprentice. Immediate want: trace false oath ropes. Hidden depth: Lornesse rescue master Sella is her missing aunt.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.talla-halfprice",
+      "name": "Talla Halfprice",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Tired bridge keeper with impeccable safety habits and a hobby painting tiny cheerful tollbooths. Wants the bridge closed without causing a riot; reads timber movement and crowds; broke procedure by hiding the cracks. Answerable to rival League councils. She accepts investigation if engineers, not politicians, control reopening.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.tom-shepherd",
+      "name": "Tom Shepherd",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back unwilling candidate. Immediate want: return to his flock. Hidden depth: has mediated more disputes than both rivals combined.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.toma-var",
+      "name": "Toma Var",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict tithe registrar. Immediate want: prove records altered. Hidden depth: her own signature was copied flawlessly.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.tomas-vaneer",
+      "name": "Tomas Vaneer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Cringeworthy young mast merchant who rehearses nautical metaphors and uses all of them incorrectly. Wants to recover stolen timber and impress the shipwright fraternities; excellent with accounts and tree provenance; easily manipulated by praise. Secretly funds the Dry Admiral's poorest regulars. He matures when his ledger skill, not his performance, saves livelihoods.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.vara-blue",
+      "name": "Vara Blue",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "dramatic court prophet. Immediate want: preserve influence. Hidden depth: knows her best prophecy was written by a comic playwright.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.varo-senn",
+      "name": "Varo Senn",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Dramatic romantic caravan guard who dedicates each crossing to a different legendary lost traveler. Wants the saddle theft solved; excellent with animals and mountain pursuit; secretly recognizes one supposed dead survivor. Former rival of Arlen Pott. He reveals the survivor only when convinced the party respects chosen lives.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.venn-pepperglass",
+      "name": "Venn Pepperglass",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Socially awkward spice broker who identifies aromas brilliantly and compliments people as if describing soup. Wants the smoke-tainted cargo cleared; knows trade routes and plant scents; accidentally insults important buyers. Purchases saffron through Namarra. Patient interpretation lets Venn trace the threatened forest without becoming a joke.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.yara-pom",
+      "name": "Yara Pom",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Cheerful petition writer at Pomegranate Court who celebrates correctly completed forms with tiny fanfares. Wants copper contamination addressed before officials minimize it; reads bureaucracy and public mood; risks losing her license for helping illiterate clients. Sends legal jokes to Elowen Pike. She becomes a public organizer if protected from retaliatory paperwork.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people"
+      }
+    }
+  ],
+  "relationships": []
+}

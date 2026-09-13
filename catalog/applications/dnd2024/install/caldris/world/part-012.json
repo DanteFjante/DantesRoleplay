@@ -1,0 +1,712 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.1976-the-war-of-false-weights",
+      "name": "The War of False Weights",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The War of False Weights",
+            "summary": "Trouble began when three neighbouring market authorities certified incompatible measures under the same name. Traders bought wool by one stone and sold it by another; tenants owed rents whose meaning changed at the estate boundary. A confiscated caravan led to reprisals. For two years, armed households seized scales, burned toll shelters, and detained merchants. Later ballads supplied great battles that contemporary burial records do not support. Most suffering came from missed planting, stolen animals, and villages cut off from salt. Sella Venn, a travelling assayer, proposed publicly accessible reference weights and the right to witness a weighing. Merchant houses opposed the expense until a fraudulent shipment embarrassed their own patrons.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999684000,
+            "precision": "era",
+            "dateLabel": "1,976–1,969 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1984-the-orchard-compact",
+      "name": "The Orchard Compact",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard Compact",
+            "summary": "An orchard district survived a succession of late frosts unusually well. Its farmers credited a spirit called the Guest Beneath the Boughs, who appeared as a mud-stained old person with blossom caught in their hair. The oldest compact required an unharvested strip of orchard, protection for nesting birds, and a shared meal when the first fruit ripened. The Guest sheltered blossoms against a few nights of frost; the farmers maintained the habitat on which the orchards depended. The compact prospered because both sides worked. A visiting religious house recorded the agreement and offered witnesses for later renewals. Some clergy regarded the Guest as a neighbour; others called it an affliction. The disagreement never divided neatly between kind villagers and cruel priests: several tenants welcomed the clergy because orchard owners were charging them for access to supposedly sacred fruit.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999756000,
+            "precision": "era",
+            "dateLabel": "1,984–1,977 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1992-the-road-of-seven-suppers",
+      "name": "The Road of Seven Suppers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Road of Seven Suppers",
+            "summary": "Recovery depended on moving seed and livestock between valleys. Seven households agreed that a traveller carrying a recognised wooden tally could receive supper and a place beside the fire, then repay the hospitality through work or goods at another participating house. Derren Vale, a muleteer with an unreliable singing voice, carried the first settlement accounts. The elven traveller Aveline Sere accompanied him for four seasons while collecting small household spells. She remembered the journey as a brief, pleasant interruption. Derren built the rest of his life around it. These stopping places established a practical route across the hills. Parts of it are proposed predecessors of the present Lantern Road, although floods, enclosures, and changing markets would later move its course.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999828000,
+            "precision": "era",
+            "dateLabel": "1,992–1,985 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.2000-the-winter-of-borrowed-hearths",
+      "name": "The Winter of Borrowed Hearths",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter of Borrowed Hearths",
+            "summary": "Three poor harvests culminated in a winter that closed the upland tracks. Smoke rose from fewer chimneys as families gathered in the houses with sound roofs. The chalk-cut storage chambers of the Button Hills became communal granaries, guarded by shepherds and opened before witnesses. Maelin Rusk, a widow responsible for weighing grain, refused to use the measures brought by the estate collectors: their baskets had grown larger since the last harvest. She measured distributions in an ordinary household cooking pot. Her decision saved several hamlets from surrendering seed grain as rent and made her a criminal in the surviving estate accounts. The hill communities adopted the custom of leaving a small portion of supper beside the hearth for an absent traveller. Over time, hospitality replaced hunger in the explanation.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999900000,
+            "precision": "era",
+            "dateLabel": "2,000–1,993 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.sundering-of-seals",
+      "name": "The Sundering of Seals",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Seals Were Sundered",
+            "summary": "Local rulers, guilds, temples, and communities rejected Concord demands after famine, archive seizures, and violent enforcement. Roads survived, but authority splintered and many records disappeared into private hands.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -398930400,
+            "precision": "approximate",
+            "dateLabel": "116 BS",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.three-banner-war",
+      "name": "The Three Banner War",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Three Banner War Ended",
+            "summary": "A costly struggle over succession, grain passage, and mutual defense ended without a satisfying victor. Its memorials and surviving veterans still shape law, diplomacy, and ordinary fear of another war.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -43624800,
+            "precision": "exact",
+            "dateLabel": "560 AS — eighty-three years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.ability-assignment.standard-array.v1",
+      "name": "Standard Array (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.ability-assignment-policy",
+          "value": {
+            "policyVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+            },
+            "scoreBounds": {
+              "minimum": 8,
+              "maximum": 15
+            },
+            "allocation": {
+              "family": "fixed-multiset",
+              "values": [
+                8,
+                10,
+                12,
+                13,
+                14,
+                15
+              ]
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.background.acolyte.v1",
+      "name": "Acolyte (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "background",
+            "contentKey": "acolyte",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.background.ability-increase-options",
+          "value": {
+            "contentKey": "acolyte",
+            "contentVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            },
+            "eligibleAbilities": [
+              "int",
+              "wis",
+              "cha"
+            ],
+            "allowedPatterns": [
+              "plus-2-plus-1",
+              "plus-1-each"
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.background-creation-profile",
+          "value": {
+            "backgroundKey": "acolyte",
+            "skillProficiencies": [
+              "insight",
+              "religion"
+            ],
+            "toolProficiency": {
+              "kind": "fixed",
+              "toolId": "calligraphers-supplies"
+            },
+            "originFeat": {
+              "definitionId": "dnd2024.feat.magic-initiate",
+              "configurationKey": "cleric"
+            },
+            "startingEquipment": {
+              "packageEntries": [
+                {
+                  "kind": "item",
+                  "itemKey": "calligraphers-supplies",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "book-prayers",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "holy-symbol",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "parchment-sheet",
+                  "quantity": 10
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "robe",
+                  "quantity": 1
+                }
+              ],
+              "packageCurrencyGp": 8,
+              "cashAlternativeGp": 50
+            },
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.class.monk.v1",
+      "name": "Monk (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "class",
+            "contentKey": "monk",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.class-progression",
+          "value": {
+            "hitDieSides": 8,
+            "fixedHitPointGainBeforeConstitution": 5,
+            "levels": [
+              {
+                "classLevel": 1,
+                "featureDefinitionIds": [
+                  "dnd2024.content.feature.monk.martial-arts.v1",
+                  "dnd2024.content.feature.monk.unarmored-defense.v1"
+                ],
+                "choiceSetDefinitionIds": []
+              }
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.class-creation-profile",
+          "value": {
+            "classKey": "monk",
+            "primaryAbilities": {
+              "mode": "all",
+              "abilities": [
+                "dex",
+                "wis"
+              ]
+            },
+            "savingThrows": [
+              "str",
+              "dex"
+            ],
+            "skills": {
+              "choiceCount": 2,
+              "options": [
+                "acrobatics",
+                "athletics",
+                "history",
+                "insight",
+                "religion",
+                "stealth"
+              ],
+              "fixedChoices": [
+                "acrobatics",
+                "insight"
+              ]
+            },
+            "weapons": {
+              "categories": [
+                "simple"
+              ],
+              "restrictedMartialProperties": [
+                "light"
+              ]
+            },
+            "armorTraining": [],
+            "tools": {
+              "fixed": [],
+              "choiceGroups": [
+                {
+                  "count": 1,
+                  "optionFamilies": [
+                    "artisan-tools",
+                    "musical-instrument"
+                  ]
+                }
+              ]
+            },
+            "spellcasting": {
+              "kind": "none",
+              "ability": "none",
+              "cantrips": 0,
+              "preparedSpells": 0,
+              "spellbookSpells": 0,
+              "level1Slots": 0,
+              "slotLevel": 0
+            },
+            "startingEquipmentCashGp": 50,
+            "startingEquipmentCurrencyDefinitionId": "dnd2024.equipment.currency.gold-piece",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.defense.unarmored.v1",
+      "name": "Unarmored Defense (ordinary, D&D 2024)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.creature.defense-basis",
+          "value": {
+            "armorClass": {
+              "mechanicId": "dnd2024.mechanic.armor-class.unarmored",
+              "inputBindings": {
+                "abilityRef": "dnd2024.vocabulary.ability.dexterity",
+                "base": 10
+              }
+            },
+            "damageResponses": []
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.feature.monk.martial-arts.v1",
+      "name": "Martial Arts (Monk, D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "feature",
+            "contentKey": "monk-martial-arts",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.feature.monk.unarmored-defense.v1",
+      "name": "Unarmored Defense (Monk, D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "feature",
+            "contentKey": "monk-unarmored-defense",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.equipment.currency.gold-piece",
+      "name": "Gold Piece",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Equipment > Coins > Coin Values > Gold Piece (SRD 5.2.1, pages 89-89)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.physical",
+          "value": {
+            "weight": {
+              "dimension": "mass",
+              "value": {
+                "numerator": 45359237,
+                "denominator": 5000000000
+              },
+              "unit": {
+                "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.presentation",
+          "value": {
+            "summary": "The Coin Values table also supplies the CP/SP/EP/GP/PP abbreviation and value relative to the Gold Piece."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.content.species.half-elf.v1",
+      "name": "Half-Elf (Caldris Homebrew, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "species",
+            "contentKey": "half-elf",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.species-profile",
+          "value": {
+            "contentKey": "half-elf",
+            "contentVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+            },
+            "creatureType": "humanoid",
+            "allowedSizes": [
+              "medium"
+            ],
+            "baseSpeed": {
+              "walkFeet": 30,
+              "burrowFeet": 0,
+              "climbFeet": 0,
+              "flyFeet": 0,
+              "swimFeet": 0
+            },
+            "traitKeys": [
+              "darkvision",
+              "fey-ancestry",
+              "skill-versatility"
+            ],
+            "choiceFamilies": []
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.rules.readable",
+          "value": {
+            "section": {
+              "id": "character-options",
+              "label": "Character Options",
+              "order": 15
+            },
+            "order": 10,
+            "title": "Half-Elf (Caldris Homebrew)",
+            "summary": "The installed Caldris extension contributes a Medium Humanoid Half-Elf option with its recorded speed and trait keys.",
+            "blocks": [
+              {
+                "kind": "list",
+                "heading": "Recorded profile",
+                "body": null,
+                "items": [
+                  "Creature type: Humanoid.",
+                  "Allowed size: Medium.",
+                  "Trait keys: Darkvision, Fey Ancestry, and Skill Versatility."
+                ]
+              },
+              {
+                "kind": "callout",
+                "heading": "Homebrew source",
+                "body": "This option belongs to the active Caldris Homebrew extension and is not part of the core D&D 2024 catalog.",
+                "items": []
+              }
+            ],
+            "examples": [],
+            "relatedRuleRefs": [
+              {
+                "entityId": "dnd2024.rule.characters.character-sheet"
+              }
+            ],
+            "relatedContentRefs": [],
+            "citations": [
+              {
+                "sourceId": "dnd2024-extension.caldris-homebrew",
+                "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+              }
+            ],
+            "mechanicIds": [
+              "dnd2024.mechanic.species-selection.resolve"
+            ],
+            "procedureIds": [
+              "dnd2024.procedure.mechanic.species-selection"
+            ],
+            "visibility": "public",
+            "presentationStatus": "published"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.item.ganjis-carving-knife.v1",
+      "name": "Ganji's Carving Knife (Caldris Homebrew, definition v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.item-definition",
+          "value": {
+            "definitionVersion": 1,
+            "kind": "adventuring-gear",
+            "stackPolicy": "separate",
+            "massPounds": {
+              "numerator": 1,
+              "denominator": 2
+            },
+            "equipmentModes": [
+              "held"
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Items > Ganji's Carving Knife"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.item.ganjis-quarterstaff.v1",
+      "name": "Ganji's Quarterstaff (Caldris Homebrew, definition v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.item-definition",
+          "value": {
+            "definitionVersion": 1,
+            "kind": "weapon",
+            "stackPolicy": "separate",
+            "massPounds": {
+              "numerator": 4,
+              "denominator": 1
+            },
+            "equipmentModes": [
+              "held"
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Items > Ganji's Quarterstaff (self-carved staff and flute)"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.sundering-of-seals",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.three-banner-war",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.three-banner-war",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1976-the-war-of-false-weights",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1984-the-orchard-compact",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1992-the-road-of-seven-suppers",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.2000-the-winter-of-borrowed-hearths",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

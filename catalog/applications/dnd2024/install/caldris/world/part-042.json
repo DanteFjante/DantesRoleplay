@@ -1,0 +1,388 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0699-the-court-of-seven-roads-account.1",
+      "name": "The Court of Seven Roads — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Highmead's King Neral Merrow convened representatives from seven established road districts to address escorts, duplicate collections, and recurring disputes over maintenance. The number referred to the delegations at that meeting, not every important road in the kingdom. The resulting Court of Seven Roads heard a limited category of disputes through travelling sessions. It did not replace local courts or govern the whole of Caldris. Its early usefulness depended on access to testimony from carriers, hosts, and people maintaining the roads themselves. Road advocate Pellin Rusk insisted that hearings sometimes take place at affected crossings rather than exclusively in comfortable town halls. The practice made sessions slower and more expensive, while exposing practical facts missing from formal maps.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0709-the-workroom-of-mended-things-account.1",
+      "name": "The Workroom of Mended Things — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Willowrace, flood damage and years of reduced incomes had made replacement tools expensive. Repairer Sera Wren organised a shared workroom where residents could borrow space and certain tools while paying skilled workers for tasks they could not safely complete themselves. Whitewindow craftspeople offered instruction during visits. Ysra, passing through after further northern journeys, repaired a scent charm on a linen keepsake and explained why she could not restore its vanished original scent. The owner chose to record her present kitchen instead. The workroom persisted because people found it useful, though disputes over broken tools and unpaid work never vanished. It became known as the House of Second Use, a name later adopted by unrelated repair houses in other districts.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0722-the-wedding-at-the-empty-orchard-account.1",
+      "name": "The Wedding at the Empty Orchard — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Harth's Guest woke briefly during preparations for a wedding near its root ground. It recognised the feast layout and assumed an old obligation was being renewed. The couple, Ressa Vale and Toman Brill, had intended a family celebration, not a new bargain for frost protection. The misunderstanding was resolved by keeper Jora Nall, who explained the changed customs and asked the Guest whether it wished to attend simply as a neighbour. It did. Witnesses recorded that it listened to the music, accepted an unfamiliar dish, and fell asleep beneath a young tree before the final dance. For a few mornings afterward, blossoms on that tree carried frost without damage. No wider protection was promised. The wedding became famous enough that later families tried to reproduce its exact meal in hope of attracting the same guest.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0735-the-night-market-at-ash-salt-account.1",
+      "name": "The Night Market at Ash Salt — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "South of Nacre Quay, at a lesser inlet called Ash Salt, traders began holding an evening market timed to local tides and the arrival of fishing boats. Smoked fish, lamp oil, coarse salt, repaired nets, and cheap hot food provided most of its business. Market keeper Nima Voss established covered weighing tables and hired independent witnesses for bulk sales. The market attracted small sellers who found the main ports' fees difficult to afford. It also attracted smugglers, stolen goods, and officials eager to collect new revenue. A short confrontation ended with Ash Salt paying specified dues while retaining simpler stall charges. It remained a small inlet market dependent on access and weather, not a shadow capital controlling all coastal crime.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0748-the-saint-with-three-birthplaces-account.1",
+      "name": "The Saint with Three Birthplaces — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Pilgrimage accounts began placing the birth of Sister Meret, founder of the House of Returning Names, in three different towns. Each had a local tradition, an accommodating inn trade, and an object presented as evidence. The disagreement concerned a woman who had lived more than a millennium earlier. Travelling scholar Anwen Dorr compared the stories and concluded that none established a certain birthplace. One town had preserved the history of an early donor; another had confused the founder with a later namesake; the third had the oldest claim but little corroboration. Saint Meret's Rest declined to certify a winner. Its keepers invited all three towns to contribute copies of their records and support the work of identifying forgotten people. Some pilgrims welcomed that response. Others preferred a definite destination and bought certainty from less careful guides.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0761-the-bargain-at-the-bedside-account.1",
+      "name": "The Bargain at the Bedside — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Margrave Daven Halren of South Vey spent his final illness trying to arrange a succession acceptable to his household, landholders, and towns. The Seven-Month War lay centuries behind him, but later claims about service and revenue still drew on its settlements. His daughter Alessa Halren secured recognition by accepting a standing assembly of specified estate and town representatives. She became margravine; South Vey remained a distinct polity rather than being absorbed into Highmead or Reedbank. The assembly's membership excluded many people who supplied its revenue, a limitation that would matter to later history. Daven's final public message praised unity. Private notes record argument over two mills, a disputed dowry, and the cost of his funeral. Those details reveal how power changed hands without requiring the ceremony to have been entirely false.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0774-the-basilisk-in-the-dry-store-account.1",
+      "name": "The Basilisk in the Dry Store — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Flood repairs exposed an old stone storage complex near a river branch. Labourers entered to retrieve sound masonry and found several strangely lifelike figures beneath mineral deposits. A basilisk had taken shelter in the dry inner chambers, using broken drains and reed beds to move outside. The response was led by hunter Osric Hale, quarry worker Brenna Tal, and local practitioner Merev Senn. They restricted entry, mapped the drains from outside, and prepared screened approaches before attempting to drive the creature into a controlled enclosure. The basilisk killed one hunter and was eventually slain after breaking through a weakened partition. The surviving party retrieved the victims they could identify. Securing the site and seeking help for those petrified took longer than the celebrated hunt. The availability of an appropriate remedy varied by victim's condition and the expertise the communities could obtain.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0787-the-agreement-of-the-open-sluices-account.1",
+      "name": "The Agreement of the Open Sluices — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Rebuilding forced the Reedbank communities, South Vey estates, and affected towns to decide which channels should remain clear and who would pay for them. Engineers could describe consequences; they could not make displaced households agree about whose land should receive floodwater. Surveyor Halda Penn produced several plans, each naming the properties protected and the ground deliberately left vulnerable. Reedbank Speaker Omer Vell insisted those consequences be read aloud before contributions were agreed. The resulting Open Sluices Agreement included compensation funds, seasonal inspections, and marked limits on new obstructions. The agreement worked where its participants maintained the channels and paid their shares. Some outlying districts declined to join. Their decision did not make them villains, but later works required negotiating how their land and water connected to the shared system.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0799-the-spring-of-floating-doors-account.1",
+      "name": "The Spring of Floating Doors — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Heavy upland rain, snowmelt, and damaged river defences combined in a major flood across parts of the Vey basin. The water overtopped banks, damaged crossings, and carried household doors downstream among timber and wrecked boats. Some Reedbank communities evacuated early through maintained channels. Others had fewer boats, outdated warnings, or nowhere safe to move their animals. The flood's uneven harm became a source of bitter argument once the immediate danger passed. At Doorhaven, a temporary camp on firm ground, boatwoman Edda Rusk used salvaged doors as makeshift tables and raised sleeping platforms. The camp's name preserved that practical improvisation. People brought missing-person descriptions, wet account books, hens in baskets, and rumours about which upstream landholders had diverted the water.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0809-the-first-feast-of-two-harvests-account.1",
+      "name": "The First Feast of Two Harvests — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Growers from Aunholt and the Chalklands celebrated a successful season of exchanged rootstocks, storage methods, and seeds at Boughmeet. The event became known as the Feast of Two Harvests, though participants came from more than two districts and their results varied considerably. Ysra returned for the gathering, now about five centuries old. She carried drawings of Seln's instrument wood and a melody she had learned there, played on Jalen's increasingly repaired fiddle. Several listeners knew versions of Jalen's songs without knowing who he had been. The feast's most durable outcome was an agreement to record failures alongside successful cultivation trials. A Harth delegation attended without claiming to speak for its sleeping Guest. The orchard communities had lives, expertise, and hospitality of their own.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0774-the-basilisk-in-the-dry-store-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0787-the-agreement-of-the-open-sluices-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0799-the-spring-of-floating-doors-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0809-the-first-feast-of-two-harvests-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0709-the-workroom-of-mended-things-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0722-the-wedding-at-the-empty-orchard-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0735-the-night-market-at-ash-salt-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0748-the-saint-with-three-birthplaces-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0761-the-bargain-at-the-bedside-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0699-the-court-of-seven-roads-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0722-the-wedding-at-the-empty-orchard-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0735-the-night-market-at-ash-salt-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0748-the-saint-with-three-birthplaces-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0761-the-bargain-at-the-bedside-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0774-the-basilisk-in-the-dry-store-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0787-the-agreement-of-the-open-sluices-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0799-the-spring-of-floating-doors-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0809-the-first-feast-of-two-harvests-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0699-the-court-of-seven-roads-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0709-the-workroom-of-mended-things-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

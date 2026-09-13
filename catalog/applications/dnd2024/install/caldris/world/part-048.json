@@ -1,0 +1,388 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.1887-the-founding-of-alderwake-fair-account.1",
+      "name": "The Founding of Alderwake Fair — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Where the orchard branch met an eastern drovers' track, a landholder granted four days of seasonal market peace. Herds could rest on common ground; debts could be disputed before witnesses; no participant could be arrested for an old private feud until the market closed. The settlement that grew around this bargain was called Alderwake. Its first fairwarden, Ysolde Fen, rented stalls by frontage rather than by the seller's birthplace. Foreign traders welcomed the rule. Local traders discovered that impartiality felt less admirable when it introduced competition. Musicians, animal healers, cooks, and cheap lodging followed. A fair visitor could buy wool, learn a new dance, and hear an entirely inaccurate description of the sea before noon. Couples began timing marriages to the fair because relatives from several valleys could attend.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1899-the-autumn-without-a-debt-account.1",
+      "name": "The Autumn Without a Debt — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aveline Sere's obligation to bring a guest to the Seventh Hearth ended with the preceding century. The following autumn she arrived anyway, accompanied by a young potter called Iven Marr. She carefully explained that they were visiting, not making a payment. The threshold spirit had prepared seven places. Aveline put five bowls away and asked whether it would prefer three people who were actually hungry. This small disagreement became the first occasion on which the household chose a new custom instead of trying to complete an old one. Iven stayed through the winter, repairing the chimney and producing lopsided cups. He later established Marr's Kiln on a clay seam below the hill road. His cups spread the hearth's seven-notch mark far beyond its original hospitality network. Later collectors would mistake ordinary pottery for proof of membership in an ancient magical fellowship.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1909-the-lantern-settlement-account.1",
+      "name": "The Lantern Settlement — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The century ended with agreements between road wardens, market councils, sanctuary keepers, and landed households. They established shared contributions for bridges, public inspection of market measures, winter hospitality funds, and recognised places where travellers could lodge complaints. Lamps became the visible sign of a participating stopping house. The settlement offers an origin for traditions later associated with the Lantern Road, without requiring today's road or institutions to have existed unchanged for two millennia. It was an imperfect achievement. Outlying hamlets paid for repairs they seldom benefited from. Several ferry families lost their livelihood. Households without recognised standing had no direct voice. Nevertheless, more people could carry a winter's savings to the next market and reasonably expect to return with them.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1909-the-lantern-settlement-account.2",
+      "name": "The Lantern Settlement — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "On the last evening of the negotiations, someone stole the fine silver lamp commissioned for the signing. The delegates completed their work beside a kitchen lantern. Later paintings consistently show the silver one.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1919-the-last-supper-at-the-seventh-house-account.1",
+      "name": "The Last Supper at the Seventh House — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Derren died before Aveline's next return. His granddaughter presented her with a packet of letters. The earliest asked when she would visit; the later ones told her what she had missed. The final letter contained directions to a pear tree he thought she would enjoy. Aveline followed the old supper road and found its seventh house standing behind a wall of brambles. Its threshold spirit still expected the original account to be settled. It had continued laying places for people whose names no longer appeared in any village register. The surviving song says that Aveline bought everyone's supper. It does not explain what she paid.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1928-the-empty-storehouses-account.1",
+      "name": "The Empty Storehouses — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Success brought new grain stores to the Button Hills. Several chambers were cut into older workings whose builders the inhabitants no longer knew. In one cluster, grain spoiled despite dry floors and sound doors. Rats abandoned the site. Labourers reported hearing someone moving sacks after sunset. An expensive investigation blamed an ancient malediction. The owners commissioned protective inscriptions, collected compensation, and quietly moved their good grain elsewhere. The abandoned chambers gave later shepherds shelter and later storytellers a kingdom beneath the hills.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1936-the-house-of-returning-names-account.1",
+      "name": "The House of Returning Names — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At a hill sanctuary, Sister Meret began recording travellers who died far from home. With their names she kept small descriptions: a missing tooth, a favourite song, the smell of a trade, the name of someone they hoped to see again. Merchants carried copies of these notices. A room intended for burial records became a meeting place for lost relatives and returning labourers. Offerings supported messengers, funerals, and the occasional fraud investigation. The sanctuary's fame grew after an elven visitor identified a century-old burial from a badly remembered joke. Long lives gave the records unusual value, but memory remained fallible: witnesses could be certain and wrong.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1944-the-eighty-day-crown-account.1",
+      "name": "The Eighty-Day Crown — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An upland ruler died without an accepted successor. The town councils appointed a wool merchant, Tavin Orr, to coordinate supplies until the dispute was settled. He wore the treasury's ceremonial crown at one public hearing because nobody could find the ordinary chain of office. Later legend made him a reluctant king. Surviving orders suggest a capable, impatient administrator who wanted the roads reopened before shearing season. His government lasted eighty days. It paid soldiers partly in cloth and obtained peace by confirming several villages' rights to their shared pasture. The eventual dynasty retained his emergency taxes and described his pasture grants as provisional.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1952-the-bell-above-the-water-account.1",
+      "name": "The Bell Above the Water — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A destructive flood shifted the crossing near the site of modern Bramblebridge. Several households moved uphill; their abandoned wells remained beneath the silt. A ferryman called Hadrin Moss paid a bellfounder to cast a warning bell, while a rare local enchantress arranged for its clapper to respond to water rising inside a sealed shaft. It warned of certain upstream floods, not every danger, and it needed ordinary maintenance. Keeping the shaft clear proved harder to fund than commissioning the wonder. The first bell keeper was Hadrin's daughter Enna, who refused the accompanying marriage offer and negotiated a wage instead. Later stories remembered only that the bell rang for a maiden.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1960-the-salt-petition-account.1",
+      "name": "The Salt Petition — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Storms and the loss of several coastal cargoes drove up the price of inland salt. A trading association secured exclusive access to the usable winter route, arguing that dependable escorts required dependable revenue. For a time it delivered exactly what it promised. Then the association began charging villages for salt they had not ordered. The contracts made participation a condition of using the road. Preserving meat became a matter of debt, and poor households slaughtered animals early rather than feed them through winter. Brewers, shepherds, and a coastal widow named Ossa Pell pooled small subscriptions to finance one independent convoy. Their Salt Petition survives in the proposed history as an early example of ordinary households funding a commercial venture together.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.1952-the-bell-above-the-water-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1960-the-salt-petition-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1919-the-last-supper-at-the-seventh-house-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1928-the-empty-storehouses-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1936-the-house-of-returning-names-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1944-the-eighty-day-crown-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1887-the-founding-of-alderwake-fair-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1899-the-autumn-without-a-debt-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1909-the-lantern-settlement-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1909-the-lantern-settlement-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1936-the-house-of-returning-names-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1944-the-eighty-day-crown-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1952-the-bell-above-the-water-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1960-the-salt-petition-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1887-the-founding-of-alderwake-fair-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1899-the-autumn-without-a-debt-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1909-the-lantern-settlement-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1909-the-lantern-settlement-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1919-the-last-supper-at-the-seventh-house-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1928-the-empty-storehouses-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

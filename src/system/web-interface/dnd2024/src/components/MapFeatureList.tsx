@@ -1,4 +1,4 @@
-import type { MapDocument } from "../data/hub-types";
+import type { MapDocument, WorldLocation } from "../data/hub-types";
 import { groupMapFeaturesByLayers } from "../state.js";
 import { Icon } from "./Icon";
 
@@ -11,6 +11,8 @@ export function MapFeatureList({
   influencedFeatureIds,
   onFeatureSelect,
   onOpenScope,
+  unplacedLocations = [],
+  onOpenLocation,
 }: {
   map: MapDocument;
   selectedFeatureId: string;
@@ -20,6 +22,8 @@ export function MapFeatureList({
   influencedFeatureIds: Set<string>;
   onFeatureSelect: (featureId: string) => void;
   onOpenScope: (mapId: string) => void;
+  unplacedLocations?: WorldLocation[];
+  onOpenLocation?: (locationId: string) => void;
 }) {
   const groups = groupMapFeaturesByLayers(map) as Array<{
     layer: MapDocument["layers"][number];
@@ -31,8 +35,8 @@ export function MapFeatureList({
       {groups.length === 0 ? (
         <div className="map-feature-list__empty">
           <Icon name="MapPin" size={22} />
-          <strong>No places are visible in the selected layers.</strong>
-          <p>Turn a layer back on to include its known places.</p>
+          <strong>No map markers are visible in the selected layers.</strong>
+          <p>Turn a layer back on to include its map markers.</p>
         </div>
       ) : groups.map((group) => (
         <section key={group.layer.id} aria-labelledby={`${group.layer.id}-list-heading`}>
@@ -86,8 +90,19 @@ export function MapFeatureList({
           </ul>
         </section>
       ))}
+      {unplacedLocations.length ? <section aria-label="Places without map positions">
+        <header><h2>Places without map positions</h2><span>{unplacedLocations.length}</span></header>
+        <ul>{unplacedLocations.map((location) => <li key={location.id}>
+          <button className="map-feature-list__select" onClick={() => onOpenLocation?.(location.id)} type="button"
+            aria-label={`View details for ${location.name}`} aria-current={location.id === currentLocationId ? "location" : undefined}>
+            <span className="map-feature-list__icon"><Icon name="MapPin" size={16} /></span>
+            <span><strong>{location.name}</strong><small>{location.summary}</small>
+              <span className="map-feature-list__badges"><em>Location details</em></span></span>
+          </button>
+        </li>)}</ul>
+      </section> : null}
       <p className="world-map-panel__note">
-        List and illustrated modes show the same authorized places and layer filters.
+        Layer filters apply to map markers. Known places without map positions remain in this list.
       </p>
     </section>
   );

@@ -1,0 +1,862 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Dragon evidence is appearing in Alderwick, Lornesse, Kethria, and Namarra for different reasons;",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Lantern Sea Accord congress meets next year at Aster Quay, whose presiding chair is missing.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Summer Without Swallows damaged insect cycles and became a canvas for prophecy and fraud.",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Veyr succession could strengthen local cooperation or produce the first standing continental",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Two unrelated royal heirs died within eighteen months, making marriages and minor claims newly",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tension.young-officials-across-several-states-admire-the-lantern-concords-efficiency-while-knowing",
+      "name": "Present tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Young officials across several states admire the Lantern Concord's efficiency while knowing",
+            "provenance": "Caldris world bible — current tensions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor-sect",
+      "name": "The Tensor Discipline",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tensor monks teach that every motion is joined to every other motion by invisible tension. By studying breath, balance, attention, and intention, they hope one day to perceive the whole pattern and see the divine source behind the Nine Lamps.",
+            "provenance": "Ganji character integration approved by the player on 2026-08-30.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "world-reference"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor.master-orun-vale",
+      "name": "Master Orun Vale",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect’s headmaster and strongest living fighter. Orun Vale trains with unnerving patience and taught Ganji directly from childhood; his affection for the escaped young monk is sincere, but tangled with the belief that Ganji’s future belongs to the sect.",
+            "provenance": "Ganji lived-beginning campaign preparation approved by the player on 2026-08-30.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "world-reference"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.moonwake-strait",
+      "name": "Moonwake Strait",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Narrow northern crossing, fast but foggy, politically sensitive, and watched by three different toll authorities.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-aur",
+      "name": "The Aur",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ordelain's great navigable river; grain, paper, soldiers, and lawsuits move along it.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-greyward-ocean",
+      "name": "The Greyward Ocean",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Eredane's western ocean; rich fishing, violent storms, and a route to lands known mostly through sailors' exaggerations.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-lantern-sea",
+      "name": "The Lantern Sea",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Central trade sea, usually crossed in eight to eighteen days depending on route, vessel, and season.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-mere",
+      "name": "The Mere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Alderwick's principal river, joining two tributaries at Merecross before reaching Carrowmere.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-namar-veins",
+      "name": "The Namar Veins",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Delta distributaries and canals; productive, crowded, difficult to map, and forever changing.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.water.the-saffron-reach",
+      "name": "The Saffron Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Warm southeastern sea around Selucia and Namarra; island trade, pilgrim routes, reefs, and seasonal piracy.",
+            "provenance": "Caldris world bible — waters and crossings",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.lantern-sea",
+      "name": "Lantern Sea",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lantern Sea fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lantern-sea.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lantern Sea fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lantern-sea.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The sea between Eredane and Solasca. Coastal passages and open-water sailings require vessels, working harbours and suitable conditions; the sea is not a road.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.eredane",
+      "name": "Eredane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Eredane regional terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 255,
+            "y": 380
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Eredane regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Eredane regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.solasca",
+      "name": "Solasca",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Solasca fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/solasca.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Solasca fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/solasca.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The eastern and southeastern continent: deltas, dry plateaus, terraced highlands, island chains, caravan rivers, shaded courts, white-stone ports, and societies shaped by canals, cisterns, sailing seasons, and river law.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.a-wedding-if-convenient",
+      "name": "Adventure bridge — A Wedding, If Convenient",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The couple's gift comes from an absent Namar village.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "name": "Adventure bridge — Chickens of Commercial Intent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A farmer pays the party with a brooch claimed by three families, beginning an inheritance comedy.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.crownmaking",
+      "toEntityId": "location.caldris.eredane",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.sundering-of-seals",
+      "toEntityId": "location.caldris.eredane",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lantern-roads",
+      "toEntityId": "location.caldris.eredane",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.alderwick-crown-council",
+      "toEntityId": "location.caldris.eredane",
+      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.moonwake-strait",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.moonwake-strait",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-aur",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-aur",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-greyward-ocean",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-greyward-ocean",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-lantern-sea",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-lantern-sea",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-mere",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-mere",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-saffron-reach",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-saffron-reach",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-namar-veins",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.water.the-namar-veins",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.dragon-evidence-is-appearing-in-alderwick-lornesse-kethria-and-namarra-for-different-reasons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-lantern-sea-accord-congress-meets-next-year-at-aster-quay-whose-presiding-chair-is-missing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-summer-without-swallows-damaged-insect-cycles-and-became-a-canvas-for-prophecy-and-fraud",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.the-veyr-succession-could-strengthen-local-cooperation-or-produce-the-first-standing-continental",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.two-unrelated-royal-heirs-died-within-eighteen-months-making-marriages-and-minor-claims-newly",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.young-officials-across-several-states-admire-the-lantern-concords-efficiency-while-knowing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tension.young-officials-across-several-states-admire-the-lantern-concords-efficiency-while-knowing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.a-wedding-if-convenient",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.a-wedding-if-convenient",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tensor-sect",
+      "toEntityId": "faction.caldris.tensor-sect",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tensor-sect",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tensor.master-orun-vale",
+      "toEntityId": "faction.caldris.tensor-sect",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tensor.master-orun-vale",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

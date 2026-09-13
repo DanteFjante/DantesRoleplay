@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0100-0050-place-the-green-awning-yard.1",
+      "name": "The Green Awning Yard — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A freight assembly yard in Brinefold with repaired awnings, shared weighing space, and places rented by independent carriers. Its earliest arrangements have been replaced or renewed over time. The spring gathering survives intermittently when trade and local organisers can support it. A person to meet: Freight organiser Pera Kell needs to establish whether a disputed booking belongs to a working carrier or an intermediary reserving space for resale. Adventure: Trace a consignment, recover a booking record, or help independent carriers assemble a shipment. A box that changed hands here can lead through several households without requiring a world-threatening secret inside it.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0100-0050-place-the-house-of-paired-seals.1",
+      "name": "The House of Paired Seals — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A record and meeting house in Highmead containing copies of negotiations before the Three Banner War and later comparative work. Some originals are held elsewhere. Exhibits distinguish signatures, proposed terms, and provisions that were actually adopted. A person to meet: Archivist Hessa Penn is preparing a comparison requested by rival claimants who each expect it to vindicate them. Adventure: Locate a missing instruction, compare an authenticated copy with a later renewal, or identify a discarded compromise. Evidence can correct a public story without automatically deciding a present claim.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0100-0050-place-the-names-house.1",
+      "name": "The Names House — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small search archive and mediation office in Rookwater. Its records distinguish confirmed outcomes from unanswered inquiries. Later household correspondence supplements the post-war material, and restricted notes have custody rules governing their use. A person to meet: Nera Coal, the dwarven former quartermaster, remains alive in the campaign present and visits the office as her health permits. She can explain her own records and admits when she did not witness an event. Her age and longevity make her a surviving witness, not an authority on everything that happened. Adventure: Trace a displaced household, correct a mistaken death report, or return a documented possession. A recovered address may affect living descendants whose interests differ from those of the person funding the search.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0100-0050-place-the-open-string-hall.1",
+      "name": "The Open String Hall — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A community teaching and performance hall in Willowrace with repaired instruments, ordinary rehearsal rooms, and a collection of marked teaching scores. Fees, supported places, and instrument loans are recorded separately. Its paired performances remain a living custom rather than a fixed reconstruction of the founders' first concert. A person to meet: Teacher Lessa Orr needs a missing instrument returned before a public performance and wants to resolve its ownership without humiliating a former pupil. Adventure: Follow an instrument's repairs and sale history, recover a loan-back agreement, or bring separated musicians together for a performance. The reward may include friendship, a useful contact, and a tune that travels with the party.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0100-0050-place-the-shared-bank.1",
+      "name": "The Shared Bank — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A maintained riverbank work in the Penn's Reach district, repeatedly repaired since the wartime flood. A small marker records the shared labour, while local maintenance documents identify later alterations. Its present condition depends on inspection and repair. A person to meet: Water keeper Oren Orrel needs help assessing a weakened stretch before commemorative visitors arrive. He would rather obtain sound timber than another speech about cooperation. Adventure: Compare old channels with current water, recover a repair agreement, or bring materials across a disputed access path. The memorial's history may help negotiations, but it cannot repair the bank by itself.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-gm-truth.1",
+      "name": "The Spring of Unspent Muster Money — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Havren was willing to support a narrower armed response if the inspection failed. The achievement was a specific practical choice, not proof that one delegate could have prevented every later war. Several local agreements survived the episode and may matter when reconstructing how the subsequent conflict spread.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-traces-and-stories.1",
+      "name": "The Spring of Unspent Muster Money — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Unissued equipment orders, messenger payments, and redirected repair funds. A present historian might recover evidence that an apparent failed mobilisation was deliberately cancelled. An institution claiming never to have compromised may have depended on exactly such a decision.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-gm-truth.1",
+      "name": "The Duet Played Without Its Visitor — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ossa was angry as well as understanding. Nivren's delay was real, but he had also left too little time for an ordinary journey to go wrong. His long life did not exempt him from needing to plan around other people's shorter opportunities.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-traces-and-stories.1",
+      "name": "The Duet Played Without Its Visitor — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Two arrangements, a flood-delayed itinerary, and letters kept in different households. A quest can reunite the parts or trace a copy carried elsewhere. Neither version needs to be exposed as a fraud for the difference between them to matter.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-gm-truth.1",
+      "name": "The Grain Houses with Empty Lofts — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ilren initially understated losses at a storehouse managed by a friend. A second examiner corrected the report. The final useful reform emerged from disagreement and checking, not from a solitary official whose first judgement was always right.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0111-the-spring-of-unspent-muster-money-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0119-the-duet-played-without-its-visitor-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0127-the-grain-houses-with-empty-lofts-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-green-awning-yard.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-house-of-paired-seals.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-names-house.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-open-string-hall.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-shared-bank.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

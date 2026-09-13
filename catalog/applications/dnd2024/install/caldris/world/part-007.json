@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.0661-the-duke-who-counted-empty-beds",
+      "name": "The Duke Who Counted Empty Beds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Duke Who Counted Empty Beds",
+            "summary": "In an outlying Roven district, Duke Samel of Reth claimed that hearth taxes undercounted people living seasonally along the pack routes. His collectors began charging for beds available to travellers as if each represented a permanent household. The policy made shelter expensive and encouraged hosts to remove bedding before inspections. Winter carriers arrived to find rooms technically empty and practically useless. Host Talia Penn, supported by hauliers and several judges, challenged the interpretation through the district's own agreements. The settlement distinguished seasonal lodging from permanent residence and established a smaller, visible contribution toward road support. Reth remained a northern jurisdiction outside Highmead's direct authority; the Court of Seven Roads could provide examples and witnesses, not dictate the outcome.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -344268000,
+            "precision": "era",
+            "dateLabel": "661–649 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0674-the-lord-beneath-the-rushes",
+      "name": "The Lord Beneath the Rushes",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lord Beneath the Rushes",
+            "summary": "Boat crews working a neglected reed channel reported attacks by a long, low creature that could pull an unwary person from a landing. Locals called it the Rush Lord after seeing reeds and old netting draped across its back. The creature was an unusually large marsh predator occupying sheltered water near a collapsed fish weir. Stories gave it tribute, subjects, and a treasury. In practice, workers had begun leaving fish scraps to distract it, teaching it to approach occupied landings for food. Reed cutter Bellan Ose and hunter Ira Thenn organised safer access, removed the accumulated scraps, and mapped its routes. After repeated attacks continued, a guarded party trapped and killed it at a confined side channel. Reopening the neglected waterway took much longer than the hunt.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -351100800,
+            "precision": "era",
+            "dateLabel": "674–662 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
+      "name": "The Glassmaker's Daughter and the False Relics",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Glassmaker's Daughter and the False Relics",
+            "summary": "Collectors were paying high prices for anything plausibly connected to Aveline. In Istravel, glassworker Yamina Rell found that an ordinary marked reference blank from an old workshop collection had been advertised as Aveline's last enchanted mirror. Comparison with Fenn Arul's copied parcel research identified the kind of object accurately. It might be the original reference piece or a workshop successor made to the same pattern; its continuous custody could not be proved. Yamina's account separated the identification of a tool from certainty about one particular object's history. The controversy exposed several other false relics, but not every seller was knowingly dishonest. Some had inherited confident descriptions and never examined them. A collector who lost prestige eventually funded the copying of actual workshop notes, which proved more useful than the supposed mirror.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -357933600,
+            "precision": "era",
+            "dateLabel": "687–675 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0699-the-court-of-seven-roads",
+      "name": "The Court of Seven Roads",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Court of Seven Roads",
+            "summary": "Highmead's King Neral Merrow convened representatives from seven established road districts to address escorts, duplicate collections, and recurring disputes over maintenance. The number referred to the delegations at that meeting, not every important road in the kingdom. The resulting Court of Seven Roads heard a limited category of disputes through travelling sessions. It did not replace local courts or govern the whole of Caldris. Its early usefulness depended on access to testimony from carriers, hosts, and people maintaining the roads themselves. Road advocate Pellin Rusk insisted that hearings sometimes take place at affected crossings rather than exclusively in comfortable town halls. The practice made sessions slower and more expensive, while exposing practical facts missing from formal maps.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -364503600,
+            "precision": "era",
+            "dateLabel": "699–688 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0709-the-workroom-of-mended-things",
+      "name": "The Workroom of Mended Things",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Workroom of Mended Things",
+            "summary": "At Willowrace, flood damage and years of reduced incomes had made replacement tools expensive. Repairer Sera Wren organised a shared workroom where residents could borrow space and certain tools while paying skilled workers for tasks they could not safely complete themselves. Whitewindow craftspeople offered instruction during visits. Ysra, passing through after further northern journeys, repaired a scent charm on a linen keepsake and explained why she could not restore its vanished original scent. The owner chose to record her present kitchen instead. The workroom persisted because people found it useful, though disputes over broken tools and unpaid work never vanished. It became known as the House of Second Use, a name later adopted by unrelated repair houses in other districts.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -370285200,
+            "precision": "era",
+            "dateLabel": "709–700 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0722-the-wedding-at-the-empty-orchard",
+      "name": "The Wedding at the Empty Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Wedding at the Empty Orchard",
+            "summary": "Harth's Guest woke briefly during preparations for a wedding near its root ground. It recognised the feast layout and assumed an old obligation was being renewed. The couple, Ressa Vale and Toman Brill, had intended a family celebration, not a new bargain for frost protection. The misunderstanding was resolved by keeper Jora Nall, who explained the changed customs and asked the Guest whether it wished to attend simply as a neighbour. It did. Witnesses recorded that it listened to the music, accepted an unfamiliar dish, and fell asleep beneath a young tree before the final dance. For a few mornings afterward, blossoms on that tree carried frost without damage. No wider protection was promised. The wedding became famous enough that later families tried to reproduce its exact meal in hope of attracting the same guest.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -376329600,
+            "precision": "era",
+            "dateLabel": "722–710 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
+      "name": "The Night Market at Ash Salt",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Night Market at Ash Salt",
+            "summary": "South of Nacre Quay, at a lesser inlet called Ash Salt, traders began holding an evening market timed to local tides and the arrival of fishing boats. Smoked fish, lamp oil, coarse salt, repaired nets, and cheap hot food provided most of its business. Market keeper Nima Voss established covered weighing tables and hired independent witnesses for bulk sales. The market attracted small sellers who found the main ports' fees difficult to afford. It also attracted smugglers, stolen goods, and officials eager to collect new revenue. A short confrontation ended with Ash Salt paying specified dues while retaining simpler stall charges. It remained a small inlet market dependent on access and weather, not a shadow capital controlling all coastal crime.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -383162400,
+            "precision": "era",
+            "dateLabel": "735–723 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0748-the-saint-with-three-birthplaces",
+      "name": "The Saint with Three Birthplaces",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Saint with Three Birthplaces",
+            "summary": "Pilgrimage accounts began placing the birth of Sister Meret, founder of the House of Returning Names, in three different towns. Each had a local tradition, an accommodating inn trade, and an object presented as evidence. The disagreement concerned a woman who had lived more than a millennium earlier. Travelling scholar Anwen Dorr compared the stories and concluded that none established a certain birthplace. One town had preserved the history of an early donor; another had confused the founder with a later namesake; the third had the oldest claim but little corroboration. Saint Meret's Rest declined to certify a winner. Its keepers invited all three towns to contribute copies of their records and support the work of identifying forgotten people. Some pilgrims welcomed that response. Others preferred a definite destination and bought certainty from less careful guides.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -389995200,
+            "precision": "era",
+            "dateLabel": "748–736 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0761-the-bargain-at-the-bedside",
+      "name": "The Bargain at the Bedside",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Bargain at the Bedside",
+            "summary": "Margrave Daven Halren of South Vey spent his final illness trying to arrange a succession acceptable to his household, landholders, and towns. The Seven-Month War lay centuries behind him, but later claims about service and revenue still drew on its settlements. His daughter Alessa Halren secured recognition by accepting a standing assembly of specified estate and town representatives. She became margravine; South Vey remained a distinct polity rather than being absorbed into Highmead or Reedbank. The assembly's membership excluded many people who supplied its revenue, a limitation that would matter to later history. Daven's final public message praised unity. Private notes record argument over two mills, a disputed dowry, and the cost of his funeral. Those details reveal how power changed hands without requiring the ceremony to have been entirely false.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -396828000,
+            "precision": "era",
+            "dateLabel": "761–749 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0774-the-basilisk-in-the-dry-store",
+      "name": "The Basilisk in the Dry Store",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Basilisk in the Dry Store",
+            "summary": "Flood repairs exposed an old stone storage complex near a river branch. Labourers entered to retrieve sound masonry and found several strangely lifelike figures beneath mineral deposits. A basilisk had taken shelter in the dry inner chambers, using broken drains and reed beds to move outside. The response was led by hunter Osric Hale, quarry worker Brenna Tal, and local practitioner Merev Senn. They restricted entry, mapped the drains from outside, and prepared screened approaches before attempting to drive the creature into a controlled enclosure. The basilisk killed one hunter and was eventually slain after breaking through a weakened partition. The surviving party retrieved the victims they could identify. Securing the site and seeking help for those petrified took longer than the celebrated hunt. The availability of an appropriate remedy varied by victim's condition and the expertise the communities could obtain.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -403660800,
+            "precision": "era",
+            "dateLabel": "774–762 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0787-the-agreement-of-the-open-sluices",
+      "name": "The Agreement of the Open Sluices",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Agreement of the Open Sluices",
+            "summary": "Rebuilding forced the Reedbank communities, South Vey estates, and affected towns to decide which channels should remain clear and who would pay for them. Engineers could describe consequences; they could not make displaced households agree about whose land should receive floodwater. Surveyor Halda Penn produced several plans, each naming the properties protected and the ground deliberately left vulnerable. Reedbank Speaker Omer Vell insisted those consequences be read aloud before contributions were agreed. The resulting Open Sluices Agreement included compensation funds, seasonal inspections, and marked limits on new obstructions. The agreement worked where its participants maintained the channels and paid their shares. Some outlying districts declined to join. Their decision did not make them villains, but later works required negotiating how their land and water connected to the shared system.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -410493600,
+            "precision": "era",
+            "dateLabel": "787–775 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0799-the-spring-of-floating-doors",
+      "name": "The Spring of Floating Doors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Spring of Floating Doors",
+            "summary": "Heavy upland rain, snowmelt, and damaged river defences combined in a major flood across parts of the Vey basin. The water overtopped banks, damaged crossings, and carried household doors downstream among timber and wrecked boats. Some Reedbank communities evacuated early through maintained channels. Others had fewer boats, outdated warnings, or nowhere safe to move their animals. The flood's uneven harm became a source of bitter argument once the immediate danger passed. At Doorhaven, a temporary camp on firm ground, boatwoman Edda Rusk used salvaged doors as makeshift tables and raised sleeping platforms. The camp's name preserved that practical improvisation. People brought missing-person descriptions, wet account books, hens in baskets, and rumours about which upstream landholders had diverted the water.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -417063600,
+            "precision": "era",
+            "dateLabel": "799–788 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "name": "The First Feast of Two Harvests",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Feast of Two Harvests",
+            "summary": "Growers from Aunholt and the Chalklands celebrated a successful season of exchanged rootstocks, storage methods, and seeds at Boughmeet. The event became known as the Feast of Two Harvests, though participants came from more than two districts and their results varied considerably. Ysra returned for the gathering, now about five centuries old. She carried drawings of Seln's instrument wood and a melody she had learned there, played on Jalen's increasingly repaired fiddle. Several listeners knew versions of Jalen's songs without knowing who he had been. The feast's most durable outcome was an agreement to record failures alongside successful cultivation trials. A Harth delegation attended without claiming to speak for its sleeping Guest. The orchard communities had lives, expertise, and hospitality of their own.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -422845200,
+            "precision": "era",
+            "dateLabel": "809–800 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0822-the-goat-path-and-the-painted-road",
+      "name": "The Goat Path and the Painted Road",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Goat Path and the Painted Road",
+            "summary": "Aunholt and the Roven Marches negotiated a southern carrier route. The patron financing its map wanted a line suitable for wagon traffic. Local hauliers warned that one section could support pack animals but not carts without extensive work. The published ceremonial map showed a grand continuous road. The working copy, prepared by surveyor Nerin Oss, marked unloading points, narrow turns, and shelter limits. Early travellers who bought the wrong edition arrived angry, delayed, and unexpectedly dependent on local carriers. The resulting arrangement kept the difficult section as a managed pack route. A small transfer settlement, Goat's Ledger, grew where goods moved between carts and animal trains. Its first warehouse was smaller than the road depicted on the patron's wall map.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -428889600,
+            "precision": "era",
+            "dateLabel": "822–810 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "name": "The Parcel That Had Arrived Somewhere Else",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Parcel That Had Arrived Somewhere Else",
+            "summary": "A record copied at Seven Scripts Court attracted the attention of archivist Fenn Arul. It described a small consignment whose workshop mark matched the inventory later found beneath the Seventh Hearth. Further comparisons connected it to Aveline's supposedly undelivered parcel. The new evidence showed that the parcel had reached a successor to its intended Istravel workshop and had been opened 1,338 years before the campaign present, seventy-two years after Aveline's death. The original recipient had already died. The acknowledgement was addressed through an obsolete carrier and never reached the records used by her executors. The opening account listed a personal letter, corrected preparation notes, and a small glass reference piece wrapped for protection. The recipients incorporated the useful material into their workshop collection instead of preserving a sealed curiosity.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -435722400,
+            "precision": "era",
+            "dateLabel": "835–823 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
+      "name": "The Market of Borrowed Tongues",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Market of Borrowed Tongues",
+            "summary": "Trade between Selvar, Serevan, and the farther inland road brought more languages into Namar Vale. Interpreters had long worked privately, but a dispute over a bulk cloth order led to a market practice of naming the interpreter and retaining a short summary in both parties' languages. Interpreter Saha Mir organised a shared workroom at Seven Scripts Court, where translators could compare difficult terms and consult specialist traders. The court never contained exactly seven languages at every period; the name came from its first commissioned sign. Some mistakes were innocent. Others involved an interpreter pressured by a wealthy client, or a buyer pretending a familiar trade term was incomprehensible. Publicly recording who had explained what helped, while creating new disputes over liability when circumstances changed.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -442555200,
+            "precision": "era",
+            "dateLabel": "848–836 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0861-the-crown-carried-in-a-bread-cart",
+      "name": "The Crown Carried in a Bread Cart",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Crown Carried in a Bread Cart",
+            "summary": "Highmead's Queen Deryn Merrow travelled through the northern estates during a period of poor roads and unsettled loyalties. A damaged ceremonial wagon forced her household to move several chests into an ordinary baker's cart. One held the travelling crown used at public audiences. At Tallow Ford, a crowd saw household guards anxiously protecting a wagon that smelled of bread. The story became a favourite court comedy. Its more consequential aftermath was Deryn's discovery that her appointed escort had been commandeering provisions without receipts. She ordered compensation from the royal travelling budget and dismissed two officers. The affected households received different amounts and waited different lengths of time. Her progress helped renew practical agreements without ending every dispute between the crown and the northern districts.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -449388000,
+            "precision": "era",
+            "dateLabel": "861–849 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
+      "name": "The Singing Wood of Seln",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Singing Wood of Seln",
+            "summary": "Farther along Aunholt's western trade route stood Seln, a woodland community known for instrument timber and a stand of hollow-trunked trees that sounded in particular winds. Local musicians tuned pipes against those tones before cutting or drying new wood. Ysra visited with Edan Rill, an Aunholt carrier learning to make instruments. They heard a melody the residents called the Trees' Welcome. Its changing notes belonged partly to wind and wood, partly to the musicians answering them from a sheltered platform. A small place-spirit, the Listener in the Fork, could hold a recently heard note for a little while after a performer stopped. It neither composed on command nor preserved centuries of music. When visiting patrons demanded performances in unsuitable weather, the sound was unimpressive and the Listener withdrew.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -456220800,
+            "precision": "era",
+            "dateLabel": "874–862 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
+      "name": "The Orchard of Winter Apples",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard of Winter Apples",
+            "summary": "Aunholt's best-known export was a small, sharp apple that stored well in cool conditions. Carriers called it the winter lantern for its yellow skin. Buyers in the lower valleys paid unusually high prices after discovering that a sound harvest could survive much of the winter journey. Grower Hella Vorr travelled south with grafting stock, expecting to establish a profitable nursery. Some grafts flourished; others failed in warmer, wetter ground. She stayed several years to compare soils and rootstocks with Boughmeet's growers, while her siblings maintained the original orchards. The exchange produced useful varieties and extravagant claims. A Highmead merchant advertised apples that never spoiled. His customers received ordinary fruit and an instructive disappointment. Songs later connected the winter lantern to Harth's sleeping Guest, although its cultivation belonged to a different history.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -463053600,
+            "precision": "era",
+            "dateLabel": "887–875 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0899-the-valley-already-named",
+      "name": "The Valley Already Named",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Valley Already Named",
+            "summary": "Ysra's expedition crossed beyond the northern routes described in its copies of the Book of Roads Left Open. Its members expected difficult travel and unknown plants. They found Aunholt, a high valley with stone-lined irrigation channels, scattered hamlets, and a seasonal assembly held beneath an enormous timber roof. Their guide, Rovan Pell, prepared a formal declaration naming the valley after the expedition's patron. Speaker Meret Ulan politely supplied its existing name and asked which household would pay for the expedition's fodder. Ysra entered both conversations in her notebook. The visitors spent a season exchanging knowledge with local growers. Some plants they considered rare were ordinary garden crops; others were protected because collecting them damaged grazing or water sources. The expedition's most useful achievement was arranging future visits on terms the valley's residents understood and accepted.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -469623600,
+            "precision": "era",
+            "dateLabel": "899–888 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0899-the-valley-already-named",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0861-the-crown-carried-in-a-bread-cart",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0774-the-basilisk-in-the-dry-store",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0787-the-agreement-of-the-open-sluices",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0799-the-spring-of-floating-doors",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0822-the-goat-path-and-the-painted-road",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0709-the-workroom-of-mended-things",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0722-the-wedding-at-the-empty-orchard",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0748-the-saint-with-three-birthplaces",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0761-the-bargain-at-the-bedside",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0661-the-duke-who-counted-empty-beds",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0674-the-lord-beneath-the-rushes",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0699-the-court-of-seven-roads",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

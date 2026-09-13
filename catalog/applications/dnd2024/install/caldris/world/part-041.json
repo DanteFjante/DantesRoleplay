@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0499-the-ferry-that-charged-six-pennies-account.1",
+      "name": "The Ferry That Charged Six Pennies — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Penn's Reach, the widow Merren Dole advertised a crossing for six pennies. Travellers arrived carrying coins from different towns, some clipped, some debased, and some perfectly honest but lighter than her reference issue. Arguments delayed the ferry until loaded carts stood through the rain. Merren and an evening pupil from the Twelve Windows produced a painted conversion board. Carriers welcomed predictable charges; the money changer who supplied their silver challenged the board's rates. A road hearing established a weight-based reference and a small separately stated exchange fee. Prices became easier to compare, although poorer travellers still paid disproportionately for changing tiny sums. The expression six pennies, whose pennies? entered bargaining speech. Children played ferryman with potsherds, solemnly rejecting stones from the wrong side of the garden.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0511-the-feast-of-names-added-later-account.1",
+      "name": "The Feast of Names Added Later — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Saint Meret's Rest hosted musicians, growers, repairers, and families contributing corrections to local histories. Organiser Edda Linn displayed old accounts alongside amendments, keeping the earlier text visible where possible. Acknowledging a mistake became part of the ceremony rather than something quietly concealed before it. Songs credited Jalen, Ysra, and later arrangers. Workshop notes named assistants. Darnel Field received two additional identifications, while many blank spaces remained. The gathering ended with ordinary meals supplied by several communities, each named in the accounts.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0519-the-lamp-that-waited-through-repairs-account.1",
+      "name": "The Lamp That Waited Through Repairs — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lastlight Pier needed another major repair. The neighbours tending Little Lastlight temporarily moved the inner lamp bracket to a covered landing nearby, explaining where fishers would approach. The spirit lit reluctantly at first, then settled into the temporary routine. When the pier reopened, some residents wanted to leave the light where it now served more walkers. The final arrangement moved it back while installing an ordinary lamp at the temporary site. Maintenance required an additional household rota, a less romantic but essential part of the story.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0527-the-gardens-of-the-farther-window-account.1",
+      "name": "The Gardens of the Farther Window — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Boughmeet and an Istravel gardening household exchanged propagation records through carriers already moving fine glass and wool. Their experiments produced a few useful adaptations and many failures. At Windowmere Garden, a sheltered plot near Boughmeet, plants were labelled with the person who supplied the method rather than merely the patron who paid for the wall. Gardener Tavi Brin preserved failed trials because another grower might otherwise repeat them. Visitors preferred the successful flowers, and Tavi planted the less impressive trial beds beside the entrance so they could not be entirely ignored.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0535-the-empty-seat-of-the-road-court-account.1",
+      "name": "The Empty Seat of the Road Court — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An outbreak of ordinary illness prevented several representatives from attending a travelling session of Highmead's Court of Seven Roads. A collector urged the remaining members to decide a disputed levy immediately. Judge Orra Penn postponed the case and ordered temporary arrangements that kept passage open. The delay inconvenienced carriers and cost money, but allowed affected hosts and workers to supply testimony. A later procedural rule required explicit notice when a hearing proceeded without a represented district. The empty seat became its emblem.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0543-the-chalk-stag-at-rusk-hollow-account.1",
+      "name": "The Chalk Stag at Rusk Hollow — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A collapsed storage chamber revealed a small chalk carving of a stag above a blocked passage. Rumour connected it to Branna's long-dead white hart. Several visitors paid to see the site, and one entered the unstable passage without permission. Stoneworker Henn Vell led the rescue with people who knew the storehouses. They found drainage work, household tallies, and an older burial niche, not the hart's returning spirit. The rescued visitor helped pay for safe closure and later documentation.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0551-the-quiet-archive-of-serevan-account.1",
+      "name": "The Quiet Archive of Serevan — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Leth Sarai, warehouse conversions threatened boxes of copied shipping correspondence. Clerk Mara Sef rented a small dry room behind an oil seller and began the Quiet Archive, charging for commercial searches while copying historically important fragments for other collections. Among the papers were records of a workshop assistant whose name resembled the torn addressee in Aveline's apologetic letter. Mara noted the possibility and the remaining discrepancy instead of announcing a discovery she could not prove.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0559-the-menders-procession-account.1",
+      "name": "The Menders' Procession — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Repair houses and independent craftspeople gathered at Willowrace after a dispute over the price of public work. They displayed tools, repaired objects, and accounts showing time and materials. The procession ended with demonstrations at the House of Second Use. Carpenter Sela Thenn argued that useful labour should be paid even when the finished repair was nearly invisible. Several patrons agreed to clearer contracts. Others hired cheaper workers, some competent and some not. The gathering established a regional custom of signing significant public repairs.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0567-the-winter-at-crowstep-account.1",
+      "name": "The Winter at Crowstep — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An early freeze trapped a carrier group at Crowstep Shelter, on a lesser northern branch. The building had beds and a sound roof but insufficient fodder. Host Bela Reth arranged a careful descent of the animals in small groups while travellers divided repairs, cooking, and watches. A white-furred predator followed the final group. Drover Ansel Marr and two companions drove it away with coordinated noise and guarded passage, losing one pack animal before reaching safer ground. The incident became a grand monster hunt in a later fair play.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0575-the-highmead-marriage-refused-account.1",
+      "name": "The Highmead Marriage Refused — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lady Alin Merrow refused a marriage intended to strengthen the crown's hold over a northern road district. Negotiations continued without the wedding and produced a narrower agreement on escorts and maintenance. Her refusal became a romance in which a mysterious lover supposedly defeated a king. Alin instead founded a household business arranging cloth shipments. Her correspondence shows affection for friends, commercial errors, and a determination to choose her own future. The abandoned marriage's other party, Lord Teren Oss, married elsewhere and remained one of her occasional business partners.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0583-the-silver-eels-of-penns-reach-account.1",
+      "name": "The Silver Eels of Penn's Reach — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A river channel cleared under a renewed sluice agreement produced an unusually abundant eel run. Households celebrated until disputes over traps and passage began damaging the channel itself. Water keeper Nessa Uld persuaded participants to leave a shared opening and stagger their catches. A pale river creature appeared beneath the upstream willow on three recorded nights. It loosened small obstructions but withdrew when people tried to enclose it for display. Witnesses called it the Siltwife, although its shape, sex, and preferred name were never reliably established.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0591-the-house-with-twelve-windows-account.1",
+      "name": "The House with Twelve Windows — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At the edge of Highmead's older market quarter, Sister Dena Cor and glazier Orrin Vask opened a school above a communal dining room. Its twelve narrow windows used mismatched donated glass. Children, apprentices, and adults working irregular hours attended different sessions. The school taught letters, measures, practical accounts, and the reading of ordinary contracts. Its founders argued over whether charging small fees would exclude people or keep the rooms open. They adopted a mixed arrangement of payments, sponsored places, and paid work, revising it after the first winter's accounts.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0599-the-last-lesson-in-seln-account.1",
+      "name": "The Last Lesson in Seln — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ysra's students expected a final revelation when she asked them to gather her notebooks. Instead, she asked each person to identify one conclusion they no longer believed. A nursery keeper described a failed planting; an instrument maker admitted that a revered timber mark had been copied; Ysra corrected a journey date she had repeated confidently for decades. She died in 594 years before the campaign present, aged 716, in the house near Seln where she had spent her last years. Friends carried out the instructions she had actually left, including the return of borrowed tools. Her repaired fiddle went to a local teaching household for continued use.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0609-the-festival-of-unfinished-journeys-account.1",
+      "name": "The Festival of Unfinished Journeys — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Saint Meret's Rest hosted a gathering combining unresolved-name records, route corrections, music, and accounts from people who had changed their destination. Organisers called it the Festival of Unfinished Journeys, intending to honour lives that did not follow the plans preserved in their first letters. Families brought stories of return, settlement elsewhere, estrangement, reconciliation, and uncertainty. Some contributions were joyful. Others were too private for the public readings and were retained only with permission in appropriate records. Ysra sent corrected botanical notes and a short message from Seln rather than travelling. She was about 710 years old by the end of this period. The message asked the keepers to credit Jalen for several songs filed under her name. The musicians performing them had their own arrangements and were credited too.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0622-the-mile-of-little-bridges-account.1",
+      "name": "The Mile of Little Bridges — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Repeated washouts on the approach to Goat's Ledger made carriers propose one expensive raised causeway. Engineer Dova Tal instead designed a sequence of short bridges and firm stretches that allowed water to pass through the low ground. The work used stone, timber, and local knowledge of seasonal channels. Its maintenance could be divided among several households and businesses, but each small crossing still needed inspection. A neglected span could interrupt the entire route. The finished Mile of Little Bridges became a familiar landmark. Travellers invented a custom of counting the bridges and making a wish at the last one. Counts differed after later alterations, leading to arguments among people certain their childhood version was correct.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0635-the-year-the-music-stayed-home-account.1",
+      "name": "The Year the Music Stayed Home — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At about 680 years old, Ysra stopped undertaking regular long journeys. She chose a modest house near Seln's musicians, where she could tend propagated plants, receive visitors, and organise notebooks accumulated across centuries. She still made short journeys when her health and the weather allowed, and remained interested in news beyond the valley. Retirement was a change in scale, not a disappearance. Local children learned tunes that had crossed several regions in Jalen's and her hands, often preferring newer songs she had not learned yet. Apprentice Evin Ulan helped compare the notebooks with growers' current knowledge. Ysra crossed out some of her own conclusions. A lifetime of travel had given her many observations, not immunity to error.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0648-the-library-in-the-laundry-loft-account.1",
+      "name": "The Library in the Laundry Loft — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A leak threatened a neglected part of the collection at Saint Meret's Rest. Laundry keeper Erena Vask offered dry space above a heated workroom while repairs were arranged. She and the copyists discovered that some books shelved as duplicate accounts contained household letters, route annotations, and missing-name notices unique to those copies. The emergency led to a slow review of the collection. Paper and parchment required different care, and some damage could not be reversed. The keepers recorded losses instead of claiming complete restoration. Copies of important fragments went to Sallowmere and several regional houses. Among the findings was a partial transcription of Aveline's parcel letter preserved in later correspondence. It apologised for dismissing a workshop assistant's criticism and credited a practical correction. The assistant's complete name was lost at a torn edge.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0661-the-duke-who-counted-empty-beds-account.1",
+      "name": "The Duke Who Counted Empty Beds — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "In an outlying Roven district, Duke Samel of Reth claimed that hearth taxes undercounted people living seasonally along the pack routes. His collectors began charging for beds available to travellers as if each represented a permanent household. The policy made shelter expensive and encouraged hosts to remove bedding before inspections. Winter carriers arrived to find rooms technically empty and practically useless. Host Talia Penn, supported by hauliers and several judges, challenged the interpretation through the district's own agreements. The settlement distinguished seasonal lodging from permanent residence and established a smaller, visible contribution toward road support. Reth remained a northern jurisdiction outside Highmead's direct authority; the Court of Seven Roads could provide examples and witnesses, not dictate the outcome.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0674-the-lord-beneath-the-rushes-account.1",
+      "name": "The Lord Beneath the Rushes — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Boat crews working a neglected reed channel reported attacks by a long, low creature that could pull an unwary person from a landing. Locals called it the Rush Lord after seeing reeds and old netting draped across its back. The creature was an unusually large marsh predator occupying sheltered water near a collapsed fish weir. Stories gave it tribute, subjects, and a treasury. In practice, workers had begun leaving fish scraps to distract it, teaching it to approach occupied landings for food. Reed cutter Bellan Ose and hunter Ira Thenn organised safer access, removed the accumulated scraps, and mapped its routes. After repeated attacks continued, a guarded party trapped and killed it at a confined side channel. Reopening the neglected waterway took much longer than the hunt.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics-account.1",
+      "name": "The Glassmaker's Daughter and the False Relics — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Collectors were paying high prices for anything plausibly connected to Aveline. In Istravel, glassworker Yamina Rell found that an ordinary marked reference blank from an old workshop collection had been advertised as Aveline's last enchanted mirror. Comparison with Fenn Arul's copied parcel research identified the kind of object accurately. It might be the original reference piece or a workshop successor made to the same pattern; its continuous custody could not be proved. Yamina's account separated the identification of a tool from certainty about one particular object's history. The controversy exposed several other false relics, but not every seller was knowingly dishonest. Some had inherited confident descriptions and never examined them. A collector who lost prestige eventually funded the copying of actual workshop notes, which proved more useful than the supposed mirror.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0648-the-library-in-the-laundry-loft-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0661-the-duke-who-counted-empty-beds-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0674-the-lord-beneath-the-rushes-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0591-the-house-with-twelve-windows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0599-the-last-lesson-in-seln-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0609-the-festival-of-unfinished-journeys-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0622-the-mile-of-little-bridges-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0635-the-year-the-music-stayed-home-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0551-the-quiet-archive-of-serevan-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0559-the-menders-procession-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0567-the-winter-at-crowstep-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0575-the-highmead-marriage-refused-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0583-the-silver-eels-of-penns-reach-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0511-the-feast-of-names-added-later-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0519-the-lamp-that-waited-through-repairs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0527-the-gardens-of-the-farther-window-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0535-the-empty-seat-of-the-road-court-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0543-the-chalk-stag-at-rusk-hollow-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0622-the-mile-of-little-bridges-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0635-the-year-the-music-stayed-home-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0648-the-library-in-the-laundry-loft-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0661-the-duke-who-counted-empty-beds-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0674-the-lord-beneath-the-rushes-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0551-the-quiet-archive-of-serevan-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0559-the-menders-procession-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0567-the-winter-at-crowstep-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0575-the-highmead-marriage-refused-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0583-the-silver-eels-of-penns-reach-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0591-the-house-with-twelve-windows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0599-the-last-lesson-in-seln-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0609-the-festival-of-unfinished-journeys-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0511-the-feast-of-names-added-later-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0519-the-lamp-that-waited-through-repairs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0527-the-gardens-of-the-farther-window-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0535-the-empty-seat-of-the-road-court-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0543-the-chalk-stag-at-rusk-hollow-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0499-the-ferry-that-charged-six-pennies-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0499-the-ferry-that-charged-six-pennies-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

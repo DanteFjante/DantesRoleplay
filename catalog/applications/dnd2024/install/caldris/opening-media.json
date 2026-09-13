@@ -1,0 +1,153 @@
+{
+  "root": {
+    "entityId": "world.caldris",
+    "name": "Caldris",
+    "components": [
+      {
+        "qualifiedTypeId": "game.core.world.root",
+        "value": {
+          "status": "active",
+          "summary": "A gentler, magic-rare fantasy world where storybook wonders sit beside real weather, real work, and real consequence — cozy, lightly humorous, and grounded.",
+          "visibility": "public"
+        }
+      }
+    ]
+  },
+  "media": [
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
+      "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+      "mediaType": "image/png",
+      "byteLength": 2615458,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+      "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+      "mediaType": "image/png",
+      "byteLength": 3002293,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+      "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+      "mediaType": "image/png",
+      "byteLength": 2868713,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+      "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+      "mediaType": "image/png",
+      "byteLength": 3077943,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+      "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+      "mediaType": "image/png",
+      "byteLength": 3155946,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+      "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+      "mediaType": "image/png",
+      "byteLength": 2935466,
+      "width": 1447,
+      "height": 1087
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+      "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+      "mediaType": "image/png",
+      "byteLength": 3642908,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+      "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+      "mediaType": "image/png",
+      "byteLength": 3605028,
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+      "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+      "mediaType": "image/png",
+      "byteLength": 2925307,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+      "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+      "mediaType": "image/png",
+      "byteLength": 3486329,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+      "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+      "mediaType": "image/png",
+      "byteLength": 3373851,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "sourcePath": "docs/world/caldris/visuals/portrait-ganji-v1.png",
+      "sha256": "2880566363b037b13650c250a0655adf5698f82bb80d2ab25be4fe0463fd3df2",
+      "mediaType": "image/png",
+      "byteLength": 2900510,
+      "width": 1024,
+      "height": 1536
+    },
+    {
+      "sourcePath": "docs/world/caldris/visuals/location-bramblebridge-market-v1.png",
+      "sha256": "995917ca0016f16060cc0d0265185740835588edf0d60096a22d0eedcaafda6b",
+      "mediaType": "image/png",
+      "byteLength": 3375313,
+      "width": 1536,
+      "height": 1024
+    }
+  ],
+  "pendingCharacterComponents": [
+    {
+      "entityId": "actor.caldris.ganji",
+      "qualifiedTypeId": "dnd2024.spellcasting.access",
+      "value": {
+        "entries": {
+          "dnd2024.spell.guidance": {
+            "accessTypeRef": {
+              "entityId": "dnd2024.vocabulary.spell-access-type.cantrip"
+            },
+            "grantRefs": [
+              {
+                "entityId": "dnd2024.feat.magic-initiate"
+              }
+            ]
+          },
+          "dnd2024.spell.thaumaturgy": {
+            "accessTypeRef": {
+              "entityId": "dnd2024.vocabulary.spell-access-type.cantrip"
+            },
+            "grantRefs": [
+              {
+                "entityId": "dnd2024.feat.magic-initiate"
+              }
+            ]
+          }
+        }
+      },
+      "reason": "Existing accessTypeRef dnd2024.vocabulary.spell-access-type.cantrip has no entity in authored catalog or committed capture; configure through current Magic Initiate owner."
+    }
+  ]
+}

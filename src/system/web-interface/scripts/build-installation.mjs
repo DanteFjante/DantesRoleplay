@@ -4,7 +4,6 @@ import { existsSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const scriptRoot = dirname(fileURLToPath(import.meta.url));
 const expectedTemplateKeys = [
   "application", "baseApplications", "catalogRoot", "format", "media", "pages", "runtime", "source", "stateSpaces",
 ];
@@ -106,21 +105,100 @@ async function contentComponentIds(root) {
   }
   return ids;
 }
+const componentArrayFields = new Set(["components", "optionalComponents", "contentComponentIds",
+  "contentFilterComponentIds", "targetComponentIds", "optionalTargetComponentIds", "componentIds", "effectComponentIds"]);
+export function mechanicComponentIds(requirements) {
+  const ids = new Set();
+  function visit(value) {
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      // Input schemas and child-call payloads describe values, not host snapshot dependencies.
+      if (["inputSchema", "input", "outputSchema"].includes(key)) continue;
+      if (componentArrayFields.has(key)) {
+        if (!Array.isArray(child) || child.some(id => typeof id !== "string" || !id.trim()))
+          fail(`Invalid mechanic component declaration ${key}.`);
+        for (const id of child) ids.add(id);
+      } else if (key === "sourceComponentId") {
+        if (typeof child !== "string" || !child.trim()) fail("Invalid component-reference source.");
+        ids.add(child);
+      } else visit(child);
+    }
+  }
+  visit(requirements);
+  return ids;
+}
+async function activeMechanicComponentIds(repository) {
+  const ids = new Set();
+  for (const file of await files(resolve(repository, "catalog/applications/dnd2024/mechanics"))) {
+    if (!file.path.endsWith(".md")) continue;
+    const source = file.content.toString("utf8").replace(/^\uFEFF/u, "");
+    const frontmatter = source.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/u)?.[1];
+    if (!frontmatter || !/^status:\s*active\s*$/mu.test(frontmatter)) continue;
+    const block = source.match(/^## Requirements\s*\r?\n\s*```json\s*\r?\n([\s\S]*?)\r?\n```/mu)?.[1];
+    if (!block) fail(`Active mechanic ${file.path} has no readable Requirements contract.`);
+    for (const id of mechanicComponentIds(JSON.parse(block))) {
+      const qualified = id.includes(".") ? id : `dnd2024.${id}`;
+      ids.add(qualified);
+    }
+  }
+  return ids;
+}
+async function worldComponentIds(repository, template) {
+  const ids = new Set();
+  const add = components => {
+    for (const component of components ?? []) {
+      if (typeof component.qualifiedTypeId !== "string" || !component.qualifiedTypeId.trim())
+        fail("World package component has no qualified type identity.");
+      ids.add(component.qualifiedTypeId);
+    }
+  };
+  for (const space of template.stateSpaces) {
+    add(space.root?.components);
+    for (const path of space.worldPackages) {
+      if (!isSafeRelative(path)) fail(`Unsafe world package path ${path}.`);
+      const world = JSON.parse(await readFile(resolve(repository, path), "utf8"));
+      for (const entity of world.entities ?? []) add(entity.components);
+    }
+  }
+  return ids;
+}
 function owner(qualifiedTypeId) {
   if (qualifiedTypeId.startsWith("game.")) return "game";
   if (qualifiedTypeId.startsWith("system.")) return "system";
   if (qualifiedTypeId.startsWith("dnd2024.")) return "dnd2024";
   fail(`No installation owner for component type ${qualifiedTypeId}.`);
 }
-function sourceSchemaPath(qualifiedTypeId) {
-  if (qualifiedTypeId.startsWith("dnd2024."))
-    return `catalog/applications/dnd2024/components/${qualifiedTypeId}.schema.json`;
-  return `catalog/components/${qualifiedTypeId.replaceAll(".", "/")}.schema.json`;
+function sourceSchemaPath(repository, qualifiedTypeId) {
+  const paths = [
+    ...(qualifiedTypeId.startsWith("dnd2024.")
+      ? [`catalog/applications/dnd2024/components/${qualifiedTypeId}.schema.json`] : []),
+    `catalog/components/${qualifiedTypeId.replaceAll(".", "/")}.schema.json`,
+  ];
+  const path = paths.find(candidate => existsSync(resolve(repository, candidate)));
+  if (!path) fail(`Missing current schema for required component ${qualifiedTypeId}: ${paths.join(", ")}.`);
+  return path;
 }
 
-async function componentTypes(repository, output) {
+async function requireComponentNamespace(repository, qualifiedTypeId) {
+  const namespaceId = qualifiedTypeId.slice(0, qualifiedTypeId.lastIndexOf("."));
+  const path = `catalog/namespaces/${namespaceId.replaceAll(".", "/")}/_namespace.json`;
+  if (!existsSync(resolve(repository, path))) fail(`Missing namespace ${namespaceId} for required component ${qualifiedTypeId}.`);
+  const namespace = JSON.parse(await readFile(resolve(repository, path), "utf8"));
+  if (namespace.id !== namespaceId || namespace.enabled !== true || namespace.reviewStatus !== "reviewed" ||
+      !namespace.allowedKinds?.includes("component-type"))
+    fail(`Namespace ${namespaceId} must be enabled, reviewed, and allow component-type for required component ${qualifiedTypeId}.`);
+  for (let index = namespaceId.lastIndexOf("."); index > 0; index = namespaceId.lastIndexOf(".", index - 1)) {
+    const parentId = namespaceId.slice(0, index);
+    const parent = JSON.parse(await readFile(resolve(repository, `catalog/namespaces/${parentId.replaceAll(".", "/")}/_namespace.json`), "utf8"));
+    if (parent.enabled !== true) fail(`Ancestor namespace ${parentId} is disabled for required component ${qualifiedTypeId}.`);
+  }
+}
+
+export async function componentTypes(repository, template) {
   const refs = await objectReferences(repository);
-  for (const id of await contentComponentIds(repository))
+  const declared = new Set([...(await contentComponentIds(repository)), ...(await activeMechanicComponentIds(repository)),
+    ...(await worldComponentIds(repository, template))]);
+  for (const id of declared)
     if (![...refs.keys()].some(key => key.startsWith(`${id}@`))) refs.set(`${id}@1`, null);
   const manual = [
     "game.core.world.root", "game.core.world.location", "game.core.campaign.root",
@@ -133,7 +211,8 @@ async function componentTypes(repository, output) {
     const split = key.lastIndexOf("@");
     const id = key.slice(0, split);
     const targetVersion = Number(key.slice(split + 1));
-    const sourcePath = sourceSchemaPath(id);
+    await requireComponentNamespace(repository, id);
+    const sourcePath = sourceSchemaPath(repository, id);
     const sourceAbsolute = resolve(repository, sourcePath);
     if (!existsSync(sourceAbsolute)) fail(`Missing current schema ${sourcePath}.`);
     const bytes = await readFile(sourceAbsolute);
@@ -145,19 +224,52 @@ async function componentTypes(repository, output) {
   return result;
 }
 
+export async function packageMedia(repository, output, entries) {
+  const result = [];
+  for (const entry of entries) {
+    exactKeys(entry, ["sourcePath", "sha256", "mediaType", "byteLength"], "Installation media");
+    if (!isSafeRelative(entry.sourcePath)) fail(`Unsafe media source path ${entry.sourcePath}.`);
+    const extension = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[entry.mediaType];
+    if (!extension) fail(`Unsupported installation media type ${entry.mediaType}.`);
+    const bytes = await readFile(resolve(repository, entry.sourcePath));
+    if (sha256(bytes) !== entry.sha256.toUpperCase() || bytes.length !== entry.byteLength)
+      fail(`Installation media bytes do not match reviewed metadata: ${entry.sourcePath}.`);
+    const path = `media/${entry.sha256.toLowerCase()}.${extension}`;
+    await mkdir(resolve(output, "media"), { recursive: true });
+    await writeFile(resolve(output, path), bytes);
+    result.push({ path, sha256: sha256(bytes), mediaType: entry.mediaType, byteLength: bytes.length });
+  }
+  return result;
+}
+
+export async function extensionPackages(repository, paths) {
+  if (!Array.isArray(paths)) fail("Installation extensionPackages must be an array of source paths.");
+  return Promise.all(paths.map(async path => {
+    if (!isSafeRelative(path)) fail(`Unsafe extension package path ${path}.`);
+    const bytes = await readFile(resolve(repository, path));
+    return { path: portable(path), sha256: sha256(bytes), root: "source" };
+  }));
+}
+
 async function main() {
   const repository = resolve(argument("--repository"));
   const output = resolve(argument("--output"));
   if (!existsSync(resolve(repository, "AGENTS.md")) || !existsSync(resolve(repository, "catalog/manifest.json")))
     fail("--repository is not a DantesRoleplay checkout.");
   if (existsSync(output)) fail("--output must name an absent directory.");
-  await mkdir(resolve(output, "pages"), { recursive: true });
-  await mkdir(resolve(output, "world"), { recursive: true });
-
-  const templatePath = resolve(repository, "catalog/applications/dnd2024/install/installation.template.json");
+  const profileIndex = process.argv.indexOf("--profile");
+  const profile = profileIndex < 0 ? null : process.argv[profileIndex + 1];
+  if (profileIndex >= 0 && (typeof profile !== "string" || !/^[a-z0-9][a-z0-9-]*$/u.test(profile)))
+    fail("--profile must name a repository installation profile.");
+  const templatePath = resolve(repository, "catalog/applications/dnd2024/install", profile ?? "", "installation.template.json");
   const template = JSON.parse(await readFile(templatePath, "utf8"));
   exactKeys(template, expectedTemplateKeys, "Installation template");
   if (template.format !== "dantesroleplay.installation/1") fail("Unsupported installation template format.");
+  const types = await componentTypes(repository, template);
+  const extensions = template.application.extensionPackages === undefined ? undefined
+    : await extensionPackages(repository, template.application.extensionPackages);
+  await mkdir(resolve(output, "pages"), { recursive: true });
+  await mkdir(resolve(output, "world"), { recursive: true });
 
   const dist = resolve(repository, "src/system/web-interface/dnd2024/server-dist");
   const distFiles = await files(dist);
@@ -169,10 +281,10 @@ async function main() {
   await writeFile(resolve(output, "pages/dnd2024-play.zip"), dndBundle);
   await writeFile(resolve(output, "pages/home.zip"), homeBundle);
 
-  const types = await componentTypes(repository, output);
-
   const manifest = structuredClone(template);
+  if (extensions !== undefined) manifest.application.extensionPackages = extensions;
   manifest.componentTypes = types;
+  manifest.media = await packageMedia(repository, output, template.media);
   manifest.stateSpaces = await Promise.all(manifest.stateSpaces.map(async space => ({
     ...space,
     worldPackages: await Promise.all(space.worldPackages.map(async path => {
@@ -180,6 +292,7 @@ async function main() {
       const bytes = await readFile(resolve(repository, path));
       const packagePath = `world/${portable(relative(resolve(repository, "catalog/applications/dnd2024/install"), resolve(repository, path)))}`;
       if (!isSafeRelative(packagePath)) fail(`Unsafe packaged world path ${packagePath}.`);
+      await mkdir(dirname(resolve(output, packagePath)), { recursive: true });
       await writeFile(resolve(output, packagePath), bytes);
       return { path: packagePath, sha256: sha256(bytes) };
     })),
@@ -197,4 +310,4 @@ async function main() {
     componentTypeVersions: manifest.componentTypes.length, bytes: installationBytes.length }, null, 2)}\n`);
 }
 
-await main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();

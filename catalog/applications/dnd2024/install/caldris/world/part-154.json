@@ -1,0 +1,514 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.reedminster",
+      "name": "Reedminster",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Location: A low island in the lower Vey river system, upstream of the tidal ports. Livelihood: Reed work, gardens, ferry service, and donations for hospitality. Its buildings have been repeatedly raised above flood level. A landing shelter stands outside the devotional precinct, preserving the distinction between accepting hospitality and joining worship. Old guest rules survive through generations of commentary, including disagreements written neatly in the margins.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 575,
+            "y": 580
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.reth-gate",
+      "name": "Reth Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A local administrative and lodging cluster in the former Reth jurisdiction. Its current rulers and borders remain for later history to establish. The old tollhouse is partly a shelter, with marks where removable sleeping platforms once fitted.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 470,
+            "y": 665
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.ribbon-bridge",
+      "name": "Ribbon Bridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Several replacement bridges have occupied the crossing. Ribbons are now tied to a separate frame so they do not obstruct inspections. Households remove them after a return, a confirmed death, or a decision to stop waiting; the meanings differ and are not publicly policed.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 640,
+            "y": 455
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.rookwater",
+      "name": "Rookwater",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rookwater fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rookwater.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rookwater fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rookwater.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A small settlement in the Vey Lowlands with a ferry landing, harness workshop, modest market, and houses repeatedly adapted to flooding. The working channel has shifted since its foundation. Public access to the water survives through later agreements that residents must still maintain and interpret.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 530,
+            "y": 435
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.saint-merets-rest",
+      "name": "Saint Meret's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A working hospice and archive built and rebuilt around the burial ground. Almost all early records survive as later copies; water damage, transcription mistakes, and well-intended corrections are normal. A few original wooden name boards were preserved in dry interior walls and rediscovered during repairs.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 265,
+            "y": 335
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.1",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.2",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-reedminster.1",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-reth-gate.1",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-ribbon-bridge.1",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1774-the-dispute-of-open-doors",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1483-the-river-without-a-king",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1232-the-summer-of-the-travelling-stage",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1074-the-bridge-of-untied-ribbons",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1109-the-night-of-a-hundred-names",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0748-the-saint-with-three-birthplaces",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0648-the-library-in-the-laundry-loft",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0609-the-festival-of-unfinished-journeys",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0511-the-feast-of-names-added-later",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0199-the-ferry-village-at-rookwater",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0199-the-ferry-village-at-rookwater-account.1",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-gm-truth.1",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-rookwater.1",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.alderwake",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.darnel-field",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.doorhaven",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.harth-orchard",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.penns-reach",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.reedminster",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.reth-road-fork",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.greyfold-ridge",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.bluecup-hollow",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fd9c2ca57160f6cc5117",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1b8231ab9d9ec101dde0",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.9954eee67034316bffd0",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b5cfac36b8d0e8d56e00",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.df3bbbbf346d77fa0329",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c2deda8ed1d8e85f6008",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cfac9627ab2632a7e452",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.2671a20a2d1c08a87f12",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.02a9567ebcedb9b6c729",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.840e3615785c79a6fa35",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fd9c2ca57160f6cc5117",
+      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4a18347503ae02483ca8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3648556fcfec6ec3153",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fc11cd6ddc8af445b3a0",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.203440db45f36e63fad1",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c2deda8ed1d8e85f6008",
+      "toEntityId": "location.caldris.lore.rookwater",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.be8a297ac7986175a5d9",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccc4370e4d128f836094",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cfac9627ab2632a7e452",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2671a20a2d1c08a87f12",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fd2b89f232c148fdc62",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

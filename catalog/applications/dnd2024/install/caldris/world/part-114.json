@@ -1,0 +1,350 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-comedy-crown",
+      "name": "Adventure bridge — The Comedy Crown",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The troupe invites the party to Bellafont, where orchard blight threatens its next venue.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-council-of-margins",
+      "name": "Adventure bridge — The Council of Margins",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Delegates still need to reach home through weather, family conflict, and ordinary road trouble.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-doubled-tithe",
+      "name": "Adventure bridge — The Doubled Tithe",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A copper bell made from recovered metal rings with a Lornesse warning pattern.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-grey-orchard-wife",
+      "name": "Adventure bridge — The Grey Orchard Wife",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Restored water reveals an old grave and a personal memorial story, not a new villain.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-ordinary-comet",
+      "name": "Adventure bridge — The Ordinary Comet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A public festival needs help after its enormous prop creature disappears.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-provosts-exception",
+      "name": "Adventure bridge — The Provost's Exception",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The party's travel authorization books passage on a ship immobilized by a justified strike.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-respectable-smuggler",
+      "name": "Adventure bridge — The Respectable Smuggler",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A victory supper is interrupted by the Wayward Company arriving for the wrong contract.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-shepherd-who-refused",
+      "name": "Adventure bridge — The Shepherd Who Refused",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A thank-you horse proves terrified of one harmless-looking road marker.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "name": "Adventure bridge — The Ship That Must Sail",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A safely launched vessel carries a Selucian wedding delegation and an argument over seating.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-comedy-crown",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-comedy-crown",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-provosts-exception",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-provosts-exception",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-respectable-smuggler",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-respectable-smuggler",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-council-of-margins",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-council-of-margins",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-doubled-tithe",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-doubled-tithe",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-grey-orchard-wife",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-grey-orchard-wife",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ordinary-comet",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ordinary-comet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-shepherd-who-refused",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-shepherd-who-refused",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

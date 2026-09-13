@@ -6,6 +6,14 @@ namespace DantesRoleplay.CodexBridge;
 public static class CodexCaptureVersions
 {
     public const string SupportedCliVersion = "0.153.4";
+    public const string SupportedDesktopVersion = "0.154.0-alpha.6.2";
+
+    public static void RequireSupported(string version)
+    {
+        if (version is not (SupportedCliVersion or SupportedDesktopVersion))
+            throw new CodexBridgeException("CODEX_CAPTURE_VERSION_UNSUPPORTED",
+                $"Codex {version} is installed; capture supports only {SupportedCliVersion} or {SupportedDesktopVersion}.");
+    }
 }
 
 public sealed record CodexCaptureOptions(
@@ -192,7 +200,8 @@ public sealed record CodexCapturedMessage(
     string Classification,
     int Ordinal);
 public sealed record CodexCapturedTurn(string ThreadId, string TurnId, IReadOnlyList<CodexCapturedMessage> Messages);
-public sealed record CodexCaptureDelivery(CodexCaptureCorrelation Correlation, CodexCapturedTurn Turn);
+public sealed record CodexCaptureDelivery(CodexCaptureCorrelation Correlation, CodexCapturedTurn Turn,
+    string SourceVersion);
 
 public interface ICodexThreadReadClient
 {
@@ -232,12 +241,10 @@ public sealed class CodexCaptureAdapter(
         try
         {
             var version = await client.GetVersionAsync(cancellationToken);
-            if (!string.Equals(version, CodexCaptureVersions.SupportedCliVersion, StringComparison.Ordinal))
-                throw new CodexBridgeException("CODEX_CAPTURE_VERSION_UNSUPPORTED",
-                    $"Codex {version} is installed; capture requires {CodexCaptureVersions.SupportedCliVersion}.");
+            CodexCaptureVersions.RequireSupported(version);
             var response = await client.ReadTurnAsync(binding.ExternalCodexThreadId, correlation.TurnId, cancellationToken);
             var captured = CodexCaptureThreadParser.Parse(response, binding.ExternalCodexThreadId, correlation.TurnId);
-            return new(correlation, captured);
+            return new(correlation, captured, version);
         }
         catch
         {
@@ -277,6 +284,7 @@ public static class CodexCaptureThreadParser
             var type = OptionalString(item, "type");
             var role = type == "userMessage" ? "user" : type == "agentMessage" ? "assistant" : string.Empty;
             if (string.IsNullOrEmpty(role) || !Visible(item)) continue;
+            if (role == "assistant" && !FinalAssistant(item)) continue;
             var content = role == "user" ? UserText(item) : OptionalString(item, "text");
             if (string.IsNullOrWhiteSpace(content) || content.Length > MaximumMessageCharacters)
                 throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A visible message has invalid text.");
@@ -294,6 +302,20 @@ public static class CodexCaptureThreadParser
     private static bool Visible(JsonElement item) =>
         !item.TryGetProperty("visibility", out var visibility) || visibility.ValueKind == JsonValueKind.String &&
         string.Equals(visibility.GetString(), "visible", StringComparison.Ordinal);
+    private static bool FinalAssistant(JsonElement item)
+    {
+        foreach (var name in new[] { "phase", "channel" })
+        {
+            if (!item.TryGetProperty(name, out var field) || field.ValueKind == JsonValueKind.Null) continue;
+            if (field.ValueKind != JsonValueKind.String)
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "An assistant message has an invalid classification.");
+            var value = field.GetString();
+            if (value is "commentary" or "analysis" or "reasoning") return false;
+            if (value is not ("" or "final" or "final_answer"))
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "An assistant message has an unknown classification.");
+        }
+        return true;
+    }
     private static string Classification(JsonElement item)
     {
         var value = OptionalString(item, "phase");

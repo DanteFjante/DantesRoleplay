@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.0909-the-fair-of-three-roads",
+      "name": "The Fair of Three Roads",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Fair of Three Roads",
+            "summary": "At the close of the period, Alderwake hosted a fair bringing together carriers from the coast, the northern passes, and the orchard country. Participants renewed selected arrangements for lodging, public measures, disputed claims, and escort contributions. They did not resurrect the first Lantern League as if its failures had never happened. The agreements recognised different local practices while specifying what visiting traders could expect at participating places. Fairwarden Delia Ross insisted on publicly readable summaries as well as formal copies. Tavern versions were immediately shorter, funnier, and less accurate. Ysra attended at roughly 410 years of age, carrying Jalen's repaired fiddle. She then accepted a place with a northern botanical expedition beyond the familiar Roven routes. Her later life remains for subsequent centuries; this chapter does not establish her survival into the campaign present.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -475405200,
+            "precision": "era",
+            "dateLabel": "909–900 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
+      "name": "The Rain at Darnel Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Rain at Darnel Field",
+            "summary": "Unusually heavy rain exposed graves along the edge of Darnel Field, more than a century after the Seven-Month War. Orchard workers found personal objects with the remains. Some families wanted a grand military memorial; others wanted individual names recovered before any ceremony was planned. Schoolteacher Mara Pellin compared muster rolls, local burial notices, and Celandine House's placement records. The work identified several people who had disappeared from family accounts under inaccurate names. Many remained unknown. The resulting memorial left spaces for later identifications and recorded occupations where military allegiance was uncertain. An annual orchard meal helped fund its care. The place remained a working landscape as well as a burial ground.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -481449600,
+            "precision": "era",
+            "dateLabel": "922–910 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
+      "name": "The Cellar Beneath the Seventh Hearth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Cellar Beneath the Seventh Hearth",
+            "summary": "Repairs at the Seventh Hearth revealed a sealed shallow cellar beneath a later kitchen floor. It contained fragments of Iven's pottery, household accounts from several periods, and a wooden box whose contents had been moved there long after his lifetime. The box held a copy of an inventory associated with Aveline's undelivered parcel. It listed a folded letter, a small wrapped object, and pages identified only by a workshop mark. The record placed the parcel with a coastal carrier after her death but did not establish where it finally went. Carpenter Oren Vask and copyist Sella Rinn recorded the find. They returned the house's ordinary utensils to storage rather than stripping it into a museum. Copies of the inventory travelled to Sallowmere and Saint Meret's Rest, each acquiring later annotations.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -488282400,
+            "precision": "era",
+            "dateLabel": "935–923 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps",
+      "name": "The Pilgrimage of the Unlit Lamps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Pilgrimage of the Unlit Lamps",
+            "summary": "A severe storm damaged shrines and guesthouses along a coastal road. During the rebuilding, several religious communities organised a shared walk carrying unlit lamps, collecting oil and repair materials for places unable to provide shelter. At Morrowstep Sanctuary, Sister Arel Venn proposed that the walk end with a meal open to people who had contributed labour as well as money. Some participants treated it as worship; others regarded it as solidarity with hosts and travellers. The organisers agreed on conduct without settling every belief. The pilgrimage became an occasional event in difficult years. It did not remain a single uninterrupted annual tradition. Different later communities adopted its image for purposes ranging from relief to political protest.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -495115200,
+            "precision": "era",
+            "dateLabel": "948–936 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0961-the-scent-of-a-house-that-was-gone",
+      "name": "The Scent of a House That Was Gone",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Scent of a House That Was Gone",
+            "summary": "Ysra returned to Bluecup Hollow and found the damp limestone pocket partly buried beneath road spoil. The flower survived in a few sheltered cracks. She worked with local households to remove unstable debris and propagate a small number of plants without stripping the wild site. A prepared linen square among her belongings still held a faint scent recorded during her first journeys with Jalen: resin, warm wood, and the herbs hanging in his workshop. She gave it to his great-granddaughter Tera Fen, who had inherited the family tools but knew the room only from stories. The gift prompted Tera to copy repair notes that were beginning to deteriorate. A small sensory wonder led to ordinary preservation work whose usefulness outlasted the charm.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -501948000,
+            "precision": "era",
+            "dateLabel": "961–949 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0974-the-empty-chair-at-whitewindow",
+      "name": "The Empty Chair at Whitewindow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Empty Chair at Whitewindow",
+            "summary": "Whitewindow's guest hall received an elaborate chair from a neighbouring ruler who expected it to become a seat of honour for his representative. The hold accepted the craftsmanship and declined the implied political arrangement. For several years the chair stood unused beside a wall while negotiations continued. Guestmaster Dorra Vel eventually placed it in a quiet room for visitors waiting on difficult news. The donor's household protested, then discovered that the new use had become locally respected. People brought cushions, blankets, and small repaired toys for those waiting there. The episode helped clarify a guest agreement: accepting gifts or shelter did not itself establish obedience, religious allegiance, or an inherited service obligation. The principle had precedents in the Open Door Houses, but Whitewindow expressed it through its own law and customs.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -508780800,
+            "precision": "era",
+            "dateLabel": "974–962 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
+      "name": "The Dowry of Maps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Dowry of Maps",
+            "summary": "Lady Orienne Merrow, a cousin of Highmead's sovereign, married Councillor Vasil Dast, a member of a prominent Selvari merchant household. Their marriage connected court and commercial interests without creating a union of kingdoms. Orienne brought copied route books, estate surveys, and an interest in gardens. Vasil brought access to carriers and an alarming habit of discussing prices during ceremonial meals. Together they funded lodging repairs along a route between Istravel and the Selvari town of Namar Vale. Their most useful gift was permission for participating hosts to keep corrected working copies of the maps. Courtiers admired illuminated originals; carriers valued pages on which someone had marked a well gone brackish or a bridge replaced downstream.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -515613600,
+            "precision": "era",
+            "dateLabel": "987–975 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0999-the-stonecutters-spring",
+      "name": "The Stonecutters' Spring",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Stonecutters' Spring",
+            "summary": "Several former repair crews stayed together after the northern emergency and accepted work across jurisdictions. Their Company of the Common Plumb began as a small association sharing specialist tools, injury support, and responsibility for inspecting one another's work. Its best-known early project was a replacement arch near Tallow Ford. Mason Idda Coal insisted that the opening ceremony wait until the mortar and temporary supports were ready. A patron complained that the best guests would have departed. The bridge opened later, with fewer banners and no collapse. The company trained local apprentices and recorded unusual foundations for whoever maintained them next. Its reputation spread farther than its actual workforce. Unaffiliated builders soon copied its mark, some because they admired it and others because it helped win contracts.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -522183600,
+            "precision": "era",
+            "dateLabel": "999–988 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "name": "The Winter of the Pale Roofs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter of the Pale Roofs",
+            "summary": "Several hard winters culminated in snow damage along the northern approaches. The Roven Marches closed one high route and concentrated effort on a lower alternative through Tallow Ford. Hazelstairs remained a seasonal resource; abandoned terraces could not simply be returned to profitable farming by decree. Roadwarden Nella Dorn organised shared repair crews and public tallies of available fodder. Whitewindow sent fittings, tools, and workers, while lower valleys supplied food. The arrangement helped but did not reach every isolated household before its stores failed. At Hearthscar Shelter, a half-collapsed old hall became a refuge large enough to accommodate stranded carriers and their animals separately. Its occupants argued about smoke, space, and whose turn it was to fetch water. Those arguments were remembered fondly by people who survived to tell them.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -527965200,
+            "precision": "era",
+            "dateLabel": "1,009–1,000 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1022-the-children-of-the-guest-rooms",
+      "name": "The Children of the Guest Rooms",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Children of the Guest Rooms",
+            "summary": "Displacement had left children living with distant relatives, foster households, and sanctuaries. Some knew their origins clearly; others possessed contradictory names and dates. In Celandine House, near the old corridor, Matron Verra Kell began keeping records of placements, continued family contact, and children old enough to express where they wished to remain. The practice spread unevenly through Open Door Houses. It helped some families reconnect and exposed cases in which useful labour had been described as charitable care. Local authorities disagreed about their responsibility to people from outside their jurisdiction. An annual gathering combined record review with ordinary games, meals, and repair of donated clothes. Later commemorations often omitted the practical work and showed only a benevolent patron distributing gifts.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -534009600,
+            "precision": "era",
+            "dateLabel": "1,022–1,010 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1035-the-hound-of-empty-houses",
+      "name": "The Hound of Empty Houses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Hound of Empty Houses",
+            "summary": "People resettling the war-damaged corridor reported a huge dark hound appearing at abandoned thresholds. It entered houses where an invitation had been spoken aloud, copied familiar voices from within, and attacked people who followed those voices away from company. The creature had travelled with an old carved lintel salvaged into a roadside refuge. Ward-maker Halen Sore, drover Bren Uld, and Ysra identified a recurring invitation phrase in the accounts of survivors. They worked with local hosts to change how empty buildings were opened and trapped the creature within the lintel's threshold before destroying its bodily manifestation and breaking the binding object. The hunt lasted several weeks. Its success allowed shelters to reopen, but did not instantly make frightened households comfortable sleeping alone.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -540842400,
+            "precision": "era",
+            "dateLabel": "1,035–1,023 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1048-the-mill-that-ground-for-both-banks",
+      "name": "The Mill That Ground for Both Banks",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Mill That Ground for Both Banks",
+            "summary": "Peace left damaged infrastructure and families unable to buy new animals. At Willowrace, a mill on a river branch serving the former war corridor, millkeeper Osa Trent reopened the surviving mechanism with parts salvaged from two ruined mills on opposite sides of the conflict. Her users included widows, former soldiers, displaced tenants, and landholders who had supported the fighting. She published a temporary reduced charge and accepted labour where households could not pay in grain. The work strained her family's reserves and depended on contributions she was sometimes too proud to request. The rebuilt mill became a meeting place where practical cooperation preceded forgiveness. Memorial names were added to its yard wall without sorting them by allegiance. Some households refused to attend the dedication but still brought grain the following week.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -547675200,
+            "precision": "era",
+            "dateLabel": "1,048–1,036 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1061-the-seven-month-war",
+      "name": "The Seven-Month War",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Seven-Month War",
+            "summary": "A dispute over armed escorts and toll collection escalated between Highmead's crown and South Vey's margravate. Both claimed that a stretch of road called the Linden Corridor was necessary to protect their traders. Both had supporters within its villages. The Reedbank Association tried to maintain passage while refusing exclusive access to either army. The principal fighting lasted seven months, although requisitions and local violence extended beyond them. Soldiers burned stores, damaged mills, and seized animals. Two significant battles decided control of crossings; neither produced the sweeping conquest later commemorated in royal art. At Darnel Field, Captain Edris Voss of Highmead accepted a withdrawal agreement proposed by Lady Saela Halren after both sides ran short of provisions. A negotiated peace left the corridor under local administration with limits on permanent garrisons.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -554508000,
+            "precision": "era",
+            "dateLabel": "1,061–1,049 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1074-the-bridge-of-untied-ribbons",
+      "name": "The Bridge of Untied Ribbons",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Bridge of Untied Ribbons",
+            "summary": "Ysra returned from a lengthy coastal journey to find Jalen elderly and using a cane. His daughter had taken over most repair work. He still played well on good evenings and had kept a box of unfinished instruments for tasks he hoped to resume. They made a final short journey together to Ribbon Bridge, a small crossing where travellers tied cloth strips for people expected home. Jalen removed a ribbon he had left for his uncle decades before. He gave Ysra a repaired travelling fiddle and asked her to return his unfinished work to those who could complete it. He died at home during the following years. Ysra visited his family before setting out again. She did not inherit their grief or authority over their household simply because she remembered a version of him they had never known.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -561340800,
+            "precision": "era",
+            "dateLabel": "1,074–1,062 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1087-the-silver-that-would-not-travel",
+      "name": "The Silver That Would Not Travel",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Silver That Would Not Travel",
+            "summary": "Highmead's mint reduced the silver content of a new coin issue while retaining familiar names and designs. Officials expected the coins to circulate locally at the old rate. Foreign counters weighed them and offered less. Sellers at Alderwake began quoting two prices, producing arguments that spread faster than reliable explanations. Assayer Pel Marrin published comparison tables and offered witnessed tests. He became unpopular with the crown's collectors and with opportunists misrepresenting older coins as equally debased. A small deficit in royal accounts became a much wider crisis of confidence. The settlement accepted the new coins for specified crown dues and stopped insisting that distant markets value them identically. It also replaced one mint official whose concealed private dealings had worsened an openly adopted policy.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -568173600,
+            "precision": "era",
+            "dateLabel": "1,087–1,075 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1099-the-orchard-behind-the-wall",
+      "name": "The Orchard Behind the Wall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard Behind the Wall",
+            "summary": "At Harth, the Guest remained asleep while orchard land became more valuable. A wealthy household enclosed an old access path to create a private garden. The path was used by nursery workers, pilgrims, and residents taking the short way to a well. Keeper Sena Brill organised a careful account of who used it and under what arrangements. The resulting settlement preserved a narrow public passage and changed the route around the family's private rooms. It satisfied nobody completely and worked well enough to endure through several later renewals. The enclosure also exposed a buried bowl and the roots of an older tree. Excitement over a supposed divine judgement brought more visitors than the path could comfortably carry. Sena spent much of the following summer asking people not to stand on the fragile ground they had come to revere.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -574743600,
+            "precision": "era",
+            "dateLabel": "1,099–1,088 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1109-the-night-of-a-hundred-names",
+      "name": "The Night of a Hundred Names",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Night of a Hundred Names",
+            "summary": "Saint Meret's Rest hosted a gathering of families seeking relatives missing after journeys, wars, marriages, and migration. The sanctuary's keepers compared regional editions of the Book of Roads Left Open with household testimony and burial notices. Some people found answers. Some discovered that a relative had chosen another life. Many went home with nothing certain. Clerk Adelin Ross kept a separate list of unresolved cases rather than allowing the closing celebration to imply that all had been solved. Ysra attended with Jalen, who sought news of an uncle lost along the northern roads. They learned that he had survived his presumed accident and died years later at a distant hospice. The answer brought grief and relief, along with a letter explaining why he had never returned.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -580525200,
+            "precision": "era",
+            "dateLabel": "1,109–1,100 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "name": "The Companions of the Late Blossom",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Companions of the Late Blossom",
+            "summary": "An elven herb collector named Ysra Leth, born 1,310 years before the campaign present, began travelling with Jalen Fen, a human repairer of musical instruments. Ysra sought plants described in older nursery records. Jalen needed paying work and wanted to hear regional songs before their older singers died. They spent four seasons moving between Boughmeet, Hazelstairs' lower approaches, and the fairs. Their disagreements concerned food, money, and whether a promising detour was worth missing a festival booking. Jalen taught Ysra to ask how long someone could afford to wait. At Bluecup Hollow, they found a tiny blue flower whose opening petals were used in a modest charm to retain a scent in linen. The plant grew only in a particular damp limestone pocket. Overharvesting threatened it more immediately than any monster.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -586569600,
+            "precision": "era",
+            "dateLabel": "1,122–1,110 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1135-the-meeting-of-three-widows",
+      "name": "The Meeting of Three Widows",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Meeting of Three Widows",
+            "summary": "At a reed-market landing, three women whose households had lost boats formed a shared reserve to support replacement craft and bereaved families. Talla Oren, Bess Hal, and Nim Sareth brought different resources: a workshop lease, trusted accounts, and connections among the boat crews. Their Reed Chest grew through small regular contributions. It distinguished losses eligible for replacement help from ordinary maintenance, and investigated suspicious claims through people familiar with the boats. Several members disliked paying during years in which they needed nothing. The arrangement supported families that would otherwise lose their livelihoods after a single accident. It also failed some applicants, especially newcomers unable to produce the required contributions or witnesses. A fund with limited money could not repair every tragedy.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -593402400,
+            "precision": "era",
+            "dateLabel": "1,135–1,123 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1148-the-island-of-the-wrong-stars",
+      "name": "The Island of the Wrong Stars",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Island of the Wrong Stars",
+            "summary": "Three vessels approaching the small island of Veyr's Lantern, north of the usual Morrow Strait crossing, reported star reflections on water covered by cloud. A wreck followed when a captain trusted the reflected pattern more than his pilot's warning. The island held an abandoned observing court fitted with dark glass tiles. Earlier damage had tilted part of it toward a tidal pool. On particular nights, a surviving enchantment projected an old recorded arrangement of stars across the water. It had once been an instructional device; in its altered setting, it became a navigational hazard. Pilot Soren Avet and glassworker Dima Rell led an expedition to screen the reflecting surface and recover inscriptions. They left much of the buried court undisturbed because their hired boat could not remain through the next weather change.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -600235200,
+            "precision": "era",
+            "dateLabel": "1,148–1,136 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.1135-the-meeting-of-three-widows",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1148-the-island-of-the-wrong-stars",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1074-the-bridge-of-untied-ribbons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1087-the-silver-that-would-not-travel",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1099-the-orchard-behind-the-wall",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1109-the-night-of-a-hundred-names",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1022-the-children-of-the-guest-rooms",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1035-the-hound-of-empty-houses",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1048-the-mill-that-ground-for-both-banks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1061-the-seven-month-war",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0961-the-scent-of-a-house-that-was-gone",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0974-the-empty-chair-at-whitewindow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0999-the-stonecutters-spring",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0909-the-fair-of-three-roads",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

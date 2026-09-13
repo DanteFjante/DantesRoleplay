@@ -165,6 +165,12 @@ internal static class FreshInstallation
                 await registry.PreviewSourceAsync(registration, context, cancellationToken);
                 await registry.RegisterSourceAsync(registration, context, cancellationToken);
             }
+            foreach (var extension in await ReadExtensionPackagesAsync(manifest.Application, request, cancellationToken))
+            {
+                var context = RegistryContext(Token(manifest.ManifestHash, "extension:" + extension.ExtensionId));
+                await registry.PreviewExtensionAsync(extension, context, cancellationToken);
+                await registry.RegisterExtensionAsync(extension, context, cancellationToken);
+            }
         }
 
         await using (var scope = provider.CreateAsyncScope())
@@ -207,12 +213,13 @@ internal static class FreshInstallation
         await using (var scope = provider.CreateAsyncScope())
         {
             var previewer = scope.ServiceProvider.GetRequiredService<IApplicationPreviewService>();
-            var preview = await previewer.PreviewAsync(app, manifest.Application.SelectedSourceIds, cancellationToken);
+            var preview = await previewer.PreviewAsync(app, manifest.Application.SelectedSourceIds,
+                manifest.Application.SelectedExtensionIds, cancellationToken);
             if (!preview.IsValid) throw Invalid("INSTALLATION_APPLICATION_INVALID", "The selected application source preview is invalid.");
             var activations = scope.ServiceProvider.GetRequiredService<IApplicationActivationService>();
             var context = ActivationContext(Token(manifest.ManifestHash, "activate"));
             var activationRequest = new ApplicationActivationRequest(app, preview.PreviewFingerprint, null,
-                manifest.Application.SelectedSourceIds);
+                manifest.Application.SelectedSourceIds) { ExtensionIds = manifest.Application.SelectedExtensionIds };
             await activations.PreviewAsync(activationRequest, context, cancellationToken);
             active = (await activations.ActivateAsync(activationRequest, context, cancellationToken)).Activation;
             if (!scope.ServiceProvider.GetRequiredService<IPublicApplicationCatalogProvider>().TryGet(app, out _))
@@ -498,6 +505,33 @@ internal static class FreshInstallation
             value.QualifiedTypeId, 0, value.Value.GetRawText())).ToArray(),
         entity.Containment is null ? null : new(entity.Containment.ContainerEntityId, entity.Containment.Slot, 0));
 
+    internal static async Task<IReadOnlyList<ApplicationExtensionRegistration>> ReadExtensionPackagesAsync(
+        FreshApplication application, FreshInstallationRequest request, CancellationToken cancellationToken)
+    {
+        var registrations = new List<ApplicationExtensionRegistration>();
+        foreach (var file in application.ExtensionPackages)
+        {
+            var root = file.Root switch
+            {
+                "source" => request.SourceRoot,
+                "package" => Path.GetDirectoryName(request.ManifestPath)!,
+                _ => throw Invalid("INSTALLATION_EXTENSION_INVALID", "Extension package root must be source or package.")
+            };
+            var bytes = await ReadPinnedAsync(root, file.Path, file.Sha256, cancellationToken);
+            var package = JsonSerializer.Deserialize<FreshExtensionPackage>(bytes, Json)
+                ?? throw Invalid("INSTALLATION_EXTENSION_INVALID", "An extension package is empty.");
+            if (package.SchemaVersion != 2 || package.ApplicationId != application.Id)
+                throw Invalid("INSTALLATION_EXTENSION_INVALID", "Extension packages must use schema version 2 and match the installed application.");
+            if (registrations.Any(value => value.ExtensionId == package.ExtensionId))
+                throw Invalid("INSTALLATION_EXTENSION_INVALID", "Extension package identities must be unique.");
+            registrations.Add(new(ApplicationIdentifier.Parse(application.Id), package.ExtensionId,
+                package.DisplayName, package.Description, package.Classification, package.SourceIds,
+                package.NamespaceIds, package.Dependencies, package.ConflictsWith,
+                package.HigherPriorityThan, package.OverridesBase));
+        }
+        return registrations;
+    }
+
     private static ApplicationWorldAuthoringRelationship ToWorldRelationship(FreshWorldRelationship value) =>
         new(value.FromEntityId, value.ToEntityId, value.QualifiedKind, 0, value.Value.GetRawText());
 
@@ -536,6 +570,7 @@ internal static class FreshInstallation
         if (manifest.Format != Format) throw Invalid("INSTALLATION_FORMAT_INVALID", $"format must be '{Format}'.");
         manifest.ManifestHash = Fingerprint(bytes);
         if (manifest.BaseApplications.Count > 16 || manifest.Application.Sources.Count is < 1 or > 32
+            || manifest.Application.ExtensionPackages.Count > 100 || manifest.Application.SelectedExtensionIds.Count > 100
             || manifest.ComponentTypes.Count > 1024 || manifest.StateSpaces.Count is < 1 or > 16
             || manifest.Media.Count > 256 || manifest.Pages.Count > 32)
             throw Invalid("INSTALLATION_MANIFEST_BOUNDS", "The installation manifest exceeds a bounded collection limit.");
@@ -548,9 +583,12 @@ internal static class FreshInstallation
             || string.IsNullOrWhiteSpace(codex))
             throw Invalid("INSTALLATION_RUNTIME_INVALID", "runtime.environment must declare a portable Codex:ExecutablePath.");
         foreach (var state in manifest.StateSpaces)
-            if (state.Root is null || state.WorldPackages.Count > 64) throw Invalid("INSTALLATION_STATE_INVALID", "A bounded state-space root is required.");
+            if (state.Root is null || state.WorldPackages.Count > 256) throw Invalid("INSTALLATION_STATE_INVALID", "A state-space root and at most 256 world packages are required.");
         if (manifest.Application.Sources.Any(value => value.AllowedRootId != manifest.Source.AllowedRootId))
             throw Invalid("INSTALLATION_SOURCE_INVALID", "Every application source must use the declared installation source root.");
+        if (manifest.Application.SelectedExtensionIds.Any(value => !ApplicationExtensionIdentity.IsValid(value))
+            || manifest.Application.SelectedExtensionIds.Distinct(StringComparer.Ordinal).Count() != manifest.Application.SelectedExtensionIds.Count)
+            throw Invalid("INSTALLATION_EXTENSION_INVALID", "Selected extension identities must be valid and unique.");
         if (manifest.StateSpaces.Select(value => value.Id).Distinct(StringComparer.Ordinal).Count() != manifest.StateSpaces.Count
             || manifest.ComponentTypes.Select(value => value.QualifiedTypeId).Distinct(StringComparer.Ordinal).Count()
                 != manifest.ComponentTypes.Count)
@@ -680,7 +718,14 @@ internal class FreshApplication
     public IReadOnlyList<string> Bases { get; init; } = [];
     public IReadOnlyList<FreshApplicationSource> Sources { get; init; } = [];
     public IReadOnlyList<string> SelectedSourceIds { get; init; } = [];
+    public IReadOnlyList<FreshPinnedFile> ExtensionPackages { get; init; } = [];
+    public IReadOnlyList<string> SelectedExtensionIds { get; init; } = [];
 }
+internal sealed record FreshExtensionPackage(
+    int SchemaVersion, string ApplicationId, string ExtensionId, string DisplayName, string Description,
+    string Classification, IReadOnlyList<string> SourceIds, IReadOnlyList<string> NamespaceIds,
+    IReadOnlyList<string> Dependencies, IReadOnlyList<string> ConflictsWith,
+    IReadOnlyList<string> HigherPriorityThan, bool OverridesBase);
 internal sealed record FreshApplicationSource(
     string Id, string AllowedRootId, string RelativeRoot, string IncludePattern,
     string Trust, int Precedence, string LogicalIdentity);

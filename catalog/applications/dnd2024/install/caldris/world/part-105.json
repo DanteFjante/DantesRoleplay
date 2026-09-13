@@ -1,0 +1,690 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.1984-the-orchard-compact-quest-seeds.1",
+      "name": "The Orchard Compact — Quest seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A landowner clears the unharvested strip and finds the orchard failing. Restoring it would remove the only building plots affordable to local families. A traveller asks to attend the feast under an old name that nobody recognises.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-gm-truth.1",
+      "name": "The Road of Seven Suppers — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The seventh host was a threshold spirit inhabiting an abandoned shepherd's dwelling. It received no share of the settlements because Derren could not persuade the others that an empty house had expenses. Its first grievance was quite reasonable.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-historical-traces.1",
+      "name": "The Road of Seven Suppers — Historical traces",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Seven shallow notches cut beside old doors; road songs whose verses describe meals; inns that offer a bowl of broth before discussing payment.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-quest-seeds.1",
+      "name": "The Road of Seven Suppers — Quest seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A tally opens a hidden cupboard in an apparently much younger inn. An old song gives directions to a lost stopping house, but one verse describes a river that has changed course.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-gm-truth.1",
+      "name": "The Winter of Borrowed Hearths — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Maelin also diverted grain from a prosperous hamlet that had contributed fairly. Its children suffered. Her descendants preserved her courage and concealed the cost; the other village preserved the injury and forgot the wider famine.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-historical-traces.1",
+      "name": "The Winter of Borrowed Hearths — Historical traces",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Soot-blackened communal kitchens; scratched family marks around granary doors; a winter song in which the same woman is called both thief and grandmother.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-quest-seeds.1",
+      "name": "The Winter of Borrowed Hearths — Quest seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A newly opened storehouse contains grain tallies that undermine a family's celebrated claim to have fed the district. Two villages want Maelin's pot returned to them before their winter festivals.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-alderwake.1",
+      "name": "Alderwake — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: East of Harth's orchard branch, where a drovers' track meets the route toward the river. Livelihood: Livestock, cloth, lodging, and seasonal fairs. The ancient fairground becomes a small town whose widest lanes remain open for temporary stalls. On ordinary days it feels half empty. On fair days kitchens overflow into courtyards and children navigate by stall awnings rather than house numbers. The original fair bell is lost; successive bells inherit its name. Present-day person: Fairwarden Merren Auld is excellent at negotiating stall disputes and quietly afraid of horses. She wants a fair small sellers can still afford. Adventure: A protected trader vanishes between entering the fair and collecting a reserved stall. The evidence leads through custody arrangements, a debt claim, and an invitation to perform at a private supper. The case can be resolved as a local mystery without invoking any ancient curse.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-amberstile.1",
+      "name": "Amberstile — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A Honey Road meeting place for beekeepers, wax buyers, and carriers bringing other goods on the return journey. Present-day form: A modest market town whose wax sheds serve candle makers, craftspeople, and local households. Seasonal trading fills a broad yard behind the old gate. The honey cakes sold to visitors are good enough that residents forgive the inaccurate stories printed on their wrappers. A person to meet: Assayer Rill Thenn is revising a respected testing manual and faces resistance from buyers comfortable with its simpler rules. Adventure: A suspect shipment comes from a new flowering district and behaves differently under the established test. Proving its quality may rescue a small producer's livelihood while revealing how a second trader exploited the confusion.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-ash-salt.1",
+      "name": "Ash Salt — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A small southern inlet market serving fishing crews, modest sellers, and carriers outside the main ports' more expensive arrangements. Present-day form: Working stalls, smokehouses, net sheds, and lamps arranged around a tidal landing. The market's busiest hours change with local water conditions. It is a place of honest work, occasional opportunism, and visitors who mistake informality for lawlessness. A person to meet: Witness keeper Tavi Voss records bulk sales and can recognise sellers by marks that never appear in formal port books. She wants enough paid assistants to keep the busiest nights properly witnessed. Adventure: Recover the route of a dispersed cargo through small sales. The evidence may distinguish salvage, theft, legitimate resale, and a merchant's attempt to conceal losses from partners.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-aunholt.1",
+      "name": "Aunholt — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A high northern valley encountered by Ysra's expedition, already connected to western neighbours through trade and seasonal movement. Present-day form: Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps. A person to meet: Assembly recorder Lethan Ulan welcomes useful information from visitors and expects their maps to acknowledge local knowledge. He is documenting a side channel before an elder who maintains it can no longer make the journey. Adventure: A visiting expedition's inherited map directs it to a protected collecting ground.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-aunholt.2",
+      "name": "Aunholt — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Resolving the conflict can lead to a shared survey and an alternative site, while an old annotation reveals why the original patron misnamed the valley.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-bellwade.1",
+      "name": "Bellwade — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A low coastal farming community relocated after saltwater inundation and rebuilt around a shared drying ground. Present-day form: An inland village facing a tidal marsh where fragments of its first site occasionally emerge. Some houses incorporate old lintels, though many claimed originals are later commemorations. The communal bell has been recast since its relocation, preserving portions of earlier metal and its inherited name. A person to meet: Marsh guide Orsa Nall records exposures after storms and asks finders to note where objects were recovered before moving them. Adventure: An eroding bank reveals a household shrine. Two families recognise its emblem from different traditions, and careful examination can show how both accounts connect to successive occupants.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-bluecup-hollow.1",
+      "name": "Bluecup Hollow — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A damp limestone hollow where Ysra and Jalen found a flower used in a scent-preserving charm, later restored after road spoil threatened it. Present-day form: A small protected patch amid working land near the routes between the orchard country and the northern foothills. Propagated plants grow in a nearby nursery, but the wild pocket retains conditions difficult to reproduce elsewhere. The ancient companions' exact collecting spot is only approximately known. A person to meet: Nursery keeper Benna Varn maintains access agreements and permits careful study. She is saving for a drainage repair that preserves the wet pocket rather than drying it out. Adventure: A wealthy buyer offers to fund repairs in return for all future flowers. An alternative agreement could meet the nursery's needs while protecting local access and a small supply for practitioners.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-boughmeet.1",
+      "name": "Boughmeet — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: On the southern approach to Harth Orchard. Livelihood: Grafting stock, seedlings, cider, and practical teaching. Plots bear names of villages that no longer exist. The oldest varieties persist through deliberate propagation, not immortal trees. A row of training pears grows against a warm stone wall, each labelled with both its market name and the name used by the person who brought it. Present-day person: Nali Brin, a nursery keeper with no documented connection to Tessa, is trying to save a sour, unpopular pear because it survives a disease affecting valuable stock. Adventure: The last healthy graft of a resistant variety was sent away as a wedding gift. Finding it requires following family moves and recognising a tree nobody now calls by its original name.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-cairn-moss.1",
+      "name": "Cairn Moss — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: Peat country west of Whitewindow's surface road. Livelihood: Limited peat cutting, grazing, and guide work. The listening ring lies in a protected patch within working land. Its stones were reset after later disturbance, and only part of the original effect persists. Visitors often hear nothing. Local families maintain paths because losing someone in the moss is a greater concern than disappointing a scholar. Present-day person: Guide Fenna Reed keeps a notebook of conditions on evenings when sounds occur. She regards both credulous enthusiasts and blanket sceptics as tiresome walking companions. Adventure: Compare present sounds with Belda's transcriptions to locate a misplaced stone. The recovered phrase offers a new lead into the ring's older history, not a complete explanation.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-celandine-house.1",
+      "name": "Celandine House — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A guesthouse and care institution that recorded family placements and children's circumstances after wartime displacement. Present-day form: A modest local institution with rebuilt accommodation, gardens, and a small archive. It has changed governance and function more than once. Some early records survive as copied extracts in other collections, with private details separated from public registers. A person to meet: Archivist Teva Kell helps families investigate their history and explains what the evidence does not establish. She must also decide which recent records can be shared appropriately. Adventure: Two branches of a family bring incompatible names for the same ancestor. Comparing public and legitimately accessible restricted material may reveal a chosen new household rather than fraud or a hidden noble title.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-crowstep-shelter.1",
+      "name": "Crowstep Shelter — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A maintained refuge on a local northern branch near the Roven approaches. It serves fewer carriers than Hearthscar and depends on seasonal deliveries. The winter descent has changed after later rockfalls. A person to meet: Keeper Nera Reth needs a party to verify an alternate delivery route before the first snow. Adventure: Locate a missing supply wagon, assess the safer descent, and bring back a realistic account of what animals and carts can use it.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-darnel-field.1",
+      "name": "Darnel Field — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A battlefield of the Seven-Month War, later the focus of identification work and a memorial leaving space for unresolved names. Present-day form: A working orchard beside a protected burial area. The memorial has been repaired and partially recopied; original fragments are stored locally. Later ownership changes explain why some graves lie beyond the oldest recorded boundary. A person to meet: Teacher Ilva Ross works with the orchard's occupants to document finds and update a local history used by children. She wants corrections to remain visible instead of replacing one confident legend with another. Adventure: Storm damage exposes an object matching a sanctuary notice. Establishing whose it was requires comparison of work, family, and military records. A single recovered name can be the reward.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-doorhaven.1",
+      "name": "Doorhaven — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: An emergency camp on firm ground during the Spring of Floating Doors, later occupied by households unable or unwilling to return to their former homes. Present-day form: A small riverland settlement whose oldest lanes follow the original raised camp areas. Houses contain reused materials from several places. Flood preparedness is a practical community concern, and door carvings preserve stories whose details are not always reliable. A person to meet: Boat keeper Enna Rusk maintains a shared evacuation boat and wants new residents included in the local plan. She has found a door mark matching a family record from far upriver. Adventure: Tracing the door can identify a displaced household or clarify ownership of recovered objects. The search also exposes a neglected route needed for present flood access.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-alderwake.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-boughmeet.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-amberstile.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-bellwade.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-cairn-moss.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-ash-salt.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-aunholt.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-aunholt.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-bluecup-hollow.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-celandine-house.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-darnel-field.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-doorhaven.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1984-the-orchard-compact-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-historical-traces.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-historical-traces.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-crowstep-shelter.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1984-the-orchard-compact-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-historical-traces.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.1992-the-road-of-seven-suppers-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-historical-traces.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.2000-the-winter-of-borrowed-hearths-quest-seeds.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

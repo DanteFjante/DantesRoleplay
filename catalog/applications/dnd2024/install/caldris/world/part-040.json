@@ -1,0 +1,370 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0419-the-letter-delivered-after-the-funeral-account.1",
+      "name": "The Letter Delivered After the Funeral — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The carrier Jori Pell brought an elderly gardener's invitation from Istravel to a former apprentice at Windowmere. Storm delays and illness lengthened the journey. The apprentice had died eleven days before Jori arrived. The apprentice's widower asked Jori to stay for the first harvest from a tree the two gardeners had once disputed how to graft. He sent back fruit preserves, a practical account of the successful method, and a letter of his own. Jori carried that reply on a paid return journey; kindness did not make boats or meals free. Later retellings invented a race against death and a miraculous final meeting. The surviving exchange describes a missed chance, grief, gratitude, and someone choosing to write back even though the intended conversation could no longer happen.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0427-the-agreement-on-the-violet-steps-account.1",
+      "name": "The Agreement on the Violet Steps — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Changes to the Penn's Reach channels prompted fishers and sluice keepers to consult old records of the Siltwife. Several cautious observers again saw a pale creature at a stone landing stained purple by mineral seepage. Water keeper Adra Uld tested small changes to obstructions while recording the creature's responses. The resulting Violet Steps Agreement bound the human households to keep one passage clear, limit certain traps, and share maintenance. The creature accepted space and occasionally cleared silt, but never signed, spoke an oath, or appeared at a hearing. Adra insisted that the agreement describe human promises without pretending to own another being's future behaviour. For several decades the landing became a place to settle practical water disputes. Children left smooth stones there. Keepers removed elaborate offerings when they obstructed the channel.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0435-the-summer-the-wards-went-thin-account.1",
+      "name": "The Summer the Wards Went Thin — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Unusually warm weather coincided with failures in old enchantments along the Veyr approaches. A shelter's weather charm faded; a locked storehouse opened at night; a preserved wooden sluice began to soften. Tiny translucent moths gathered near the affected structures, visible most clearly against lamplight. Ward keeper Pell Arven and travelling mage Sorrel Dain identified a swarm feeding on certain slowly decaying enchantments. At Crowstep they lured much of it into a sacrificial charm fixed to a clay vessel, then vitrified the vessel in a potter's kiln. Workers meanwhile braced the failing buildings by ordinary means. The glass-moth summer changed how local keepers documented inherited magic. They recorded mundane alternatives alongside renewal instructions. Sorrel lost a treasured self-mending cloak while drawing moths away from a refuge full of travellers.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0443-the-succession-of-black-ribbons-account.1",
+      "name": "The Succession of Black Ribbons — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Queen Elsent Merrow's death exposed incompatible promises about road revenues. One claimant had pledged reductions to carriers; another offered to preserve income owed to shelters and bridge trusts. Town delegates tied black ribbons to their account chests and refused new advances until an interim settlement existed. After months of pressure, Maera Merrow, a collateral heir, accepted a negotiated crown with a published separation between household spending and specified road funds. A rival retained estates and a place at court. Several outlying communities received no delegate and did not regard the bargain as their consent. There were arrests, a warehouse fire, and one fatal confrontation at a toll gate. Later chronicles described a bloodless succession because no field army fought a battle. The gatekeeper's family kept a different account.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-account.1",
+      "name": "The Reply Kept in the Wrong Ledger — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At the Quiet Archive in Leth Sarai, copyist Samin Rel compared an employee list with glass preparation notes previously indexed by Mara Sef. A folded reply, kept among accounts for polishing sand, supplied the missing corroboration: Leris Amat had received Aveline's apology. The reply acknowledged the apology and described the practical harm caused when Leris's work went uncredited. It contained no assurance that the matter was entirely forgiven. Samin published a careful transcription with the relevant dates and workshop roles, resolving the addressee's identity while leaving some damaged phrases uncertain. Aveline's admirers did not agree on what to do with the discovery. Some amended display labels. Others preferred a sentimental paraphrase. The archive kept both the transcription and the original folds visible in its catalogue.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0459-the-bridge-of-three-versions-account.1",
+      "name": "The Bridge of Three Versions — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A new timber crossing near Willowrace connected workshops to grazing and reed beds previously reached by a seasonal ford. Three work parties raised funds with different versions of a tune associated with Ysra. At the opening, their musicians discovered that the verses no longer fitted together. The dwarven instrument maker Orven Dast, then aged 163, arranged an alternating performance. He retained each version and wrote transitions instead of declaring a single authentic melody. The crossing became Three-Reed Bridge, after three reed pipes played at the dedication. Its maintenance chest received a share of the annual music fair's takings. Later singers called the arrangement Ysra's last composition, although she had been dead for more than a century when the bridge opened. Orven's surviving score identifies his own work clearly.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0467-the-breach-at-brinefold-account.1",
+      "name": "The Breach at Brinefold — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Brinefold, a salt-working harbour in the Vey Lowlands, expanded across an old tidal channel. During a severe storm, seawater entered behind the new embankment and trapped households between the quay and the inland road. Pilot Oda Fen guided shallow boats through lanes normally used by carts. Witnesses reported a vast, pale-backed animal lying across the harbour mouth while the boats escaped. It broke part of the outer quay and withdrew before morning. Brinefold rebuilt farther inland, abandoning the lowest streets. Salt production resumed at a smaller scale, and families argued for decades over who should bear the loss of leased pans beneath the water. Oda refused a statue until the rescue crews were named. The eventual monument lists boat owners, rowers, rope handlers, and three people identified only by their work.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0475-the-hollow-mint-affair-account.1",
+      "name": "The Hollow Mint Affair — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Highmead's mint paid for silver it had not yet received, expecting an overdue shipment to cover its commitments. When the shipment failed, officials reduced the silver in a run of small coins. Court suppliers accepted them at their stamped value; northern wool sellers demanded more. The difference spread through markets faster than any official explanation. Assayer Petren Vale and Queen Elsent Merrow's treasurer, Hessa Dorn, arranged a limited exchange funded by postponed court works and negotiated losses among creditors. Owners of large accounts recovered more reliably than servants paid in small coin. Petren preserved rejected petitions beside the official settlement. The old assay building acquired the name the Hollow Mint after a popular accusation that its furnaces melted promises. Its surviving wings later housed licensed weighers and repair shops.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0483-the-winter-of-borrowed-sunlight-account.1",
+      "name": "The Winter of Borrowed Sunlight — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "In Seln, a succession of dark winters led the glassworker Iven Sorr and the mage Dara Venn to refurbish an abandoned teaching house. Dara fixed a modest enchantment into three copper-backed panes: each could release a short interval of daylight gathered during brighter weather. The light carried colour and ordinary illumination, but supplied neither meaningful warmth nor a growing season for crops. People brought mending, accounts, and fine instrument work to Sunborrow House. Children watched a patch of summer brightness cross the floor while snow pressed against the shutters. The rooms still needed fuel, and the keeper charged wealthier users for reserved hours to subsidise the common tables. An overcast autumn left too little stored light. The house shortened its sessions and bought more lamp oil. Its surviving accounts record wonder and expense on adjacent lines.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-account.1",
+      "name": "The Guest Who Returned to the Copper Kettle — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The elven traveller Nivren Sael returned to an orchard-road inn after seventy-three years, carrying a blue cup he had borrowed from its former keeper. He expected a familiar kitchen. The keeper's great-granddaughter, Rella Morn, showed him the burial register and asked whether he would like supper before visiting the graves. Nivren stayed through the pear harvest. He remembered the old keeper's voice but had forgotten the name of the woman who had cooked beside her for thirty years. Rella found that name in household accounts. In return, Nivren taught the family a small drying charm useful for damp boots, a spell he had once considered too trivial to write down. The inn adopted the name the Copper Kettle after the battered vessel Nivren recognised. The blue cup entered everyday use. When it finally broke, its pieces became a mosaic beside the hearth.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0491-the-guest-who-returned-to-the-copper-kettle-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0459-the-bridge-of-three-versions-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0467-the-breach-at-brinefold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0475-the-hollow-mint-affair-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0475-the-hollow-mint-affair-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0483-the-winter-of-borrowed-sunlight-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0419-the-letter-delivered-after-the-funeral-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0419-the-letter-delivered-after-the-funeral-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0427-the-agreement-on-the-violet-steps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0427-the-agreement-on-the-violet-steps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0435-the-summer-the-wards-went-thin-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0435-the-summer-the-wards-went-thin-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0443-the-succession-of-black-ribbons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0443-the-succession-of-black-ribbons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

@@ -1,0 +1,762 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.campaign.volume.volume-v",
+      "name": "Volume V — Names That Went Missing (levels 7–9)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Volume V — Names That Went Missing (levels 7–9) The party moves through Namarra, Kethria, Tessarane, and Ordelain. Deep-history clues accumulate, but each polity's crisis retains independent stakes. 1. The Village That Is Not There: restore, conceal, or transform the legal status of an erased community without exposing it to predatory collection. 2. Seed for the Wrong Season: trace stolen durable seed through royal and private granaries. 3. The Doubled Tithe: expose the fraudulent copper demand and confront the reality of Kethria's dragon bargain. 4. The Ordinary Comet: protect honest observation from three politically useful prophecies, then discover one genuinely impossible detail. 5. The River Returns: mediate claims around Old Aur Island and recover records older than the Concord. 6. The Reed Graves: meet or outwit Sable Annek, who hoards legal absences rather than gold. Apparent completion: the Council's restoration plan becomes visible and several cells can be defeated. Hig…",
+            "provenance": "Caldris campaign tapestry — six-volume shape",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.campaign.volume.volume-vi",
+      "name": "Volume VI — The Margins of Peace (levels 9–10)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Volume VI — The Margins of Peace (levels 9–10) The final volume is a struggle over institutions, history, and custody rather than a march toward one required battle. The party can seek Ilyr, convene witnesses, expose records, bargain with states, split the Council, or build a replacement practice from relationships earned throughout the campaign. 1. The Council of Margins: reach, infiltrate, expose, debate, or fracture the transcontinental leadership. 2. The Archive That Answers Back: enter Ilyr's Listening Caves, where testimony contradicts official history and echo riddles test whether visitors listen rather than merely collect. 3. The Queen's Empty Chair: resolve Alderwick's succession pressure without allowing emergency policy to decide it silently. 4. The Accord Congress: keep delegates present and safe while each tries to control the archival settlement. 5. The Measure of Mercy: choose who may preserve, access, correct, and enforce shared records, and accept the imperfectio…",
+            "provenance": "Caldris campaign tapestry — six-volume shape",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.ganji.button-hills-origin",
+      "name": "Ganji's Button Hills Origin",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ganji was born in Merebutton to a human father and elven mother. His parents abandoned him as an infant after village rumours made his slight catlike features an attraction for passing travellers. Tensor monks came to investigate the rumours and took him to Highmead as a possible prophecy. Ganji knows neither parent nor their reasons, and assumes they were cruel; the deeper truth is optional background, not his central purpose.",
+            "provenance": "Ganji lived-beginning campaign preparation approved by the player on 2026-08-30.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "campaign-reference"
+      }
+    },
+    {
+      "entityId": "secret.caldris.ganji.nettle",
+      "name": "Nettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nettle is a soot-grey tom with one white toe who understands Ganji’s words and mood but obeys no one. He has followed Ganji into Bramblebridge after two weeks on the road, steals food when useful, and may offer clues through stubbornly feline choices. He has no combat statistics, player control, or required plot role.",
+            "provenance": "Ganji lived-beginning campaign preparation approved by the player on 2026-08-30.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "campaign-reference"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.ganji.the-bell-without-motion",
+      "name": "Ganji Hook — The Bell Without Motion",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: A Tensor instructor disappears while investigating a bell reported to ring before anyone touches its rope. Layers: apparent foresight → physical or social anticipation → a foundational Tensor teaching may rest on a misunderstood phenomenon. Objectives: find the instructor, reproduce the event honestly, and decide who may interpret or publish the result. Failure forward: the bell is removed by sect custodians, but transport marks and independent witnesses preserve several investigative routes.",
+            "provenance": "Ganji character integration approved by the player on 2026-08-30.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.ganji.the-hands-that-retrieve",
+      "name": "Ganji Hook — The Hands That Retrieve",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Three Tensor monks reach Bramblebridge with papers describing Ganji as a protected novice rather than a fugitive. Layers: apparent kidnappers → sincere affection joined to coercive doctrine → the sect is divided over whether Ganji's escape fulfilled its teaching. Objectives: protect Ganji's agency, establish what authority the papers actually carry, and decide whether to evade, negotiate with, expose, reform, or confront the retrieval party. Failure forward: the monks gain local procedural support but must remain publicly accountable. No outcome requires Ganji to return or predetermines his feelings.",
+            "provenance": "Ganji character integration approved by the player on 2026-08-30.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.ganji.the-missing-folio",
+      "name": "Ganji Hook — The Missing Folio",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Pages from Ganji's childhood intake record appear among documents exposed by a Button Hills sinkhole. Layers: family discovery → deliberately separated folio → competing village and sect claims over shame, privacy, and prophecy. Objectives: protect the unstable site, authenticate the pages without surrendering them to one claimant, and let Ganji decide how to approach the people named. Failure forward: part of the folio is lost, but surviving stitching and witness memories identify a second archive.",
+            "provenance": "Ganji character integration approved by the player on 2026-08-30.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "name": "Q01 — The Thirteenth Bell",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Bramblebridge's noon bell rings thirteen times while an empty tax wagon rolls into market with dry cargo in heavy rain. Layers: apparent prank or haunting → missing driver and altered bell rope → coordinated diversion for a selective cargo exchange. Objectives: 1. Account for the wagon, driver, horse, cargo, and bell-tower access. 2. Identify how the bell rang and why witnesses heard different intervals. 3. Decide what to disclose before market panic or official seizure hardens the story. Routes: tower inspection, animal handling, witness comparison, river mud, market records, theatre rigging knowledge, magical investigation, or following exchanged cargo. Clues: cut rope fibers on a theatre pulley; dry flour beneath wet canvas; the horse follows a different driver's whistle; Tibb remembers a closed alley on the new map; bell timing matches a barge signal, not a civic pattern. Creative constraints: the bell must physically move or be convincingly imitated; t…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q02.chickens-of-commercial-intent",
+      "name": "Q02 — Chickens of Commercial Intent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Inspector Fara Dint classifies market poultry one bird at a time, seizing a widow's cart while favoured carriers pass under obscure exemptions. Layers: absurd official → impossible revenue target and selective paperwork → Drail's policy designed to make central freight control attractive. Objectives: 1. Keep the market functioning without humiliating or assaulting vulnerable officials. 2. Compare enforcement against written orders and actual exemption use. 3. Secure practical relief for small traders while preserving evidence of higher direction. Routes: legal challenge, comic public demonstration, alternate crossing, negotiation, evidence collection, market strike, paying under protest, or exposing exempt cargo. Clues: three versions of the same order; identical handwriting in unrelated exemption notes; Fara's private marginal joke names the contradiction; Bridge House receipts show a revenue target set before the rule existed. Riddle: a guild proverb asks…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q03.the-wheel-at-midnight",
+      "name": "Q03 — The Wheel at Midnight",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Old Weir Mill stops at the same minute every night although the river runs steadily. Layers: haunting or sabotage → hidden sluice use → deed boundary and smuggling route intersect with an older flood-control channel. Objectives: 1. Protect workers and grain while testing the stoppage. 2. Trace the water or mechanism change without destroying the mill. 3. Settle immediate access to the sluice before harvest flour spoils. Routes: mechanical inspection, timed watch, upstream survey, underwater approach, historical deed research, negotiation with Jory, controlled shutdown, or magical observation. Clues: polished wear on a disused gate; eel baskets displaced nightly; flour on a supposedly flooded stair; Nan's copy and Della's deed omit the same boundary phrase; Jory owns a key but not the only key. Creative constraints: stopping the mill for long harms the town; forcing the gate risks flood; the route also serves legitimate emergency drainage. Failure forward: f…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q04.the-respectable-smuggler",
+      "name": "Q04 — The Respectable Smuggler",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Evidence points to Rusk Pettifer, who invites the party to supper and presents receipts for medicine, winter tools, and flood relief his illegal network supplied. Layers: charming benefactor → coercive logistics boss → regional provost uses Rusk to produce selective disorder while planning to discard him. Objectives: 1. Establish Rusk's harmful acts and socially useful services separately. 2. Prevent retaliation against witnesses, inspectors, and dependent households. 3. Defeat, expose, bargain with, displace, or turn Rusk while proposing a practical freight path. Routes: infiltrate accounts, negotiate immunity, build a guild cooperative, controlled sting, public hearing, seize routes, recruit Jory, or split Rusk's lieutenants. Clues: payments to widows; threats in different handwriting; route changes matching Drail's orders; a locked case with higher-level instructions; Merrit and Odo independently remember Rusk's past flood aid. Failure forward: Rusk esca…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q05.a-standard-with-a-hollow-heart",
+      "name": "Q05 — A Standard with a Hollow Heart",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Fenna discovers that one official market weight is hollow and contains a strip of names, debts, dates, and bridge symbols. Layers: guild fraud → covert carrier preference list → old Concord notation revived for modern toll coordination. Objectives: 1. Authenticate the weight, insertion date, and custody history. 2. Decode enough entries to protect named innocents and identify active carriers. 3. Decide how to challenge guild complicity without destroying trust in every measure. Routes: metallurgy, tool-mark comparison, archive research, surveillance, interviewing retired assessors, controlled false entry, or Pella's repair expertise. Clues: newer solder under old patina; maker's mark from Glassharbor; one name corresponds to a dead road; recurring seven-place spacing; Fenna's family record explains access but not motive. Riddle: “What grows lighter when filled?” The physical answer is the hollow weight when filled with debt exemptions; the social answer is…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q06.the-provosts-exception",
+      "name": "Q06 — The Provost's Exception",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Drail visits Bramblebridge to praise reform and dismiss local abuses as implementation errors while quietly removing records. Layers: stern reformer → architect of selective failure → subordinate of Vane's policy office, with personal choices exceeding his orders. Objectives: 1. Preserve a complete comparison of policy, enforcement, exemptions, and consequences. 2. Prevent Drail from sacrificing Fara, Rusk, or junior clerks as the whole explanation. 3. Secure an accountable outcome that leaves roads and trade functioning. Routes: formal inquiry, clerk coalition, intercepted destruction, courtroom advocacy, political bargain, public satire, direct confrontation, or evidence delivery to the Crown Council. Clues: targets set before consultation; Drail's corrections in Fara's orders; favoured freight contracts; Vane's legitimate concern about succession logistics; separate orders showing Drail added coercive family threats himself. Failure forward: Drail keeps…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q07.the-comedy-crown",
+      "name": "Q07 — The Comedy Crown",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Bramble Theatre Loft loses its comic villain crown, which contains a ministerial dispatch hidden by someone who mistook costume storage for a secure courier cache. Layers: theatrical theft → competing actors and officials → dispatch discusses succession contingencies and an unrelated flood appropriation. Objectives: 1. Recover the crown before the evening performance or replace it convincingly. 2. Identify who hid and who stole the dispatch without exposing private theatre matters needlessly. 3. Decide where the dispatch belongs and what public-interest information cannot stay hidden. Routes: backstage search, impersonation, prop reconstruction, market chase, negotiation with a fan, legal delivery, memorization, or staging the theft as part of the performance. Clues: crown lining stitched by Jory; glitter on Bridge House forms; two actors swapped roles; the thief wanted the jewels, not the paper; Sera knows an official voice from rehearsal patronage. Failur…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q08.three-bridges-two-courts",
+      "name": "Q08 — Three Bridges, Two Courts",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Floodwater threatens Merecross while three bridge owners and two courts dispute who may close roads, requisition boats, and cut a private embankment. Layers: bureaucratic comedy → real class and jurisdiction conflict → old flood map deliberately omitted a poor district. Objectives: 1. Protect people and essential routes during rising water. 2. Establish which interventions are physically necessary and legally contestable. 3. Record emergency choices so temporary power does not become permanent silently. Routes: engineering, evacuation, persuasion, commandeering with later accountability, alternate channels, local knowledge, public notices, or magical assistance within accepted mechanics. Clues: Nessa's notebooks; water marks behind paneling; omitted district on royal map; mill gate timing; an estate wall built over emergency spill land. Failure forward: property and one bridge are lost, but lives can still be saved and the aftermath becomes a reform rather…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q09.the-heir-in-the-footnote",
+      "name": "Q09 — The Heir in the Footnote",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Highmead scholars find a marginal note suggesting Alderwick's succession law allows a broader council choice than the Crown publicly admits. Layers: secret rightful heir → recent annotation and older ambiguous custom → political actors want certainty more than historical truth can provide. Objectives: 1. Authenticate each layer of the manuscript and its cited precedents. 2. Hear living stakeholders whose rights cannot be reduced to the text. 3. Prevent one faction from presenting interpretation as automatic destiny. Routes: palaeography, oral history, court debate, copy comparison, foreign archive request, protecting scholars, or publishing uncertainty deliberately. Clues: ink age mismatch; a missing witness roll; related Veyr custom; Queen Adela's private notes; proof the annotation reflects a real but exceptional precedent. Failure forward: one faction weaponizes the note, but opposing evidence and later negotiation remain available. Aftermath: a scholar…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q10.the-ship-that-must-sail",
+      "name": "Q10 — The Ship That Must Sail",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Gullstrand shipwrights strike for safe hours and injury support while the autumn grain convoy deadline approaches and someone sabotages a fitting. Layers: reckless strikers or greedy owners → planted sabotage by a safety inspector → procurement broker and grain speculator seek to break the strike and profit from delay. Objectives: 1. Keep the yard and unfinished ship safe while identifying the sabotage method. 2. Establish a workable plan for grain transport and legitimate worker demands. 3. Expose or neutralize the commercial network profiting from failure. Routes: engineering inspection, negotiation, alternate vessel repair, financial trail, protect apprentice witness, public test, magical repair if supported, or organizing shared oversight. Clues: wrong-direction stress marks; inspector-only tool access; futures contracts; falsified injury logs; timber from a protected Alderwick grove. Failure forward: the convoy sails late or smaller, changing prices an…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q11.the-grey-orchard-wife",
+      "name": "Q11 — The Grey Orchard Wife",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Bellafont's pale-canker kills old trees, and villagers blame the Grey Orchard Wife while estates sell an expensive cure. Layers: spirit curse → soil/water stress and infected grafts → lost common-water rights worsen the disease; a real supernatural presence may preserve memory rather than cause blight. Objectives: 1. Compare disease spread, water access, graft sources, and reported apparitions. 2. Stop harmful treatment and protect remaining healthy stock. 3. Resolve immediate water access while deciding how to treat the grove's spirit claim. Routes: plant study, irrigation survey, witness folklore, night vigil, negotiation, graft quarantine, archive recovery, or communication with a possible spirit. Clues: disease follows graft batches not sightings; oldest trees fail first where canals were redirected; orchard song contains boundary sequence; apparitions point away from sick trees. Riddle: seven carved pears ask visitors to “give the first drink to the ro…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q12.the-shepherd-who-refused",
+      "name": "Q12 — The Shepherd Who Refused",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Veyr succession factions all claim shepherd Tom as a symbolic supporter; Tom refuses the office, while someone plans violence to make refusal impossible. Layers: hidden wise king → capable mediator who genuinely does not want rule → rival campaigns need legitimacy and one escort company needs instability. Objectives: 1. Keep candidates, delegates, and Tom safe through the moot. 2. Expose manufactured violence and false-raid funding. 3. Help the marches reach a legitimate process without forcing a preferred candidate. Routes: guard work, negotiation, public procedure, financial evidence, challenge contests, decoy banners, Tom's local mediation, or delaying election lawfully. Clues: raid tack from one company; payment through Vanner's cousin; Red's genuine emergency plans; Tom's past settlements; contradictory heraldic blank thefts. Failure forward: the election fractures or a weaker candidate wins, but local marches remain active agents and later reform is p…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "name": "Q13 — The Choir Below Stone",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Copperdeep miners hear formal knocking and choral tones below sealed Concord galleries. Layers: trapped ghosts → ventilation, old bell pipes, and active trespass → someone searches for a tithe chamber associated with dragon history. Objectives: 1. Map safe access and protect workers from collapse or bad air. 2. Determine the source of knocking, soot, and choral resonance. 3. Decide what evidence and access should remain sealed, studied, or made public. Routes: mining expertise, sound triangulation, old plans, rescue ropes, ventilation smoke, controlled breach, magical sensing, or following trespass supply lines. Clues: human boot soot; pipes tuned to warning intervals; fresh food scraps; tithe niche marks; one knocking sequence is an old shift code. Failure forward: a gallery collapse closes one route but exposes a safer archive escape tunnel. Aftermath: bell metal carries a Kethrian tithe mark, unrelated to Alderwick tolls.",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q02.chickens-of-commercial-intent",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q02.chickens-of-commercial-intent",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q03.the-wheel-at-midnight",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q03.the-wheel-at-midnight",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q04.the-respectable-smuggler",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q04.the-respectable-smuggler",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q05.a-standard-with-a-hollow-heart",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q05.a-standard-with-a-hollow-heart",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q06.the-provosts-exception",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q06.the-provosts-exception",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q07.the-comedy-crown",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q07.the-comedy-crown",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q08.three-bridges-two-courts",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q08.three-bridges-two-courts",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q09.the-heir-in-the-footnote",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q09.the-heir-in-the-footnote",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q10.the-ship-that-must-sail",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q10.the-ship-that-must-sail",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q11.the-grey-orchard-wife",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q11.the-grey-orchard-wife",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q12.the-shepherd-who-refused",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q12.the-shepherd-who-refused",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "clue.caldris.q01.barge-timing",
+      "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "qualifiedKind": "game.core.world.clue.supports",
+      "value": {}
+    },
+    {
+      "fromEntityId": "clue.caldris.q01.dry-flour",
+      "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "qualifiedKind": "game.core.world.clue.supports",
+      "value": {}
+    },
+    {
+      "fromEntityId": "clue.caldris.q01.theatre-fibres",
+      "toEntityId": "secret.caldris.quest.q01.the-thirteenth-bell",
+      "qualifiedKind": "game.core.world.clue.supports",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.volume.volume-v",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.volume.volume-v",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.volume.volume-vi",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.volume.volume-vi",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.ganji.button-hills-origin",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.ganji.the-bell-without-motion",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.ganji.the-hands-that-retrieve",
+      "toEntityId": "faction.caldris.tensor-sect",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.ganji.the-hands-that-retrieve",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.ganji.the-missing-folio",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.ganji.nettle",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

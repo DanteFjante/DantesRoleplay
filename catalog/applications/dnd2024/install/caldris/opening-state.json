@@ -1,0 +1,4545 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "campaign.caldris.measure-of-mercy",
+      "name": "The Measure of Mercy",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.root",
+          "value": {
+            "status": "active",
+            "title": "The Measure of Mercy",
+            "premise": "A bridge toll and a bell that rings thirteen times lead from local corruption to royal succession, transcontinental archives, and the old responsibility of a dragon—without losing sight of supper, friendship, weather, work, and ordinary lives worth protecting.",
+            "partyGoals": [
+              "Become part of Bramblebridge without taking over its life.",
+              "Learn who profits from the new toll orders and why an empty tax wagon reached the market.",
+              "Choose how powerful systems can be made humane without making every victory belong to one conspiracy."
+            ],
+            "toneAndBoundaries": [
+              "Cozy, lightly humorous, storybook medieval adventure grounded in believable work, law, travel, weather, and consequence.",
+              "Magic is rare and remarkable rather than ordinary infrastructure; grief and danger appear beside warmth, eccentricity, and recovery.",
+              "Mysteries reward secrets, riddles, conversation, and creative solutions; apparent bosses may reveal higher layers while completed adventures still matter."
+            ],
+            "rulesetScope": "dnd2024",
+            "creationMethod": "manual",
+            "reviewFingerprint": "5118269bd27dfc3805ef7af962221c5100bfa7c57dabd4528d554d0e7335670c"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.campaign.current-scene",
+          "value": {
+            "location": {
+              "entityId": "location.caldris.bramblebridge"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "campaign"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-cat-companion-hook",
+      "name": "A Cat With Its Own Will",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ganji has a natural affinity for cats. A planned future story hook: he may cross paths with a cat of unusual, independent will that can understand him -- a possible companion, given his affinity, playable as a small optional thread rather than a major plot point.",
+            "provenance": "GM worldbuilding note, from player-provided character background",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-elvish-lessons",
+      "name": "An Improper Silence",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An elven sect-brother felt it improper that Ganji didn't speak Elvish, and privately taught him the language during free hours.",
+            "provenance": "Ganji's own account",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-escape",
+      "name": "Ganji's Departure",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Two weeks ago, Ganji left the Tensor Sect in the dark of night and has been travelling the Lantern Road toward Bramblebridge since.",
+            "provenance": "Witnessed by Ganji himself",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-musician-friend",
+      "name": "The Old Musician",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An old traveling musician once stayed at the Tensor Sect for a short time. Music wasn't permitted within the Sect's walls, so he played just outside them instead -- where Ganji, sneaking out from his required hours of solitary religious study, heard him. The two struck a quiet bargain not to tell on each other, became friends over the musician's short stay, and Ganji learned to play the flute from him. It was Ganji's first real experience of music, and part of why he later carved his quarterstaff to double as one.",
+            "provenance": "Witnessed by Ganji himself",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-unbidden-eye",
+      "name": "The Unbidden Eye",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect named Ganji 'the Unbidden Eye,' believing his birth fulfilled an old teaching about a student who sees before learning how to look.",
+            "provenance": "Tensor Sect internal teaching, known to Ganji and sect members",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-sealed-alcove",
+      "name": "The Sealed Alcove",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Set into the base of one of Bramblebridge's bridge piers is a small stone alcove, sealed by a door bearing a faded royal crest nobody currently living can place. Since the new toll order arrived, guards have been quietly posted to keep people away from it -- and get oddly tense if asked why.",
+            "provenance": "Observable in Bramblebridge; the guards' behavior is common gossip",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-tax-wagon",
+      "name": "The Empty Tax Wagon",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The season's royal tax wagon arrived at Bramblebridge's market completely empty -- seals unbroken, locks untouched, no sign of a break-in anywhere along the road. The crown's collectors are furious and looking for someone local to blame before word reaches the capital.",
+            "provenance": "Common knowledge in Bramblebridge",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-vanishing-sheep",
+      "name": "The Vanishing Sheep of Thistlewick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Thistlewick's shepherds have lost eleven sheep this month -- no blood, no tracks, no wolves seen or heard. Each one vanished at night, always from the pastures nearest Sable Hollow. The villagers are more baffled than afraid, but they'd very much like it to stop.",
+            "provenance": "Local rumor, easily heard in Bramblebridge or Thistlewick",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.prediction-court-legend",
+      "name": "No One Crosses Unheard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Sect doctrine holds that nobody can cross the Prediction Court's suspended bells without ringing one — until Ganji did it on the night he escaped.",
+            "provenance": "Tensor Sect legend, now spreading among the monks",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor-sect-doctrine",
+      "name": "The Doctrine of Invisible Tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect teaches that every movement is joined to every other by invisible tension, and that a sufficiently disciplined mind could perceive the whole pattern at once.",
+            "provenance": "Tensor Sect teaching, widely known within Highmead",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor-sect-pursuit",
+      "name": "The Sect's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect raised Ganji as a prodigy and does not easily let go of what it considers its own. If Ganji ever makes a serious, lasting break from them, the Sect may dispatch monks to retrieve him. This is a live, unresolved threat for the GM to invoke at a dramatically appropriate moment, not a scheduled event.",
+            "provenance": "GM worldbuilding note, from player-provided character background",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "faction.caldris.alderwick-crown-council",
+      "name": "Alderwick Crown Council",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "The council charged with preserving lawful succession and the kingdom's fragile peace while Queen Adela refuses to name an heir.",
+            "visibility": "public",
+            "goals": [
+              "Preserve lawful succession.",
+              "Prevent uncertainty from becoming war."
+            ],
+            "methods": [
+              "Committee review and sealed advice.",
+              "Selective disclosure intended to project confidence."
+            ],
+            "assets": [
+              "Royal clerks",
+              "Provincial correspondence",
+              "Emergency legal powers"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Contain the toll scandal before it becomes evidence that the Crown has lost control of its own orders."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.aur-river-judges",
+      "name": "Aur River Judges",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Aur River Judges operates across Ordelain. Keep navigation and water rights predictable.",
+            "visibility": "public",
+            "goals": [
+              "Keep navigation and water rights predictable."
+            ],
+            "methods": [
+              "Elite training isolates judges from villages; rival schools weaponize precedent."
+            ],
+            "assets": [
+              "Reach: Ordelain"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The river changes course around a ducal estate."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.bellafont-water-courts",
+      "name": "Bellafont Water Courts",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Bellafont Water Courts operates across Bellafont. Allocate scarce water by charter and need.",
+            "visibility": "public",
+            "goals": [
+              "Allocate scarce water by charter and need."
+            ],
+            "methods": [
+              "Ancient documents privilege abbeys and estates; reformers forge consensus statistics."
+            ],
+            "assets": [
+              "Reach: Bellafont"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Orchard blight and drought coincide."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.bramblebridge-watch",
+      "name": "Bramblebridge Watch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "A tiny civic watch trying to keep a busy market town safe with too little money, uneven social skills, borrowed equipment, and considerable local loyalty.",
+            "visibility": "public",
+            "goals": [
+              "Keep Bramblebridge safe.",
+              "Prevent toll anger from becoming violence."
+            ],
+            "methods": [
+              "Foot patrols, witness interviews, and local favors.",
+              "Maps, labeled string, and reluctant cooperation with guilds."
+            ],
+            "assets": [
+              "Tibb's Watch Post",
+              "Town maps",
+              "A whistle everyone recognizes"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Find the missing tax-wagon driver and learn why the noon bell rang thirteen times before someone is arrested for convenience."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.brotherhood-of-saint-orro",
+      "name": "Brotherhood of Saint Orro",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Brotherhood of Saint Orro operates across Selucia. Rescue anyone in danger at sea.",
+            "visibility": "public",
+            "goals": [
+              "Rescue anyone in danger at sea."
+            ],
+            "methods": [
+              "The order treats proper knots as a moral issue and hoards navigation logs."
+            ],
+            "assets": [
+              "Reach: Selucia"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "A relic dispute could close the repair dock."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.carrowmere-shipwright-fraternities",
+      "name": "Carrowmere Shipwright Fraternities",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Carrowmere Shipwright Fraternities operates across Carrowmere. Safe work, injury support, and high-quality ships.",
+            "visibility": "public",
+            "goals": [
+              "Safe work, injury support, and high-quality ships."
+            ],
+            "methods": [
+              "Rival yards compete for contracts and disagree over strike tactics."
+            ],
+            "assets": [
+              "Reach: Carrowmere"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The grain fleet deadline approaches."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.company-of-weirs",
+      "name": "Company of Weirs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Company of Weirs operates across Alderwick rivers. Maintain bridges, mills, floodworks, and navigation.",
+            "visibility": "public",
+            "goals": [
+              "Maintain bridges, mills, floodworks, and navigation."
+            ],
+            "methods": [
+              "Uses inherited monopolies and sometimes invents urgent repairs to retain tolls."
+            ],
+            "assets": [
+              "Reach: Alderwick rivers"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Flood-control funding is diverted to court roads."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.free-axle-companies",
+      "name": "Free Axle Companies",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Free Axle Companies operates across Veyr roads. Repair vehicles and aid stranded travellers.",
+            "visibility": "public",
+            "goals": [
+              "Repair vehicles and aid stranded travellers."
+            ],
+            "methods": [
+              "Some companies trade route information to escort firms."
+            ],
+            "assets": [
+              "Reach: Veyr roads"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "False raids raise travel costs."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.glassharbor-furnace-guilds",
+      "name": "Glassharbor Furnace Guilds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Glassharbor Furnace Guilds operates across Seven Lamps. Safe fuel, fair apprenticeships, and high craft standards.",
+            "visibility": "public",
+            "goals": [
+              "Safe fuel, fair apprenticeships, and high craft standards."
+            ],
+            "methods": [
+              "Old masters suppress efficient methods that weaken their control."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Cheap fuel violates forest agreements."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.grey-mantle-houses",
+      "name": "Grey Mantle Houses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Grey Mantle Houses operates across Dunmarrow. Maintain northern defence and veteran support.",
+            "visibility": "public",
+            "goals": [
+              "Maintain northern defence and veteran support."
+            ],
+            "methods": [
+              "Conflate family prestige with public safety and lobby for a standing army."
+            ],
+            "assets": [
+              "Reach: Dunmarrow"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Mine revenue no longer supports fortress budgets."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.honest-weights-guild",
+      "name": "Honest Weights Guild",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Market assessors and craftspeople who defend common measures and small traders while guarding their own authority to certify what counts as honest.",
+            "visibility": "public",
+            "goals": [
+              "Protect reliable public measures.",
+              "Give small traders a fair appeal."
+            ],
+            "methods": [
+              "Public tests and witnessed scales.",
+              "Formal arbitration and apprentice training."
+            ],
+            "assets": [
+              "Honest Weights Hall",
+              "Certified standards",
+              "Regional assessors"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Discover how a hollow standard and counterfeit exemptions entered Bramblebridge without making an unverified public accusation."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.houses-of-rescue",
+      "name": "Houses of Rescue",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Houses of Rescue operates across Carrowmere coast. Maintain lighthouses, boats, shelters, and survivor care.",
+            "visibility": "public",
+            "goals": [
+              "Maintain lighthouses, boats, shelters, and survivor care."
+            ],
+            "methods": [
+              "Protect embarrassing wreck records to preserve public trust."
+            ],
+            "assets": [
+              "Reach: Carrowmere coast"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Several warning signals appear without storms."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.keepers-of-the-mountain-tithe",
+      "name": "Keepers of the Mountain Tithe",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Keepers of the Mountain Tithe operates across Kethria. Preserve an ancient peace and prevent dragon conflict.",
+            "visibility": "public",
+            "goals": [
+              "Preserve an ancient peace and prevent dragon conflict."
+            ],
+            "methods": [
+              "A secretive office allowed one official to double the tithe."
+            ],
+            "assets": [
+              "Reach: Kethria"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Copper disappears before storage."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.kethrian-canal-councils",
+      "name": "Kethrian Canal Councils",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Kethrian Canal Councils operates across Kethria. Maintain snowmelt water through shared labour.",
+            "visibility": "public",
+            "goals": [
+              "Maintain snowmelt water through shared labour."
+            ],
+            "methods": [
+              "Upland and lowland councils hide measurements from one another."
+            ],
+            "assets": [
+              "Reach: Kethria"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Warm night water suggests diverted underground flow."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.lantern-sea-couriers",
+      "name": "Lantern Sea Couriers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Lantern Sea Couriers operates across cross-border. Carry authenticated messages across political boundaries.",
+            "visibility": "public",
+            "goals": [
+              "Carry authenticated messages across political boundaries."
+            ],
+            "methods": [
+              "Couriers protect client confidentiality even when information could prevent harm."
+            ],
+            "assets": [
+              "Reach: cross-border"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Seven-sided seals appear on unauthorized packets."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.league-chairs-secretariat",
+      "name": "League Chair's Secretariat",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "League Chair's Secretariat operates across Seven Lamps. Coordinate diplomacy and member-city obligations.",
+            "visibility": "public",
+            "goals": [
+              "Coordinate diplomacy and member-city obligations."
+            ],
+            "methods": [
+              "Clerks use procedural delay as political leverage."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Chair Ansel Daro and the archive key are missing."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.long-bench-union",
+      "name": "Long Bench Union",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Long Bench Union operates across Dunmarrow. Feed and protect mining households during closures.",
+            "visibility": "public",
+            "goals": [
+              "Feed and protect mining households during closures."
+            ],
+            "methods": [
+              "Some organizers sabotage reopening plans they consider unsafe."
+            ],
+            "assets": [
+              "Reach: Dunmarrow"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Sealed shafts promise work and unknown risk."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.lorn-bell-houses",
+      "name": "Lorn Bell Houses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Lorn Bell Houses operates across Lornesse. Coordinate warning, rescue, worship, and civic time.",
+            "visibility": "public",
+            "goals": [
+              "Coordinate warning, rescue, worship, and civic time."
+            ],
+            "methods": [
+              "Bell families guard patterns as hereditary property."
+            ],
+            "assets": [
+              "Reach: Lornesse"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "False alarms mask activity below Copperdeep."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.low-lantern-dry-sock-fund",
+      "name": "Low Lantern Dry Sock Fund",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Low Lantern Dry Sock Fund operates across Seven Lamps. Mutual aid for dock and ferry workers.",
+            "visibility": "public",
+            "goals": [
+              "Mutual aid for dock and ferry workers."
+            ],
+            "methods": [
+              "Its impeccable records accidentally expose smuggling and espionage."
+            ],
+            "assets": [
+              "Reach: Seven Lamps"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Three states demand access to its books."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.namar-water-captains",
+      "name": "Namar Water Captains",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Namar Water Captains operates across Namarra. Maintain canals, evacuation, and fair local allocation.",
+            "visibility": "public",
+            "goals": [
+              "Maintain canals, evacuation, and fair local allocation."
+            ],
+            "methods": [
+              "Local loyalties sometimes conceal trade from royal tax offices."
+            ],
+            "assets": [
+              "Reach: Namarra"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Villages disappear from state rolls."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.nine-lamps-hospitallers",
+      "name": "Nine Lamps Hospitallers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Nine Lamps Hospitallers operates across cross-border. Provide hospice beds, burial, relief, and mediation.",
+            "visibility": "public",
+            "goals": [
+              "Provide hospice beds, burial, relief, and mediation."
+            ],
+            "methods": [
+              "Central officers standardize traditions that local houses consider essential."
+            ],
+            "assets": [
+              "Reach: cross-border"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Relief grain is redirected through political contracts."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.nine-march-moot",
+      "name": "Nine March Moot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Nine March Moot operates across Veyr. Preserve cooperation without erasing local law.",
+            "visibility": "public",
+            "goals": [
+              "Preserve cooperation without erasing local law."
+            ],
+            "methods": [
+              "Procedure allows wealthy marches to delay urgent decisions."
+            ],
+            "assets": [
+              "Reach: Veyr"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The High Warden is dying."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.oath-rope-lodges",
+      "name": "Oath Rope Lodges",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Oath Rope Lodges operates across Lornspine. Organize rescue and reciprocal mountain aid.",
+            "visibility": "public",
+            "goals": [
+              "Organize rescue and reciprocal mountain aid."
+            ],
+            "methods": [
+              "Some lodges refuse aid to unregistered commercial expeditions."
+            ],
+            "assets": [
+              "Reach: Lornspine"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Counterfeit rescue knots appear in Kethria."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.open-roof-society",
+      "name": "Open Roof Society",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Open Roof Society operates across Tessarane. Teach public observation and challenge fraudulent prophecy.",
+            "visibility": "public",
+            "goals": [
+              "Teach public observation and challenge fraudulent prophecy."
+            ],
+            "methods": [
+              "Performative skeptics sometimes mock sincere faith or local knowledge."
+            ],
+            "assets": [
+              "Reach: Tessarane"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Members receive threats from three factions."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.quiet-bell-chapter",
+      "name": "Quiet Bell Chapter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Quiet Bell Chapter operates across Alderwick. Keep bridge shrines, hospice beds, and memorial bells.",
+            "visibility": "public",
+            "goals": [
+              "Keep bridge shrines, hospice beds, and memorial bells."
+            ],
+            "methods": [
+              "Strict traditionalists oppose practical reform; local chapters disagree about magic."
+            ],
+            "assets": [
+              "Reach: Alderwick"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Bells ring with unexplained patterns."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.roadmenders-brotherhood",
+      "name": "Roadmenders' Brotherhood",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Roadmenders' Brotherhood operates across cross-border. Keep roads, bridges, waymarks, and travellers safe.",
+            "visibility": "public",
+            "goals": [
+              "Keep roads, bridges, waymarks, and travellers safe."
+            ],
+            "methods": [
+              "Accepts quiet payments to prioritize some routes; local chapters vary wildly."
+            ],
+            "assets": [
+              "Reach: cross-border"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Waymarks rotate or vanish along three old Lantern Roads."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.seed-mothers-compact",
+      "name": "Seed Mothers' Compact",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Seed Mothers' Compact operates across Namarra. Preserve resilient seed and emergency grain.",
+            "visibility": "public",
+            "goals": [
+              "Preserve resilient seed and emergency grain."
+            ],
+            "methods": [
+              "Elders restrict access to protect stock, frustrating younger farmers."
+            ],
+            "assets": [
+              "Reach: Namarra"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Durable seed is being exported secretly."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.selucian-dock-assemblies",
+      "name": "Selucian Dock Assemblies",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Selucian Dock Assemblies operates across Selucia. Safe labour, fair salvage, and island representation.",
+            "visibility": "public",
+            "goals": [
+              "Safe labour, fair salvage, and island representation."
+            ],
+            "methods": [
+              "Island branches compete and occasionally block one another's ships."
+            ],
+            "assets": [
+              "Reach: Selucia"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Royal wedding work bypasses agreed rates."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.society-of-the-silver-pear",
+      "name": "Society of the Silver Pear",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Society of the Silver Pear operates across Bellafont court. Fund art, gardens, and public feasts.",
+            "visibility": "public",
+            "goals": [
+              "Fund art, gardens, and public feasts."
+            ],
+            "methods": [
+              "Courtly patrons use taste as political exclusion and intelligence gathering."
+            ],
+            "assets": [
+              "Reach: Bellafont court"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "A satire names a private royal fear."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.swallow-almanac-society",
+      "name": "Swallow Almanac Society",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Swallow Almanac Society operates across cross-border. Observe migration, weather, insects, and crop patterns.",
+            "visibility": "public",
+            "goals": [
+              "Observe migration, weather, insects, and crop patterns."
+            ],
+            "methods": [
+              "Competing theories become personal feuds; collectors sometimes trespass."
+            ],
+            "assets": [
+              "Reach: cross-border"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The Summer Without Swallows remains unexplained."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.tensor-sect",
+      "name": "Tensor Sect",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "A small Highmead philosophical order whose monks study the instant before action and believe perfect perception may reveal the divine source refracted through the Nine Lamps. Their sincere reverence for exceptional students can become coercive custody.",
+            "visibility": "public",
+            "goals": [
+              "Achieve increasingly complete perception through disciplined observation and martial training.",
+              "Return the escaped novice called the Unbidden Eye to Tensor instruction."
+            ],
+            "methods": [
+              "Train breath, balance, gaze, prediction, and nonlethal combat through repeated observation exercises.",
+              "Use hospitality, philosophical debate, apprenticeship obligations, and retrieval parties to preserve the order."
+            ],
+            "assets": [
+              "House of the Ninth Angle",
+              "Prediction Court",
+              "Disciplined travelling monks",
+              "Detailed observation and intake folios"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Locate Ganji, determine how he crossed the Prediction Court unheard, and bring him back without allowing outsiders to redefine the sect's claim over him."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.tessa-sky-college",
+      "name": "Tessa Sky College",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Tessa Sky College operates across Tessarane. Observe stars and weather carefully.",
+            "visibility": "public",
+            "goals": [
+              "Observe stars and weather carefully."
+            ],
+            "methods": [
+              "Senior scholars enjoy court patronage and overstate certainty."
+            ],
+            "assets": [
+              "Reach: Tessarane"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "A comet becomes political evidence."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.the-seventh-ledger",
+      "name": "The Seventh Ledger",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "The Seventh Ledger operates across hidden transcontinental. Restore predictable peace through records, standards, and enforceable obligation.",
+            "visibility": "public",
+            "goals": [
+              "Restore predictable peace through records, standards, and enforceable obligation."
+            ],
+            "methods": [
+              "Believes consent is a luxury and erases people who cannot be made legible. Cells disagree between reform, capture, and restoration."
+            ],
+            "assets": [
+              "Reach: hidden transcontinental"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Counterfeit seals test which institutions still obey Concord forms."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.vessa-open-archive-league",
+      "name": "Vessa Open Archive League",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Vessa Open Archive League operates across Ordelain. Return copies of important records to communities.",
+            "visibility": "public",
+            "goals": [
+              "Return copies of important records to communities."
+            ],
+            "methods": [
+              "Radical members steal documents rather than litigate."
+            ],
+            "assets": [
+              "Reach: Ordelain"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "A private archive buys flood-era charters."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.wayward-company",
+      "name": "Wayward Company",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Wayward Company operates across cross-border adventurers. Solve problems, protect travellers, and become respectably famous.",
+            "visibility": "public",
+            "goals": [
+              "Solve problems, protect travellers, and become respectably famous."
+            ],
+            "methods": [
+              "Takes jobs too quickly, advertises victories too loudly, and occasionally solves the wrong problem well."
+            ],
+            "assets": [
+              "Reach: cross-border adventurers"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "It receives a contract intended for the player party."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "location.caldris.sable-hollow",
+      "name": "Sable Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A small, quiet wood at the edge of Thistlewick's pastures. Nothing dangerous has ever come out of it -- but lately things have been going into it and not coming back.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.thistlewick",
+      "name": "Thistlewick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A small shepherd village half a day up the Lantern Road from Bramblebridge, known for its wool and for the ring of old standing stones on the hill above the pastures. Quiet, insular, and currently missing sheep.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "region.caldris.chalklands",
+      "name": "The Chalklands",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "A country of pale hills and old chalk pits, threaded by the Lantern Road between the hill-city of Highmead and the frontier village of Bramblebridge.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "secret.caldris.ganji-parentage",
+      "name": "What Made Ganji",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ganji's catlike traits have no confirmed cause -- mutation, old curse, or something dormant in the buried past of the region. Several pages about his family were deliberately removed from the Tensor Sect's own records, and even the Sect doesn't fully understand why. Ganji himself assumes his birth parents abandoned him simply because of how he looked, and isn't especially curious to learn otherwise -- but the truth (if the GM chooses to reveal one) has never been told to him.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.missing-folio",
+      "name": "The Missing Folio",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The pages removed from Ganji's childhood record have resurfaced among documents pulled from a Button Hills sinkhole — proof the sect knew more about his ancestry than it admitted.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-sealed-alcove-solution",
+      "name": "The Sealed Alcove -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The alcove holds an old binding ward tied to a pact struck generations ago with a dragon that once guarded this river crossing before any bridge existed. The ward is failing, slowly. The new toll order exists because someone in the crown found out and wants the site quietly monitored without causing public panic ahead of the succession. This is a slow-burn campaign-arc thread, not meant to resolve in one session -- no fixed reward or XP yet; the GM should let its shape emerge through play rather than solving it early.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-tax-wagon-solution",
+      "name": "The Empty Tax Wagon -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The wagon has a false bottom, cut and reset by a Bramblebridge cartwright who owed a debt to a moneylender. Somewhere along the route the real silver was swapped for lead-weighted sacks and offloaded at a covered mill outside town; the seals were never broken because the swap happened before the wagon was sealed for the day. Expected solution path: examine the wagon's underside (Investigation), trace the route and timing (Insight/Investigation with witnesses), confront or catch the cartwright. Reward: 30 gp finder's fee plus real goodwill with the tollhouse if the silver is recovered; 75 XP for solving it, more if handled with unexpected cleverness or mercy.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-vanishing-sheep-solution",
+      "name": "The Vanishing Sheep -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A fey-touched cat with a will of its own has been quietly herding sheep into a hidden glen in Sable Hollow, keeping them as its own odd little kingdom -- not malicious, just lonely and mischievous. It can understand speech even if it doesn't answer. Expected solution path: track it (Survival/Perception), follow it into the Hollow, and either negotiate, play, or simply be kind to it rather than fight -- violence toward it should feel wrong and unnecessary once found. This cat may be the same one hinted at in Ganji's cat-companion hook; GM discretion on making the connection explicit. Reward: the shepherds' genuine gratitude, 20 gp, a wheel of cheese, and 50 XP; a possible ongoing feline companion if Ganji makes friends with it.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.prediction-court-truth",
+      "name": "How He Really Crossed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "confidential"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "No one helped Ganji cross the Prediction Court unheard — it was entirely his own perception. But at least one monk suspects otherwise, and privately wonders if they should have helped him leave sooner.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas",
+      "name": "Caldris Atlas",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
+                "caption": "Western Eredane geography revised against the retained Eredane regional master; no overlay data is baked into the image.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 2
+                }
+              },
+              "dm": {
+                "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
+                "caption": "Western Eredane geography revised against the retained Eredane regional master; no overlay data is baked into the image.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 2
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.item.ganjis-quarterstaff.v1",
+      "name": "Ganji's Quarterstaff (Caldris Homebrew, definition v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.item-definition",
+          "value": {
+            "definitionVersion": 1,
+            "kind": "weapon",
+            "stackPolicy": "separate",
+            "massPounds": {
+              "numerator": 4,
+              "denominator": 1
+            },
+            "equipmentModes": [
+              "held"
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Items > Ganji's Quarterstaff (self-carved staff and flute)"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.item.ganjis-carving-knife.v1",
+      "name": "Ganji's Carving Knife (Caldris Homebrew, definition v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.item-definition",
+          "value": {
+            "definitionVersion": 1,
+            "kind": "adventuring-gear",
+            "stackPolicy": "separate",
+            "massPounds": {
+              "numerator": 1,
+              "denominator": 2
+            },
+            "equipmentModes": [
+              "held"
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Items > Ganji's Carving Knife"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency",
+      "name": "Proficiency",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Rules Glossary > Proficiency (SRD 5.2.1, pages 186-186)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.term",
+          "value": {
+            "code": "proficiency",
+            "categoryRef": {
+              "entityId": "dnd2024.vocabulary.category.proficiency-rank",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.category.proficiency-rank",
+      "name": "Proficiency Rank",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Rules Glossary > Expertise; Proficiency (SRD 5.2.1, pages 182-186)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.category",
+          "value": {
+            "code": "proficiency-rank"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.source.srd-5.2.1",
+      "name": "D&D 2024 SRD 5.2.1",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.source",
+          "value": {
+            "system": "dnd2024",
+            "document": "System Reference Document",
+            "version": "5.2.1",
+            "publisher": "Wizards of the Coast LLC",
+            "canonicalUrl": "https://www.dndbeyond.com/srd",
+            "documentUrl": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.pdf",
+            "publishedOn": "2025-05-01",
+            "license": {
+              "id": "CC-BY-4.0",
+              "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+              "attribution": "This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode."
+            },
+            "locatorFormat": "section heading plus PDF page(s) when stable"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.distance-unit.meter",
+      "name": "Meter",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Playing the Game > Movement and Position > Speed (SRD 5.2.1, pages 11-11)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.term",
+          "value": {
+            "code": "meter",
+            "categoryRef": {
+              "entityId": "dnd2024.vocabulary.category.distance-unit",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.category.distance-unit",
+      "name": "Distance Unit",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Playing the Game > Movement and Position; Gameplay Toolbox > Travel Pace (SRD 5.2.1, pages 11-192)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.category",
+          "value": {
+            "code": "distance-unit"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.defense.unarmored.v1",
+      "name": "Unarmored Defense (ordinary, D&D 2024)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.creature.defense-basis",
+          "value": {
+            "armorClass": {
+              "mechanicId": "dnd2024.mechanic.armor-class.unarmored",
+              "inputBindings": {
+                "abilityRef": "dnd2024.vocabulary.ability.dexterity",
+                "base": 10
+              }
+            },
+            "damageResponses": []
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.size.medium",
+      "name": "Medium",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Playing the Game > Size; Rules Glossary > Size (SRD 5.2.1, pages 14-188)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.term",
+          "value": {
+            "code": "medium",
+            "categoryRef": {
+              "entityId": "dnd2024.vocabulary.category.size",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.category.size",
+      "name": "Creature Size",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Playing the Game > Size; Rules Glossary > Size (SRD 5.2.1, pages 14-188)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.category",
+          "value": {
+            "code": "size"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.feature.monk.unarmored-defense.v1",
+      "name": "Unarmored Defense (Monk, D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "feature",
+            "contentKey": "monk-unarmored-defense",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.feature.monk.martial-arts.v1",
+      "name": "Martial Arts (Monk, D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "feature",
+            "contentKey": "monk-martial-arts",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.feat.magic-initiate",
+      "name": "Magic Initiate",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "feature",
+            "contentKey": "magic-initiate",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Feats > Magic Initiate (SRD 5.2.1, pages 87-87)"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Feats > Magic Initiate (SRD 5.2.1, pages 87-87)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.advancement.feat",
+          "value": {
+            "categoryRef": {
+              "entityId": "dnd2024.feat-category.origin"
+            },
+            "repeatable": true,
+            "grantRefs": []
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.feat-category.origin",
+      "name": "Origin",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Feats > Feat Categories (SRD 5.2.1, pages 87-88)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.term",
+          "value": {
+            "code": "origin",
+            "categoryRef": {
+              "entityId": "dnd2024.vocabulary.category.feat-category",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.category.feat-category",
+      "name": "Feat Category",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Feats > Parts of a Feat (SRD 5.2.1, pages 87-88)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.category",
+          "value": {
+            "code": "feat-category"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.extension.caldris.content.species.half-elf.v1",
+      "name": "Half-Elf (Caldris Homebrew, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "species",
+            "contentKey": "half-elf",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.species-profile",
+          "value": {
+            "contentKey": "half-elf",
+            "contentVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024-extension.caldris-homebrew",
+              "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+            },
+            "creatureType": "humanoid",
+            "allowedSizes": [
+              "medium"
+            ],
+            "baseSpeed": {
+              "walkFeet": 30,
+              "burrowFeet": 0,
+              "climbFeet": 0,
+              "flyFeet": 0,
+              "swimFeet": 0
+            },
+            "traitKeys": [
+              "darkvision",
+              "fey-ancestry",
+              "skill-versatility"
+            ],
+            "choiceFamilies": []
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.rules.readable",
+          "value": {
+            "section": {
+              "id": "character-options",
+              "label": "Character Options",
+              "order": 15
+            },
+            "order": 10,
+            "title": "Half-Elf (Caldris Homebrew)",
+            "summary": "The installed Caldris extension contributes a Medium Humanoid Half-Elf option with its recorded speed and trait keys.",
+            "blocks": [
+              {
+                "kind": "list",
+                "heading": "Recorded profile",
+                "body": null,
+                "items": [
+                  "Creature type: Humanoid.",
+                  "Allowed size: Medium.",
+                  "Trait keys: Darkvision, Fey Ancestry, and Skill Versatility."
+                ]
+              },
+              {
+                "kind": "callout",
+                "heading": "Homebrew source",
+                "body": "This option belongs to the active Caldris Homebrew extension and is not part of the core D&D 2024 catalog.",
+                "items": []
+              }
+            ],
+            "examples": [],
+            "relatedRuleRefs": [
+              {
+                "entityId": "dnd2024.rule.characters.character-sheet"
+              }
+            ],
+            "relatedContentRefs": [],
+            "citations": [
+              {
+                "sourceId": "dnd2024-extension.caldris-homebrew",
+                "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+              }
+            ],
+            "mechanicIds": [
+              "dnd2024.mechanic.species-selection.resolve"
+            ],
+            "procedureIds": [
+              "dnd2024.procedure.mechanic.species-selection"
+            ],
+            "visibility": "public",
+            "presentationStatus": "published"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.rule.characters.character-sheet",
+      "name": "Reading a Character Sheet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.rules.readable",
+          "value": {
+            "section": {
+              "id": "characters",
+              "label": "Characters",
+              "order": 10
+            },
+            "order": 10,
+            "title": "Reading a Character Sheet",
+            "summary": "A character sheet gathers the character's available identity, abilities, defenses, features, resources, actions, and equipment into one readable view.",
+            "blocks": [
+              {
+                "kind": "paragraph",
+                "heading": "Available state",
+                "body": "Only sections supported by the character's current recorded state are shown. Missing sections are not replaced with assumed values.",
+                "items": []
+              },
+              {
+                "kind": "callout",
+                "heading": "Authority",
+                "body": "The readable sheet explains current results. Catalog mechanics remain authoritative for calculations and state changes.",
+                "items": []
+              }
+            ],
+            "examples": [
+              {
+                "title": "Incomplete character",
+                "body": "A character without spellcasting state has no spellcasting section; the rest of the available sheet remains readable."
+              }
+            ],
+            "relatedRuleRefs": [
+              {
+                "entityId": "dnd2024.rule.combat.weapon-attacks"
+              }
+            ],
+            "relatedContentRefs": [],
+            "citations": [
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+              }
+            ],
+            "mechanicIds": [
+              "dnd2024.mechanic.character-sheet.project"
+            ],
+            "procedureIds": [
+              "dnd2024.procedure.mechanic.character-sheet"
+            ],
+            "visibility": "public",
+            "presentationStatus": "published"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.rule.combat.weapon-attacks",
+      "name": "Weapon Attacks",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.rules.readable",
+          "value": {
+            "section": {
+              "id": "combat",
+              "label": "Combat",
+              "order": 20
+            },
+            "order": 10,
+            "title": "Weapon Attacks",
+            "summary": "A weapon attack resolves its attack roll and, on a hit, applies the weapon activity's recorded damage through the active combat mechanics.",
+            "blocks": [
+              {
+                "kind": "steps",
+                "heading": "Resolution",
+                "body": null,
+                "items": [
+                  "Choose the acting character, target, and recorded weapon activity.",
+                  "Resolve the attack roll against the target's current defense.",
+                  "If the attack hits, resolve the activity's damage and the target's recorded damage responses."
+                ]
+              },
+              {
+                "kind": "callout",
+                "heading": "Recorded state wins",
+                "body": "The readable rule never substitutes browser calculations for the active weapon-attack mechanic.",
+                "items": []
+              }
+            ],
+            "examples": [
+              {
+                "title": "Different weapon activities",
+                "body": "A weapon definition can expose distinct melee, thrown, one-handed, or two-handed activities. The selected activity determines the authoritative mechanic input."
+              }
+            ],
+            "relatedRuleRefs": [
+              {
+                "entityId": "dnd2024.rule.characters.character-sheet"
+              },
+              {
+                "entityId": "dnd2024.rule.resting.long-rests"
+              }
+            ],
+            "relatedContentRefs": [],
+            "citations": [
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Rules Glossary > Weapon Attack (SRD 5.2.1, pages 191-191)"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Playing the Game > Actions > Attack (SRD 5.2.1, pages 9-9)"
+              }
+            ],
+            "mechanicIds": [
+              "dnd2024.mechanic.weapon-attack"
+            ],
+            "procedureIds": [
+              "dnd2024.procedure.mechanic.weapon-attack"
+            ],
+            "visibility": "public",
+            "presentationStatus": "published"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.rule.resting.long-rests",
+      "name": "Long Rests",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.rules.readable",
+          "value": {
+            "section": {
+              "id": "resting",
+              "label": "Resting",
+              "order": 30
+            },
+            "order": 10,
+            "title": "Long Rests",
+            "summary": "A long rest is a recorded episode whose progress, interruptions, completion benefits, and eligible resource restoration are resolved by the active rest policy.",
+            "blocks": [
+              {
+                "kind": "paragraph",
+                "heading": "Rest episode",
+                "body": "Beginning a rest records the selected policy and starting state. Progress and interruptions update that same episode rather than inventing an outcome in the interface.",
+                "items": []
+              },
+              {
+                "kind": "list",
+                "heading": "What the mechanic checks",
+                "body": null,
+                "items": [
+                  "The active rest policy and its source-bound timing.",
+                  "Recorded interruptions and elapsed time.",
+                  "Hit points, Hit Dice, exhaustion, ability scores, and resource pools that are eligible for restoration when the episode completes."
+                ]
+              }
+            ],
+            "examples": [
+              {
+                "title": "Interrupted rest",
+                "body": "When an interruption is recorded, the rest-progress mechanic applies the active policy before reporting whether more time is required."
+              }
+            ],
+            "relatedRuleRefs": [
+              {
+                "entityId": "dnd2024.rule.combat.weapon-attacks"
+              }
+            ],
+            "relatedContentRefs": [],
+            "citations": [
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Rules Glossary > Long Rest and Short Rest, PDF pages 185 and 187"
+              }
+            ],
+            "mechanicIds": [
+              "dnd2024.mechanic.rest.begin",
+              "dnd2024.mechanic.rest.interrupt",
+              "dnd2024.mechanic.rest.progress",
+              "dnd2024.mechanic.rest.complete",
+              "dnd2024.mechanic.rest.hit-points.restore",
+              "dnd2024.mechanic.rest.hit-dice.apply",
+              "dnd2024.mechanic.rest.exhaustion.reduce",
+              "dnd2024.mechanic.rest.ability-scores.restore",
+              "dnd2024.mechanic.rest.resource-pool.restore"
+            ],
+            "procedureIds": [
+              "dnd2024.procedure.mechanic.rest-episode"
+            ],
+            "visibility": "public",
+            "presentationStatus": "published"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.class.monk.v1",
+      "name": "Monk (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "class",
+            "contentKey": "monk",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.class-progression",
+          "value": {
+            "hitDieSides": 8,
+            "fixedHitPointGainBeforeConstitution": 5,
+            "levels": [
+              {
+                "classLevel": 1,
+                "featureDefinitionIds": [
+                  "dnd2024.content.feature.monk.martial-arts.v1",
+                  "dnd2024.content.feature.monk.unarmored-defense.v1"
+                ],
+                "choiceSetDefinitionIds": []
+              }
+            ],
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.class-creation-profile",
+          "value": {
+            "classKey": "monk",
+            "primaryAbilities": {
+              "mode": "all",
+              "abilities": [
+                "dex",
+                "wis"
+              ]
+            },
+            "savingThrows": [
+              "str",
+              "dex"
+            ],
+            "skills": {
+              "choiceCount": 2,
+              "options": [
+                "acrobatics",
+                "athletics",
+                "history",
+                "insight",
+                "religion",
+                "stealth"
+              ],
+              "fixedChoices": [
+                "acrobatics",
+                "insight"
+              ]
+            },
+            "weapons": {
+              "categories": [
+                "simple"
+              ],
+              "restrictedMartialProperties": [
+                "light"
+              ]
+            },
+            "armorTraining": [],
+            "tools": {
+              "fixed": [],
+              "choiceGroups": [
+                {
+                  "count": 1,
+                  "optionFamilies": [
+                    "artisan-tools",
+                    "musical-instrument"
+                  ]
+                }
+              ]
+            },
+            "spellcasting": {
+              "kind": "none",
+              "ability": "none",
+              "cantrips": 0,
+              "preparedSpells": 0,
+              "spellbookSpells": 0,
+              "level1Slots": 0,
+              "slotLevel": 0
+            },
+            "startingEquipmentCashGp": 50,
+            "startingEquipmentCurrencyDefinitionId": "dnd2024.equipment.currency.gold-piece",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk, PDF pages 49–50"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.equipment.currency.gold-piece",
+      "name": "Gold Piece",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Equipment > Coins > Coin Values > Gold Piece (SRD 5.2.1, pages 89-89)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.physical",
+          "value": {
+            "weight": {
+              "dimension": "mass",
+              "value": {
+                "numerator": 45359237,
+                "denominator": 5000000000
+              },
+              "unit": {
+                "entityId": "dnd2024.vocabulary.mass-unit.kilogram"
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.presentation",
+          "value": {
+            "summary": "The Coin Values table also supplies the CP/SP/EP/GP/PP abbreviation and value relative to the Gold Piece."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.mass-unit.kilogram",
+      "name": "Kilogram",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Rules Glossary > Carrying Capacity (SRD 5.2.1, pages 178-178)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.term",
+          "value": {
+            "code": "kilogram",
+            "categoryRef": {
+              "entityId": "dnd2024.vocabulary.category.mass-unit",
+              "expectedArchetype": "dnd2024.archetype.vocabulary-category-definition"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.vocabulary.category.mass-unit",
+      "name": "Mass Unit",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.source",
+          "value": {
+            "citations": [
+              {
+                "sourceRef": {
+                  "entityId": "dnd2024.source.srd-5.2.1"
+                },
+                "locator": "Rules Glossary > Carrying Capacity (SRD 5.2.1, pages 178-178)"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.core.version",
+          "value": {
+            "revision": 1,
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.vocabulary.category",
+          "value": {
+            "code": "mass-unit"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.background.acolyte.v1",
+      "name": "Acolyte (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.content-definition",
+          "value": {
+            "kind": "background",
+            "contentKey": "acolyte",
+            "contentVersion": 1,
+            "status": "active",
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.background.ability-increase-options",
+          "value": {
+            "contentKey": "acolyte",
+            "contentVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            },
+            "eligibleAbilities": [
+              "int",
+              "wis",
+              "cha"
+            ],
+            "allowedPatterns": [
+              "plus-2-plus-1",
+              "plus-1-each"
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.background-creation-profile",
+          "value": {
+            "backgroundKey": "acolyte",
+            "skillProficiencies": [
+              "insight",
+              "religion"
+            ],
+            "toolProficiency": {
+              "kind": "fixed",
+              "toolId": "calligraphers-supplies"
+            },
+            "originFeat": {
+              "definitionId": "dnd2024.feat.magic-initiate",
+              "configurationKey": "cleric"
+            },
+            "startingEquipment": {
+              "packageEntries": [
+                {
+                  "kind": "item",
+                  "itemKey": "calligraphers-supplies",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "book-prayers",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "holy-symbol",
+                  "quantity": 1
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "parchment-sheet",
+                  "quantity": 10
+                },
+                {
+                  "kind": "item",
+                  "itemKey": "robe",
+                  "quantity": 1
+                }
+              ],
+              "packageCurrencyGp": 8,
+              "cashAlternativeGp": 50
+            },
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "dnd2024.content.ability-assignment.standard-array.v1",
+      "name": "Standard Array (D&D 2024, content v1)",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.ability-assignment-policy",
+          "value": {
+            "policyVersion": 1,
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+            },
+            "scoreBounds": {
+              "minimum": 8,
+              "maximum": 15
+            },
+            "allocation": {
+              "family": "fixed-multiset",
+              "values": [
+                8,
+                10,
+                12,
+                13,
+                14,
+                15
+              ]
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "rules.content"
+      }
+    },
+    {
+      "entityId": "location.caldris.button-hills",
+      "name": "The Button Hills",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Chalk pasture and shepherd tracks west of Highmead, scattered with rain-washed buttons and collapsing ancient storehouses. Ganji's birthplace, and the site of a sinkhole that recently swallowed part of one old storehouse.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "region.caldris.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.highmead",
+      "name": "Highmead",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A hill-city of narrow chalk-white streets, its Whitewall district overlooked by the Tensor Sect's monastery. Ganji grew up hearing its bells and market noise from behind monastery walls.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "region.caldris.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
+      "name": "Ganji campaign participation",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.character-participation",
+          "value": {
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "character-participation"
+      }
+    },
+    {
+      "entityId": "location.caldris.eredane",
+      "name": "Eredane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Eredane regional terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 255,
+            "y": 380
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Eredane regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Eredane regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.house-of-the-ninth-angle",
+      "name": "House of the Ninth Angle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A severe chalk monastery overlooking Highmead, home to the Tensor Sect. Angled mirrors, uneven floors, and sparring courts are built to expose the smallest unconscious movement.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.highmead",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick",
+      "name": "Alderwick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Alderwick regional terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 525,
+            "y": 530
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Alderwick regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Alderwick regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ilvaeril",
+      "name": "Brother Ilvaeril",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "An elven monk of the Tensor Sect who quietly taught Ganji Elvish, feeling his ignorance of it improper. Now one of the three monks sent to bring Ganji home — genuinely fond of him, and uneasy about the errand.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.house-of-the-ninth-angle",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ordrun-vess",
+      "name": "Master Ordrun Vess",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Headmaster of the Tensor Sect and the warrior who trained Ganji personally. He genuinely loves Ganji but cannot accept his right to leave, and has sent monks down the Lantern Road to bring him home.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.house-of-the-ninth-angle",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "location.caldris.prediction-court",
+      "name": "The Prediction Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A garden of suspended bells within the House of the Ninth Angle. Sect doctrine holds that nobody can cross it unheard — until Ganji did, the night he left.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.house-of-the-ninth-angle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.bramble-country",
+      "name": "Bramble Country",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Bramble Country terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 400
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramble Country terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramble Country terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge",
+      "name": "Bramblebridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A frontier village built around a toll bridge, currently uneasy over a new toll order and an empty tax wagon that reached market. The Lantern Road ends here.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 455,
+            "y": 450
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramblebridge streets, river, and structures without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramblebridge streets, river, and structures without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "995917ca0016f16060cc0d0265185740835588edf0d60096a22d0eedcaafda6b",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "The market at Bramblebridge.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/visuals/location-bramblebridge-market-v1.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey",
+      "name": "Mallow Abbey",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 230,
+            "y": 325
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "actor.caldris.nettle",
+      "name": "Nettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "A free, sharp-witted stray cat with a will very much her own. She takes an immediate liking to Ganji when their paths cross in Bramblebridge.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle",
+      "name": "The Gilded Kettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A welcoming Bramblebridge tavern that doesn't care whether its guests are prophesied for anything, so long as they help move benches and eat their dumplings before they cool.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 280,
+            "y": 575
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+                "mimeType": "image/png",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+                "mimeType": "image/png",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+                "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ganji",
+      "name": "Ganji",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character-creation-record",
+          "value": {
+            "status": "basic-playable",
+            "templateKey": "acolyte-monk-level-1-v1",
+            "selections": {
+              "abilityPolicyDefinitionId": "dnd2024.content.ability-assignment.standard-array.v1",
+              "backgroundDefinitionId": "dnd2024.content.background.acolyte.v1",
+              "classDefinitionId": "dnd2024.content.class.monk.v1",
+              "classLevel": 1,
+              "speciesDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
+              "size": "medium",
+              "classSkillChoices": [
+                "acrobatics",
+                "athletics"
+              ],
+              "languageChoices": [
+                "common-sign-language",
+                "elvish"
+              ],
+              "classToolChoices": [
+                "woodcarvers-tools"
+              ]
+            },
+            "appliedComponentIds": [
+              "dnd2024.character-creation-record",
+              "dnd2024.character-feature-grants",
+              "dnd2024.character.experience",
+              "dnd2024.conditions",
+              "dnd2024.creature.ability-scores",
+              "dnd2024.creature.body",
+              "dnd2024.creature.defenses",
+              "dnd2024.creature.hit-points",
+              "dnd2024.creature.languages",
+              "dnd2024.creature.movement",
+              "dnd2024.creature.proficiencies",
+              "dnd2024.selected-species"
+            ],
+            "unresolvedEntitlements": [
+              {
+                "ownerDefinitionId": "dnd2024.content.background.acolyte.v1",
+                "entitlementKey": "equipment:starting-package-or-50-gp",
+                "reason": "equipment-deferred"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.content.class.monk.v1",
+                "entitlementKey": "equipment:starting-package",
+                "reason": "equipment-deferred"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.content.class.monk.v1",
+                "entitlementKey": "weapon:restricted-martial-attack-enforcement:light",
+                "reason": "behavior-unimplemented"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.feat.magic-initiate",
+                "entitlementKey": "behavior:configuration:cleric",
+                "reason": "behavior-unimplemented"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.content.feature.monk.martial-arts.v1",
+                "entitlementKey": "behavior",
+                "reason": "behavior-unimplemented"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.content.feature.monk.unarmored-defense.v1",
+                "entitlementKey": "behavior",
+                "reason": "behavior-unimplemented"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
+                "entitlementKey": "trait:darkvision",
+                "reason": "application-deferred"
+              },
+              {
+                "ownerDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
+                "entitlementKey": "trait:fey-ancestry",
+                "reason": "application-deferred"
+              }
+            ],
+            "sourceRefs": [
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+              },
+              {
+                "sourceId": "dnd2024-extension.caldris-homebrew",
+                "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Classes > Monk, PDF pages 49–50"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Creation > Step 2: Character Origin > Choose Languages"
+              },
+              {
+                "sourceId": "dnd2024.source.srd-5.2.1",
+                "locator": "Character Creation > Step 5: Character Creation Details, PDF page 22"
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.character.feature-entitlements",
+          "value": {
+            "entitlements": [
+              {
+                "featureRef": {
+                  "entityId": "dnd2024.content.feature.monk.martial-arts.v1"
+                },
+                "grantedByRef": {
+                  "entityId": "dnd2024.content.class.monk.v1"
+                },
+                "grantKind": "class-feature",
+                "classLevel": 1,
+                "sourceRef": {
+                  "sourceId": "dnd2024.source.srd-5.2.1",
+                  "locator": "Classes > Monk, PDF pages 49–50"
+                }
+              },
+              {
+                "featureRef": {
+                  "entityId": "dnd2024.content.feature.monk.unarmored-defense.v1"
+                },
+                "grantedByRef": {
+                  "entityId": "dnd2024.content.class.monk.v1"
+                },
+                "grantKind": "class-feature",
+                "classLevel": 1,
+                "sourceRef": {
+                  "sourceId": "dnd2024.source.srd-5.2.1",
+                  "locator": "Classes > Monk, PDF pages 49–50"
+                }
+              },
+              {
+                "featureRef": {
+                  "entityId": "dnd2024.feat.magic-initiate"
+                },
+                "grantedByRef": {
+                  "entityId": "dnd2024.content.background.acolyte.v1"
+                },
+                "grantKind": "origin-feat",
+                "configurationKey": "cleric",
+                "sourceRef": {
+                  "sourceId": "dnd2024.source.srd-5.2.1",
+                  "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.character.experience",
+          "value": {
+            "total": 0
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.conditions",
+          "value": {
+            "entries": [],
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Rules Glossary"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.ability-scores",
+          "value": {
+            "scores": {
+              "dnd2024.vocabulary.ability.strength": 8,
+              "dnd2024.vocabulary.ability.dexterity": 15,
+              "dnd2024.vocabulary.ability.constitution": 13,
+              "dnd2024.vocabulary.ability.intelligence": 13,
+              "dnd2024.vocabulary.ability.wisdom": 16,
+              "dnd2024.vocabulary.ability.charisma": 10
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.body",
+          "value": {
+            "sizeRef": {
+              "entityId": "dnd2024.vocabulary.size.medium"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.defenses",
+          "value": {
+            "armorClassSource": {
+              "entityId": "dnd2024.content.defense.unarmored.v1"
+            },
+            "damageResponses": []
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.hit-points",
+          "value": {
+            "current": 9,
+            "maximum": 9
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.languages",
+          "value": {
+            "languages": {
+              "dnd2024.vocabulary.language.common": {
+                "understands": true,
+                "communicates": true,
+                "reads": true,
+                "writes": true,
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.language.elvish": {
+                "understands": true,
+                "communicates": true,
+                "reads": true,
+                "writes": true,
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.language.common-sign-language": {
+                "understands": true,
+                "communicates": true,
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.movement",
+          "value": {
+            "speeds": {
+              "dnd2024.vocabulary.movement-mode.walk": {
+                "distance": {
+                  "dimension": "distance",
+                  "value": {
+                    "numerator": 11430,
+                    "denominator": 1250
+                  },
+                  "unit": {
+                    "entityId": "dnd2024.vocabulary.distance-unit.meter"
+                  }
+                },
+                "enabled": true,
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.creature.proficiencies",
+          "value": {
+            "entries": {
+              "dnd2024.vocabulary.ability.strength": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.class.monk.v1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.ability.dexterity": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.class.monk.v1"
+                  }
+                ]
+              },
+              "dnd2024.equipment.tool.calligraphers-supplies": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.background.acolyte.v1"
+                  }
+                ]
+              },
+              "dnd2024.equipment.weapon-category.simple": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.class.monk.v1"
+                  }
+                ]
+              },
+              "dnd2024.equipment.weapon-property.light": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.class.monk.v1"
+                  }
+                ]
+              },
+              "dnd2024.equipment.tool.woodcarvers-tools": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.content.class.monk.v1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.acrobatics": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.athletics": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.insight": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.perception": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.performance": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              },
+              "dnd2024.vocabulary.skill.sleight-of-hand": {
+                "rankRef": {
+                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
+                },
+                "sourceRefs": [
+                  {
+                    "entityId": "dnd2024.source.srd-5.2.1"
+                  }
+                ]
+              }
+            },
+            "recordedFamilies": [
+              "armor-training",
+              "saving-throw",
+              "skill",
+              "tool",
+              "weapon"
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.selected-species",
+          "value": {
+            "speciesDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1"
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.character.identity",
+          "value": {
+            "pronouns": "he/him",
+            "appearance": "A half-elf, son of a human father and an elven mother he never knew. Ganji mostly looks the part -- until you notice the eyes, faintly catlike and quick to catch light, or the too-smooth, unnervingly graceful way he moves, like a cat crossing a fence rail. It can be a little offputting to people who aren't used to it. He's eighteen, technically grown by most reckonings, though he rarely acts it.",
+            "biography": "Ganji was born in a small rural village and abandoned as an infant -- by his own reckoning, over nothing more than how he looked. Word of the odd, unnervingly graceful baby spread by rumor, and within months travelers came to investigate, convinced he might be something prophesied. The Tensor Sect took him in.\n\nThe Sect believes that mastering combat through perfect perception and prediction is the path to one day \"seeing god,\" and they raised Ganji as a prodigy of natural gifts -- inhumanly nimble, unnervingly perceptive -- while holding him to punishing standards for a devotion he never quite felt. He trained personally under the Sect's Headmaster, its strongest warrior, and made what friends he could. But there were no women among the Sect's ranks, and that was only one of many things that wore at him over the years.\n\nHe was meant to spend his required hours of solitude on religious study, but he often slipped away instead. It was on one of those escapes that he heard an old traveling musician -- forbidden from playing inside the Sect's walls -- practicing just outside them. The two struck a quiet bargain not to tell on each other, became friends over the musician's short stay, and Ganji learned to play the flute from him: his first real taste of something that wasn't devotion, discipline, or god. The Sect, for its part, once gave him a carving knife as a gift, a mark of how important they believed him to be -- an enchanted blade that never dulls and can shave stone like wood, though no one ever explained where its magic came from. Ganji used it to carve himself a quarterstaff, hollowed and fingerholed to double as a flute -- since he was meant to be training combat, not music, a 'weapon' that was secretly an instrument let him practice openly without ever needing to hide it.\n\nTwo weeks ago, tired of chasing a faith that never took root in him, Ganji slipped away from the Sect's halls in the dark of night. He's been on the road since, only now starting to slow down -- half-expecting that if he ever truly tries to leave for good, the Sect will send monks after him.\n\nHe doesn't spend much time wondering why he is the way he is. He'd rather find out who he's going to be. He fights because he's always been good at it and likes winning; he wants adventure, good company, maybe someone to fall for, and above all a reason to care about something the way his sect-brothers cared for their god.",
+            "playerNotes": "Fighting style: prefers fists and feet, but is just as happy with a weapon in hand -- especially the quarterstaff he carved himself, which doubles as a flute -- or whatever else is nearby. When he loses or embarrasses himself, he laughs it off and tries something reckless rather than sulking; laid-back, easygoing, almost Taoist in temperament. Traveling alone. Looking for fun, adventure, friendship, and maybe romance eventually, more than any grand destiny. Player is fine with character death and would enjoy Ganji's story surfacing as lore in a future campaign set in this world."
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.character.origin-selections",
+          "value": {
+            "speciesRef": {
+              "entityId": "dnd2024.extension.caldris.content.species.half-elf.v1"
+            },
+            "backgroundRef": {
+              "entityId": "dnd2024.content.background.acolyte.v1"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.character.monk-unarmored-defense",
+          "value": {
+            "active": true,
+            "sourceRef": {
+              "sourceId": "dnd2024.source.srd-5.2.1",
+              "locator": "Classes > Monk > Unarmored Defense (SRD 5.2.1, pages 50-50)"
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "portrait",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "2880566363b037b13650c250a0655adf5698f82bb80d2ab25be4fe0463fd3df2",
+                "mimeType": "image/png",
+                "width": 1024,
+                "height": 1536,
+                "alt": "Ganji, the half-elf monk.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/visuals/portrait-ganji-v1.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.weir-bridge",
+      "name": "Weir Bridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Weir Bridge and Bridge House approach without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 655,
+            "y": 505
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
+                "caption": "Prepared location illustration of the rainy Weir Bridge toll approach; no depicted event is recorded as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.north-bell-tower",
+      "name": "North Bell Tower",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+                "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey.chapel",
+      "name": "Abbey Chapel",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The small working chapel at the center of Mallow Abbey.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 505,
+            "y": 360
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey.hospice-wing",
+      "name": "Hospice Wing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The abbey wing used for beds, remedies, and travelers needing quiet care.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 650,
+            "y": 420
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey.archive-room",
+      "name": "Archive Room",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A dry stone room where local charters and copied records are stabilized.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 520
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey.apiary",
+      "name": "Abbey Apiary",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The abbey’s working hives and sheltered bee yard.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 315,
+            "y": 265
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.mallow-abbey.orchard",
+      "name": "Abbey Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "An old orchard crossed by footpaths beside the abbey buildings.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 255,
+            "y": 560
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ganji.class-membership.monk",
+      "name": "Ganji monk membership",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.character.class-membership",
+          "value": {
+            "classRef": {
+              "entityId": "dnd2024.content.class.monk.v1"
+            },
+            "level": 1
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "actor.caldris.ganji",
+        "slot": "class-membership"
+      }
+    },
+    {
+      "entityId": "item.caldris.ganji.carving-knife",
+      "name": "Ganji's Carving Knife",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.definition-link",
+          "value": {
+            "definition": {
+              "entityId": "dnd2024.extension.caldris.item.ganjis-carving-knife.v1"
+            },
+            "definitionRevision": 1
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.quantity",
+          "value": {
+            "current": 1
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "actor.caldris.ganji",
+        "slot": "carried"
+      }
+    },
+    {
+      "entityId": "item.caldris.ganji.quarterstaff",
+      "name": "Ganji's Quarterstaff",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.definition-link",
+          "value": {
+            "definition": {
+              "entityId": "dnd2024.extension.caldris.item.ganjis-quarterstaff.v1"
+            },
+            "definitionRevision": 1
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.quantity",
+          "value": {
+            "current": 1
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "actor.caldris.ganji",
+        "slot": "carried"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.common-room",
+      "name": "Common Room",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The inn’s broad common room, with crowded tables, a hearth, and sightlines to the stair and serving hatch.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 300,
+            "y": 440
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.kitchen",
+      "name": "Kitchen",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The working kitchen behind the common room, lined with copper pots and a hot range.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 650,
+            "y": 250
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.pantry",
+      "name": "Pantry",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A compact pantry of dry goods, preserves, and shelves beside the kitchen.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 675,
+            "y": 520
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.yard",
+      "name": "Inn Yard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The service yard behind the inn, reached from the kitchen and the lane.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 850,
+            "y": 420
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.cloak-porch",
+      "name": "Cloak Porch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The covered entrance where guests shed rainwater and hang wet cloaks.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 455,
+            "y": 760
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.weir-bridge.west-toll-yard",
+      "name": "West Toll Yard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The cobbled western approach between Bridge House and the bridge.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 330,
+            "y": 385
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.weir-bridge.toll-barrier",
+      "name": "Toll Barrier",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The working barrier where lawful bridge tolls are collected.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 420,
+            "y": 455
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.weir-bridge.river-stairs",
+      "name": "River Stairs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Wet stone steps descending from the bridge approach to the narrow Weir.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 650
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.weir-bridge.east-landing",
+      "name": "East Landing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The eastern landing where the road leaves the bridge and divides around the bank.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 825,
+            "y": 450
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "actor.caldris.ganji",
+      "toEntityId": "actor.caldris.ganji.class-membership.monk",
+      "qualifiedKind": "dnd2024.character.has-class-membership",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
+      "qualifiedKind": "game.core.campaign.has-character-participation",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
+      "toEntityId": "actor.caldris.ganji",
+      "qualifiedKind": "game.core.campaign.character-participation.for-actor",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "actor.caldris.ganji",
+      "qualifiedKind": "game.core.campaign.references",
+      "value": {
+        "role": "player-character",
+        "audience": "party"
+      }
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.campaign.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "location.caldris.bramblebridge",
+      "qualifiedKind": "game.core.campaign.references",
+      "value": {
+        "role": "start",
+        "audience": "party"
+      }
+    }
+  ]
+}

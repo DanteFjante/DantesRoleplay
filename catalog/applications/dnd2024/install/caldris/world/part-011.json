@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.1761-the-summer-of-ragged-pennants",
+      "name": "The Summer of Ragged Pennants",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Summer of Ragged Pennants",
+            "summary": "A contested Low Vey succession drew hired soldiers along the river. Their wages failed before their contracts ended. Some returned home, some hired themselves to towns, and others seized boats and granaries. Captain Elian Rook assembled village levies and river crews to reopen three crossings. His most famous engagement, at Ashford Weir, ended when local millers released a controlled flow that stranded the raiders' boats on a gravel bar. Several encounters elsewhere were bloody and left bereaved households on both banks. The settlement restricted private armed toll collection and left competing claimants with separate territories. The crown survived in reduced form. Graves and missing labour mattered to the river communities more than the legal phrasing of the peace.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -922428000,
+            "precision": "era",
+            "dateLabel": "1,761–1,749 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1774-the-dispute-of-open-doors",
+      "name": "The Dispute of Open Doors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Dispute of Open Doors",
+            "summary": "Some religious houses sheltered travellers accused of breaking spirit bargains. Others refused anyone who had participated in such an agreement. Merchants found that an acceptable oath at one inn might be condemned at the next sanctuary. At Reedminster, an island abbey in Low Vey, Mother Adra Sen convened clerics, lay hosts, orchard keepers, and two willing local spirits. Their agreement concerned conduct: shelter could not require worship; bargains needed understandable terms; no host could claim a guest's descendants as payment. Several congregations rejected the meeting's authority. Others adopted its principles without sharing its theology. The resulting Open Door Houses were a fellowship of participating hosts, not a single church controlling Caldris's beliefs.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -929260800,
+            "precision": "era",
+            "dateLabel": "1,774–1,762 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
+      "name": "The Blackglass Pilot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Blackglass Pilot",
+            "summary": "A Serevan navigator, Samir Orel, reached Veymouth carrying a dark glass disk that revealed a pale arc beneath particular stars. With observations and careful reckoning, it helped identify one safe approach between offshore shoals. It could not steer a ship or calm the sea. Samir married a local rope-maker, Hessa Marr, and taught three apprentices. The port funded a low observatory on Lanterns' End, a headland well outside the river mouth. Its first winter nearly ruined the project because smoke from the keeper's stove spoiled the observations. Pilots charged for their trained judgement. Sailors told stories of a disk that knew every safe harbour, and several wealthy households spent heavily trying to acquire copies of an ability the original never possessed.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -936093600,
+            "precision": "era",
+            "dateLabel": "1,787–1,775 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1799-the-blue-sailed-visitors",
+      "name": "The Blue-Sailed Visitors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Blue-Sailed Visitors",
+            "summary": "Ships from Serevan, a coastal principality across the Morrow Strait, began calling regularly at Veymouth. Their crews knew of earlier crossings; regular, documented exchange was new to these particular ports. Whether the farther shore belongs to another continent can be fixed when the world map is finalised. They brought blue dyes, citrus peel, fine needles, unfamiliar sailing terms, and letters addressed to people nobody in Veymouth knew. In return they bought worked iron, wool cloth, hides, and selected timber. Each side exaggerated the other's wealth. The interpreter Neris Vale earned a living explaining weights and shipping terms before becoming an envoy. Her surname does not establish kinship with Derren. She insisted that contracts name the language that governed a disputed phrase, then earned less romantic renown than the captains who ignored her advice.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -942663600,
+            "precision": "era",
+            "dateLabel": "1,799–1,788 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1809-the-first-high-market",
+      "name": "The First High Market",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First High Market",
+            "summary": "Dunmere's lower terraces had become crowded, muddy, and vulnerable to disputes between their old authorities. Merchants and nearby households funded a new market on the hill above them, with a covered weighing place and a cistern. The opening is remembered as the First High Market, an early stage in Highmead's growth rather than the instant creation of a city. Dunmere continued operating. Porters protested the longer climb; stallholders liked the dry ground; landlords began charging for the view. The market's mason, Orren Slatehand of Whitewindow, left a small shelf beneath the public staircase for lamps and lost objects. People later treated it as a shrine to safe returns. Orren's letters suggest he had simply grown tired of tools being left on the steps.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -948445200,
+            "precision": "era",
+            "dateLabel": "1,809–1,800 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1822-the-year-of-two-springs",
+      "name": "The Year of Two Springs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Year of Two Springs",
+            "summary": "An unusually warm early season brought blossom, then hard cold killed much of it. Summer disease weakened draft animals. The year became known as the Year of Two Springs because people replanted while gathering what little survived from the first sowing. Low Vey's stores helped the river settlements. Upland assistance travelled more slowly. Aveline spent six weeks seeking a charm said to ripen grain, returning with a real but unsuitable spell: it could mature a few stalks for seed selection, not feed a district. At Rusk Hollow, Jannet Rusk, who claimed descent from Maelin without being able to prove it, organised grain exchanges and grazing for surviving animals. Her surviving account begins, \"Count the beasts before promising the ploughs.\" It became a useful maxim long before it became a proverb.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -954489600,
+            "precision": "era",
+            "dateLabel": "1,822–1,810 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1835-the-guest-winter-at-whitewindow",
+      "name": "The Guest Winter at Whitewindow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Guest Winter at Whitewindow",
+            "summary": "Masons repairing Ceryn's river works followed an old stone causeway into the northern hills and encountered Whitewindow, a dwarven hold whose inhabitants traded mainly through a western route. Neither people had discovered the other; older contact had simply lapsed beyond living local memory. The first renewed delegation became snowbound. Whitewindow housed twenty-three outsiders for the winter, including children, a mule, and a priest whose dietary concerns the cooks initially mistook for an insult. Shared repairs, card games, and repeated apologies achieved more than the formal negotiations. The spring agreement exchanged iron fittings and dressed stone for grain, wool, and river transport. It also established a guest hall outside the hold's inner gate. Visitors gained a reliable refuge without being granted access to private homes or ancestral chambers.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -961322400,
+            "precision": "era",
+            "dateLabel": "1,835–1,823 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1848-the-white-hart-of-orrel-wood",
+      "name": "The White Hart of Orrel Wood",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The White Hart of Orrel Wood",
+            "summary": "Travellers vanished in Orrel Wood, north of the fair road. Survivors described a white hart standing just beyond the lantern light. Following it led them onto ground that seemed familiar but brought them back to the same black pool. The creature was hunted by Branna Holt, a charcoal burner's daughter, with Aveline and two local foresters. Their expedition lasted nineteen wet days. Branna learned to navigate by the direction of running water when paths became unreliable. They trapped and killed the hart at an exposed limestone sink. Later ballads gave Branna a shining spear and a royal parent. Contemporary offerings depict a short hunting bow and patched boots. Aveline, who had provided light and broken one of the creature's deceits, repeatedly failed to persuade singers that four people had gone into the wood.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -968155200,
+            "precision": "era",
+            "dateLabel": "1,848–1,836 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1861-the-orchard-that-could-not-grow",
+      "name": "The Orchard That Could Not Grow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard That Could Not Grow",
+            "summary": "Harth's success encouraged neighbouring landholders to plant more fruit trees. They expected the Guest Beneath the Boughs to protect the new acreage, even though no agreement promised this. After a destructive frost, angry tenants came to the old table carrying dead branches. The Guest admitted the limits of its shelter. An orchard keeper named Tessa Brin proposed a boundary marked by twelve stones and a separate, ordinary mutual-aid store for growers outside it. The renewed compact included explicit duties for pruning, nesting strips, and sharing frost losses. Tessa also founded Boughmeet, a small grafting nursery where different orchard traditions could be compared. Farmers gradually learned which benefits came from the Guest and which came from choosing the right trees for their soil. Neither discovery made the other worthless.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -974988000,
+            "precision": "era",
+            "dateLabel": "1,861–1,849 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1874-the-three-daughters-of-the-river",
+      "name": "The Three Daughters of the River",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Three Daughters of the River",
+            "summary": "Three small riverside lordships entered a marriage settlement intended to stop recurring toll raids. The alliance failed as a family arrangement but succeeded as an administrative one: its toll stations continued sharing escort costs after two marriages ended and the third heir joined a religious house. Queen Ceryn of House Keld assembled those arrangements into the Kingdom of Low Vey, a narrow river kingdom reaching toward Veymouth. The title sounded grander than the realm. Ceryn could compel service along the river much more reliably than in villages a day's walk into the woods. Her reign established marked navigation poles, an appeals court that travelled by boat, and a store of emergency rope and timber at major crossings. These measures made her popular with boat crews and expensive to obey for woodland tenants required to supply the timber.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -981820800,
+            "precision": "era",
+            "dateLabel": "1,874–1,862 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1887-the-founding-of-alderwake-fair",
+      "name": "The Founding of Alderwake Fair",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Founding of Alderwake Fair",
+            "summary": "Where the orchard branch met an eastern drovers' track, a landholder granted four days of seasonal market peace. Herds could rest on common ground; debts could be disputed before witnesses; no participant could be arrested for an old private feud until the market closed. The settlement that grew around this bargain was called Alderwake. Its first fairwarden, Ysolde Fen, rented stalls by frontage rather than by the seller's birthplace. Foreign traders welcomed the rule. Local traders discovered that impartiality felt less admirable when it introduced competition. Musicians, animal healers, cooks, and cheap lodging followed. A fair visitor could buy wool, learn a new dance, and hear an entirely inaccurate description of the sea before noon. Couples began timing marriages to the fair because relatives from several valleys could attend.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -988653600,
+            "precision": "era",
+            "dateLabel": "1,887–1,875 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1899-the-autumn-without-a-debt",
+      "name": "The Autumn Without a Debt",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Autumn Without a Debt",
+            "summary": "Aveline Sere's obligation to bring a guest to the Seventh Hearth ended with the preceding century. The following autumn she arrived anyway, accompanied by a young potter called Iven Marr. She carefully explained that they were visiting, not making a payment. The threshold spirit had prepared seven places. Aveline put five bowls away and asked whether it would prefer three people who were actually hungry. This small disagreement became the first occasion on which the household chose a new custom instead of trying to complete an old one. Iven stayed through the winter, repairing the chimney and producing lopsided cups. He later established Marr's Kiln on a clay seam below the hill road. His cups spread the hearth's seven-notch mark far beyond its original hospitality network. Later collectors would mistake ordinary pottery for proof of membership in an ancient magical fellowship.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -995223600,
+            "precision": "era",
+            "dateLabel": "1,899–1,888 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1909-the-lantern-settlement",
+      "name": "The Lantern Settlement",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lantern Settlement",
+            "summary": "The century ended with agreements between road wardens, market councils, sanctuary keepers, and landed households. They established shared contributions for bridges, public inspection of market measures, winter hospitality funds, and recognised places where travellers could lodge complaints. Lamps became the visible sign of a participating stopping house. The settlement offers an origin for traditions later associated with the Lantern Road, without requiring today's road or institutions to have existed unchanged for two millennia. It was an imperfect achievement. Outlying hamlets paid for repairs they seldom benefited from. Several ferry families lost their livelihood. Households without recognised standing had no direct voice. Nevertheless, more people could carry a winter's savings to the next market and reasonably expect to return with them.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999081000,
+            "precision": "era",
+            "dateLabel": "1,909–1,900 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1919-the-last-supper-at-the-seventh-house",
+      "name": "The Last Supper at the Seventh House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Last Supper at the Seventh House",
+            "summary": "Derren died before Aveline's next return. His granddaughter presented her with a packet of letters. The earliest asked when she would visit; the later ones told her what she had missed. The final letter contained directions to a pear tree he thought she would enjoy. Aveline followed the old supper road and found its seventh house standing behind a wall of brambles. Its threshold spirit still expected the original account to be settled. It had continued laying places for people whose names no longer appeared in any village register. The surviving song says that Aveline bought everyone's supper. It does not explain what she paid.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999171000,
+            "precision": "era",
+            "dateLabel": "1,919–1,910 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1928-the-empty-storehouses",
+      "name": "The Empty Storehouses",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Empty Storehouses",
+            "summary": "Success brought new grain stores to the Button Hills. Several chambers were cut into older workings whose builders the inhabitants no longer knew. In one cluster, grain spoiled despite dry floors and sound doors. Rats abandoned the site. Labourers reported hearing someone moving sacks after sunset. An expensive investigation blamed an ancient malediction. The owners commissioned protective inscriptions, collected compensation, and quietly moved their good grain elsewhere. The abandoned chambers gave later shepherds shelter and later storytellers a kingdom beneath the hills.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999252000,
+            "precision": "era",
+            "dateLabel": "1,928–1,920 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1936-the-house-of-returning-names",
+      "name": "The House of Returning Names",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The House of Returning Names",
+            "summary": "At a hill sanctuary, Sister Meret began recording travellers who died far from home. With their names she kept small descriptions: a missing tooth, a favourite song, the smell of a trade, the name of someone they hoped to see again. Merchants carried copies of these notices. A room intended for burial records became a meeting place for lost relatives and returning labourers. Offerings supported messengers, funerals, and the occasional fraud investigation. The sanctuary's fame grew after an elven visitor identified a century-old burial from a badly remembered joke. Long lives gave the records unusual value, but memory remained fallible: witnesses could be certain and wrong.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999324000,
+            "precision": "era",
+            "dateLabel": "1,936–1,929 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1944-the-eighty-day-crown",
+      "name": "The Eighty-Day Crown",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Eighty-Day Crown",
+            "summary": "An upland ruler died without an accepted successor. The town councils appointed a wool merchant, Tavin Orr, to coordinate supplies until the dispute was settled. He wore the treasury's ceremonial crown at one public hearing because nobody could find the ordinary chain of office. Later legend made him a reluctant king. Surviving orders suggest a capable, impatient administrator who wanted the roads reopened before shearing season. His government lasted eighty days. It paid soldiers partly in cloth and obtained peace by confirming several villages' rights to their shared pasture. The eventual dynasty retained his emergency taxes and described his pasture grants as provisional.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999396000,
+            "precision": "era",
+            "dateLabel": "1,944–1,937 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1952-the-bell-above-the-water",
+      "name": "The Bell Above the Water",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Bell Above the Water",
+            "summary": "A destructive flood shifted the crossing near the site of modern Bramblebridge. Several households moved uphill; their abandoned wells remained beneath the silt. A ferryman called Hadrin Moss paid a bellfounder to cast a warning bell, while a rare local enchantress arranged for its clapper to respond to water rising inside a sealed shaft. It warned of certain upstream floods, not every danger, and it needed ordinary maintenance. Keeping the shaft clear proved harder to fund than commissioning the wonder. The first bell keeper was Hadrin's daughter Enna, who refused the accompanying marriage offer and negotiated a wage instead. Later stories remembered only that the bell rang for a maiden.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999468000,
+            "precision": "era",
+            "dateLabel": "1,952–1,945 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1960-the-salt-petition",
+      "name": "The Salt Petition",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Salt Petition",
+            "summary": "Storms and the loss of several coastal cargoes drove up the price of inland salt. A trading association secured exclusive access to the usable winter route, arguing that dependable escorts required dependable revenue. For a time it delivered exactly what it promised. Then the association began charging villages for salt they had not ordered. The contracts made participation a condition of using the road. Preserving meat became a matter of debt, and poor households slaughtered animals early rather than feed them through winter. Brewers, shepherds, and a coastal widow named Ossa Pell pooled small subscriptions to finance one independent convoy. Their Salt Petition survives in the proposed history as an early example of ordinary households funding a commercial venture together.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999540000,
+            "precision": "era",
+            "dateLabel": "1,960–1,953 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1968-the-small-wonders-journey",
+      "name": "The Small Wonders Journey",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Small Wonders Journey",
+            "summary": "Aveline returned to find Derren grey-haired, prosperous, and annoyed that she had missed his wedding by twenty-seven years. They travelled together once more, more slowly, collecting useful enchantments from households along the recovering road. Their collection included a charm that revealed a hidden crack in a cup, a verse that coaxed a stubborn cooking flame, and a spell that kept the smell of rain in a folded cloth. Some worked only with particular materials. Some supposed spells proved to be excellent practical advice. Derren insisted those deserved recording too. They lodged copies with three teaching houses. This modest collection later acquired an extravagant reputation as the Book of Gentle Arts. Its most valuable achievement was persuading a few practitioners to teach people outside their own families.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -999612000,
+            "precision": "era",
+            "dateLabel": "1,968–1,961 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.1944-the-eighty-day-crown",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1952-the-bell-above-the-water",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1960-the-salt-petition",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1968-the-small-wonders-journey",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1909-the-lantern-settlement",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1919-the-last-supper-at-the-seventh-house",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1928-the-empty-storehouses",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1936-the-house-of-returning-names",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1861-the-orchard-that-could-not-grow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1874-the-three-daughters-of-the-river",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1887-the-founding-of-alderwake-fair",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1899-the-autumn-without-a-debt",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1799-the-blue-sailed-visitors",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1809-the-first-high-market",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1822-the-year-of-two-springs",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1835-the-guest-winter-at-whitewindow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1848-the-white-hart-of-orrel-wood",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1761-the-summer-of-ragged-pennants",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1774-the-dispute-of-open-doors",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

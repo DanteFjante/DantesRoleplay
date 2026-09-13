@@ -1,0 +1,694 @@
+{
+  "format": "dantesroleplay.installation/1",
+  "catalogRoot": "catalog",
+  "source": {
+    "allowedRootId": "installation-source"
+  },
+  "baseApplications": [
+    {
+      "id": "game",
+      "displayName": "Game Core",
+      "description": "Generic world, clock, and campaign state owners.",
+      "bases": []
+    }
+  ],
+  "application": {
+    "id": "dnd2024",
+    "displayName": "D&D 2024",
+    "description": "A modular D&D 2024 application.",
+    "bases": [
+      "game"
+    ],
+    "sources": [
+      {
+        "id": "dnd2024-core",
+        "allowedRootId": "installation-source",
+        "relativeRoot": "catalog/applications/dnd2024",
+        "includePattern": "**/*",
+        "trust": "trusted",
+        "precedence": 0,
+        "logicalIdentity": "dnd2024-core-catalog"
+      },
+      {
+        "id": "dnd2024-extension.caldris-homebrew",
+        "allowedRootId": "installation-source",
+        "relativeRoot": "catalog/extensions/dnd2024/caldris-homebrew/content",
+        "includePattern": "**/*",
+        "trust": "trusted",
+        "precedence": 10,
+        "logicalIdentity": "caldris-homebrew-content"
+      }
+    ],
+    "selectedSourceIds": [
+      "dnd2024-core"
+    ],
+    "extensionPackages": [
+      "catalog/extensions/dnd2024/caldris-homebrew/extension-package.json"
+    ],
+    "selectedExtensionIds": [
+      "caldris-homebrew"
+    ]
+  },
+  "stateSpaces": [
+    {
+      "id": "application-publication:dnd2024",
+      "scope": "application-publication",
+      "root": {
+        "entityId": "publication.dnd2024",
+        "name": "D&D 2024 publication",
+        "components": []
+      },
+      "worldPackages": []
+    },
+    {
+      "id": "dnd2024-main",
+      "scope": "runtime-state-space",
+      "root": {
+        "entityId": "world.caldris",
+        "name": "Caldris",
+        "components": [
+          {
+            "qualifiedTypeId": "game.core.world.clock",
+            "value": {
+              "calendarId": "caldris-common-era",
+              "currentMinute": 0,
+              "revision": 0
+            }
+          },
+          {
+            "qualifiedTypeId": "game.core.world.root",
+            "value": {
+              "status": "active",
+              "summary": "A gentler, magic-rare fantasy world where storybook wonders sit beside real weather, real work, and real consequence — cozy, lightly humorous, and grounded.",
+              "visibility": "public"
+            }
+          }
+        ]
+      },
+      "worldPackages": [
+        "catalog/applications/dnd2024/install/caldris/world/part-001.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-002.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-003.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-004.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-005.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-006.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-007.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-008.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-009.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-010.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-011.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-012.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-013.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-014.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-015.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-016.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-017.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-018.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-019.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-020.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-021.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-022.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-023.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-024.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-025.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-026.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-027.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-028.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-029.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-030.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-031.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-032.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-033.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-034.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-035.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-036.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-037.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-038.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-039.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-040.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-041.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-042.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-043.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-044.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-045.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-046.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-047.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-048.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-049.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-050.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-051.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-052.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-053.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-054.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-055.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-056.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-057.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-058.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-059.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-060.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-061.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-062.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-063.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-064.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-065.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-066.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-067.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-068.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-069.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-070.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-071.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-072.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-073.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-074.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-075.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-076.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-077.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-078.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-079.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-080.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-081.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-082.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-083.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-084.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-085.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-086.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-087.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-088.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-089.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-090.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-091.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-092.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-093.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-094.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-095.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-096.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-097.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-098.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-099.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-100.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-101.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-102.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-103.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-104.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-105.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-106.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-107.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-108.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-109.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-110.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-111.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-112.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-113.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-114.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-115.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-116.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-117.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-118.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-119.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-120.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-121.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-122.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-123.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-124.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-125.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-126.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-127.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-128.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-129.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-130.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-131.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-132.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-133.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-134.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-135.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-136.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-137.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-138.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-139.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-140.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-141.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-142.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-143.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-144.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-145.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-146.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-147.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-148.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-149.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-150.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-151.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-152.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-153.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-154.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-155.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-156.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-157.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-158.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-159.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-160.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-161.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-162.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-163.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-164.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-165.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-166.json"
+      ]
+    }
+  ],
+  "media": [
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+      "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+      "mediaType": "image/png",
+      "byteLength": 3155946
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
+      "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+      "mediaType": "image/png",
+      "byteLength": 2615458
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+      "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+      "mediaType": "image/png",
+      "byteLength": 3002293
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+      "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+      "mediaType": "image/png",
+      "byteLength": 3373851
+    },
+    {
+      "sourcePath": "data/exports/current/objects/1c/1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07.bin",
+      "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+      "mediaType": "image/png",
+      "byteLength": 3348433
+    },
+    {
+      "sourcePath": "docs/world/caldris/visuals/portrait-ganji-v1.png",
+      "sha256": "2880566363b037b13650c250a0655adf5698f82bb80d2ab25be4fe0463fd3df2",
+      "mediaType": "image/png",
+      "byteLength": 2900510
+    },
+    {
+      "sourcePath": "data/exports/current/objects/2e/2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7.bin",
+      "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
+      "mediaType": "image/png",
+      "byteLength": 3169244
+    },
+    {
+      "sourcePath": "data/exports/current/objects/34/348fe63f8371afb4304ca3c205bcaa9a88680d8fb3dc450dcf1315537e7a731c.bin",
+      "sha256": "348fe63f8371afb4304ca3c205bcaa9a88680d8fb3dc450dcf1315537e7a731c",
+      "mediaType": "image/png",
+      "byteLength": 3415881
+    },
+    {
+      "sourcePath": "data/exports/current/objects/38/3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5.bin",
+      "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+      "mediaType": "image/png",
+      "byteLength": 3264892
+    },
+    {
+      "sourcePath": "data/exports/current/objects/3a/3a4cdc0eefb0cdc1a6f95a0cdc2275b48cd601b993ce95d242d86c8a9515f50d.bin",
+      "sha256": "3a4cdc0eefb0cdc1a6f95a0cdc2275b48cd601b993ce95d242d86c8a9515f50d",
+      "mediaType": "image/png",
+      "byteLength": 2996433
+    },
+    {
+      "sourcePath": "data/exports/current/objects/3a/3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3.bin",
+      "sha256": "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3",
+      "mediaType": "image/png",
+      "byteLength": 2899410
+    },
+    {
+      "sourcePath": "data/exports/current/objects/40/401cced7107e4e2000e21d239a940714b526ed23230bba22315f064faff76d65.bin",
+      "sha256": "401cced7107e4e2000e21d239a940714b526ed23230bba22315f064faff76d65",
+      "mediaType": "image/png",
+      "byteLength": 2521004
+    },
+    {
+      "sourcePath": "data/exports/current/objects/46/462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6.bin",
+      "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+      "mediaType": "image/png",
+      "byteLength": 3017497
+    },
+    {
+      "sourcePath": "data/exports/current/objects/4a/4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15.bin",
+      "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
+      "mediaType": "image/png",
+      "byteLength": 3190127
+    },
+    {
+      "sourcePath": "data/exports/current/objects/51/518a9f692740669e974d62b8f0f7a8358e441cf264beb98b4a0c64dd02c9f458.bin",
+      "sha256": "518a9f692740669e974d62b8f0f7a8358e441cf264beb98b4a0c64dd02c9f458",
+      "mediaType": "image/png",
+      "byteLength": 3324022
+    },
+    {
+      "sourcePath": "data/exports/current/objects/52/52227d299f955dba1d7ca4175660b626ff8888e21eca07adb6877ea56a373b80.bin",
+      "sha256": "52227d299f955dba1d7ca4175660b626ff8888e21eca07adb6877ea56a373b80",
+      "mediaType": "image/png",
+      "byteLength": 2848991
+    },
+    {
+      "sourcePath": "data/exports/current/objects/5a/5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48.bin",
+      "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+      "mediaType": "image/png",
+      "byteLength": 2841609
+    },
+    {
+      "sourcePath": "data/exports/current/objects/5b/5b59844ad1f934d54089282a15078a069854805c68e7ffffd48811dca361b222.bin",
+      "sha256": "5b59844ad1f934d54089282a15078a069854805c68e7ffffd48811dca361b222",
+      "mediaType": "image/png",
+      "byteLength": 3280634
+    },
+    {
+      "sourcePath": "data/exports/current/objects/5c/5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1.bin",
+      "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+      "mediaType": "image/png",
+      "byteLength": 3509300
+    },
+    {
+      "sourcePath": "data/exports/current/objects/61/61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56.bin",
+      "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
+      "mediaType": "image/png",
+      "byteLength": 3272345
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+      "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+      "mediaType": "image/png",
+      "byteLength": 3605028
+    },
+    {
+      "sourcePath": "data/exports/current/objects/64/643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344.bin",
+      "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+      "mediaType": "image/png",
+      "byteLength": 3284958
+    },
+    {
+      "sourcePath": "data/exports/current/objects/65/65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7.bin",
+      "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+      "mediaType": "image/png",
+      "byteLength": 3159474
+    },
+    {
+      "sourcePath": "data/exports/current/objects/67/67b2b7cb201e2cd367b6b7cb5bba48e425f34f33a510d173ee4ab073161b8d0e.bin",
+      "sha256": "67b2b7cb201e2cd367b6b7cb5bba48e425f34f33a510d173ee4ab073161b8d0e",
+      "mediaType": "image/png",
+      "byteLength": 3030953
+    },
+    {
+      "sourcePath": "data/exports/current/objects/68/687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9.bin",
+      "sha256": "687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9",
+      "mediaType": "image/png",
+      "byteLength": 3198649
+    },
+    {
+      "sourcePath": "data/exports/current/objects/69/693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99.bin",
+      "sha256": "693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99",
+      "mediaType": "image/png",
+      "byteLength": 3277518
+    },
+    {
+      "sourcePath": "data/exports/current/objects/6a/6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58.bin",
+      "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+      "mediaType": "image/png",
+      "byteLength": 3173474
+    },
+    {
+      "sourcePath": "data/exports/current/objects/71/713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7.bin",
+      "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
+      "mediaType": "image/png",
+      "byteLength": 2784273
+    },
+    {
+      "sourcePath": "data/exports/current/objects/73/734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b.bin",
+      "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+      "mediaType": "image/png",
+      "byteLength": 3528598
+    },
+    {
+      "sourcePath": "data/exports/current/objects/79/79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7.bin",
+      "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
+      "mediaType": "image/png",
+      "byteLength": 3192004
+    },
+    {
+      "sourcePath": "data/exports/current/objects/7e/7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a.bin",
+      "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
+      "mediaType": "image/png",
+      "byteLength": 3302834
+    },
+    {
+      "sourcePath": "data/exports/current/objects/83/83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14.bin",
+      "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+      "mediaType": "image/png",
+      "byteLength": 3268948
+    },
+    {
+      "sourcePath": "data/exports/current/objects/8d/8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d.bin",
+      "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+      "mediaType": "image/png",
+      "byteLength": 3236459
+    },
+    {
+      "sourcePath": "data/exports/current/objects/8f/8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764.bin",
+      "sha256": "8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764",
+      "mediaType": "image/png",
+      "byteLength": 3336866
+    },
+    {
+      "sourcePath": "data/exports/current/objects/8f/8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8.bin",
+      "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
+      "mediaType": "image/png",
+      "byteLength": 3533814
+    },
+    {
+      "sourcePath": "docs/world/caldris/visuals/location-bramblebridge-market-v1.png",
+      "sha256": "995917ca0016f16060cc0d0265185740835588edf0d60096a22d0eedcaafda6b",
+      "mediaType": "image/png",
+      "byteLength": 3375313
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a1/a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e.bin",
+      "sha256": "a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e",
+      "mediaType": "image/png",
+      "byteLength": 3547768
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a2/a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4.bin",
+      "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
+      "mediaType": "image/png",
+      "byteLength": 3188036
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a4/a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61.bin",
+      "sha256": "a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61",
+      "mediaType": "image/png",
+      "byteLength": 3081868
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a6/a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34.bin",
+      "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
+      "mediaType": "image/png",
+      "byteLength": 2986096
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+      "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+      "mediaType": "image/png",
+      "byteLength": 3642908
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a9/a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59.bin",
+      "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
+      "mediaType": "image/png",
+      "byteLength": 3344386
+    },
+    {
+      "sourcePath": "data/exports/current/objects/a9/a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209.bin",
+      "sha256": "a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209",
+      "mediaType": "image/png",
+      "byteLength": 3288781
+    },
+    {
+      "sourcePath": "data/exports/current/objects/ac/acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743.bin",
+      "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+      "mediaType": "image/png",
+      "byteLength": 2831464
+    },
+    {
+      "sourcePath": "data/exports/current/objects/af/af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140.bin",
+      "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
+      "mediaType": "image/png",
+      "byteLength": 3279351
+    },
+    {
+      "sourcePath": "data/exports/current/objects/b4/b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567.bin",
+      "sha256": "b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567",
+      "mediaType": "image/png",
+      "byteLength": 2934654
+    },
+    {
+      "sourcePath": "data/exports/current/objects/b9/b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1.bin",
+      "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+      "mediaType": "image/png",
+      "byteLength": 3074784
+    },
+    {
+      "sourcePath": "data/exports/current/objects/bd/bd3ae8eb5698016ba2a41e2b3c43639f765dc53aaeeef927da5a2b6325c18b49.bin",
+      "sha256": "bd3ae8eb5698016ba2a41e2b3c43639f765dc53aaeeef927da5a2b6325c18b49",
+      "mediaType": "image/png",
+      "byteLength": 3550995
+    },
+    {
+      "sourcePath": "data/exports/current/objects/c1/c13088729bdded80fb56288d1a5519c6f67aaf532fd75aa999101c1a7cf584ca.bin",
+      "sha256": "c13088729bdded80fb56288d1a5519c6f67aaf532fd75aa999101c1a7cf584ca",
+      "mediaType": "image/png",
+      "byteLength": 2579886
+    },
+    {
+      "sourcePath": "data/exports/current/objects/c2/c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990.bin",
+      "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+      "mediaType": "image/png",
+      "byteLength": 2792489
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+      "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+      "mediaType": "image/png",
+      "byteLength": 3077943
+    },
+    {
+      "sourcePath": "data/exports/current/objects/c5/c58c1fea190d0f45b7dbc1c4852e9ffa938ecc6cded93a92b02a8c40f9d4f12d.bin",
+      "sha256": "c58c1fea190d0f45b7dbc1c4852e9ffa938ecc6cded93a92b02a8c40f9d4f12d",
+      "mediaType": "image/png",
+      "byteLength": 3233412
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+      "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+      "mediaType": "image/png",
+      "byteLength": 2925307
+    },
+    {
+      "sourcePath": "data/exports/current/objects/ce/ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286.bin",
+      "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+      "mediaType": "image/png",
+      "byteLength": 3061379
+    },
+    {
+      "sourcePath": "data/exports/current/objects/d0/d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085.bin",
+      "sha256": "d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085",
+      "mediaType": "image/png",
+      "byteLength": 3176718
+    },
+    {
+      "sourcePath": "data/exports/current/objects/d0/d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec.bin",
+      "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+      "mediaType": "image/png",
+      "byteLength": 3275117
+    },
+    {
+      "sourcePath": "data/exports/current/objects/e0/e0fd74a03e08d64cd513b5006174d80b1f9c5dee8648f51adc929e083d0b7836.bin",
+      "sha256": "e0fd74a03e08d64cd513b5006174d80b1f9c5dee8648f51adc929e083d0b7836",
+      "mediaType": "image/png",
+      "byteLength": 3121010
+    },
+    {
+      "sourcePath": "data/exports/current/objects/e6/e6f8cca0f72505fc0c322edc38fa6c77f20e49ea22153780b6c7196634f87e82.bin",
+      "sha256": "e6f8cca0f72505fc0c322edc38fa6c77f20e49ea22153780b6c7196634f87e82",
+      "mediaType": "image/png",
+      "byteLength": 3059398
+    },
+    {
+      "sourcePath": "data/exports/current/objects/e7/e7da857e16dc3ae31d04374081a0c38523fc17c39c93dc59210c4ba6a733deb6.bin",
+      "sha256": "e7da857e16dc3ae31d04374081a0c38523fc17c39c93dc59210c4ba6a733deb6",
+      "mediaType": "image/png",
+      "byteLength": 2754146
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+      "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+      "mediaType": "image/png",
+      "byteLength": 2868713
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+      "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+      "mediaType": "image/png",
+      "byteLength": 2935466
+    },
+    {
+      "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+      "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+      "mediaType": "image/png",
+      "byteLength": 3486329
+    },
+    {
+      "sourcePath": "data/exports/current/objects/f4/f4b9b932c8357b0fa468dbe81c150acaa31056def510c3cd943139aecdf20f13.bin",
+      "sha256": "f4b9b932c8357b0fa468dbe81c150acaa31056def510c3cd943139aecdf20f13",
+      "mediaType": "image/png",
+      "byteLength": 2988972
+    },
+    {
+      "sourcePath": "data/exports/current/objects/f5/f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3.bin",
+      "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+      "mediaType": "image/png",
+      "byteLength": 2950592
+    },
+    {
+      "sourcePath": "data/exports/current/objects/fb/fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03.bin",
+      "sha256": "fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03",
+      "mediaType": "image/png",
+      "byteLength": 3271614
+    },
+    {
+      "sourcePath": "data/exports/current/objects/ff/ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4.bin",
+      "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+      "mediaType": "image/png",
+      "byteLength": 3111488
+    }
+  ],
+  "pages": [
+    {
+      "pageId": "home",
+      "owner": "system",
+      "bundlePath": "pages/home.zip"
+    },
+    {
+      "owner": "application",
+      "applicationId": "dnd2024",
+      "entityId": "web-page:dnd2024-play",
+      "title": "D&D 2024",
+      "navigationLabel": "D&D 2024",
+      "slug": "dnd2024-play",
+      "order": 100,
+      "visibility": "public",
+      "isIndexPage": true,
+      "bundlePath": "pages/dnd2024-play.zip"
+    }
+  ],
+  "runtime": {
+    "publishedApplications": [
+      "dnd2024"
+    ],
+    "environment": {
+      "Catalogs:PublishedApplications:0": "dnd2024",
+      "Knowledge:LocalPlayer:Enabled": "true",
+      "Knowledge:LocalPlayer:PrincipalId": "principal.ec1e7af98aa3227708fcd23ac92e2bd611023f4dde88380b5a79aaf4b32859e3",
+      "Knowledge:LocalPlayer:ApplicationId": "dnd2024",
+      "Knowledge:LocalPlayer:CampaignId": "campaign.caldris.measure-of-mercy",
+      "Knowledge:LocalPlayer:Role": "GameMaster",
+      "Knowledge:Completion:Enabled": "false",
+      "Retrieval:Embedding:Enabled": "false",
+      "InteractionOuter:Local:Enabled": "false",
+      "InteractionPlanning:Remote:Enabled": "false",
+      "ApplicationValidationWorker:Enabled": "false",
+      "Codex:ExecutablePath": "codex"
+    }
+  }
+}

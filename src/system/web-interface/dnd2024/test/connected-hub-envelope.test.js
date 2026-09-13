@@ -703,7 +703,7 @@ test("projects connected server knowledge locations into world locations", () =>
   assert.equal(envelope.world.regions[0].count, 1);
 });
 
-test("attaches exact known ways only to the exploration scene location", () => {
+for (const includeDestination of [true, false]) test(`attaches exact known ways only to the exploration scene location (destination loaded: ${includeDestination})`, () => {
   const originId = "location.thalorien.brackenford";
   const destinationId = "location.thalorien.crownmere";
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
@@ -712,7 +712,7 @@ test("attaches exact known ways only to the exploration scene location", () => {
     locationDirectoryAudience: "player",
     locationDirectory: [
       { id: originId, name: "Brackenford", kind: "settlement", summary: "A frontier village." },
-      { id: destinationId, name: "Crownmere", kind: "settlement", summary: "A port town." },
+      ...(includeDestination ? [{ id: destinationId, name: "Crownmere", kind: "settlement", summary: "A port town." }] : []),
     ],
     knownRoutes: [{
       id: "route.thalorien.brackenford-to-crownmere",
@@ -729,7 +729,8 @@ test("attaches exact known ways only to the exploration scene location", () => {
     destination: "Crownmere",
     detail: "The Crownmere road is open. · On foot, 45 minutes.",
   }]);
-  assert.deepEqual(envelope.world.locations.find((location) => location.id === destinationId)?.routes, []);
+  assert.deepEqual(envelope.world.locations.find((location) => location.id === destinationId)?.routes,
+    includeDestination ? [] : undefined);
 });
 
 test("omits known ways when the current scene is not exploration", () => {

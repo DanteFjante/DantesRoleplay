@@ -1,0 +1,648 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.place-lanterns-end.1",
+      "name": "Lanterns' End — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden. Present-day person: Pilot Sahel Marr is documenting coastal change and refuses to treat an old chart as a current promise of safety. Adventure: A newly found observation book can help locate a wreck, but its landmarks must be translated into the modern shoreline. A second party follows it literally and needs rescue.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-lastlight-pier.1",
+      "name": "Lastlight Pier — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A disused Leth Sarai pier maintained by Faris Nemm, later home to the small lamp spirit Little Lastlight. Present-day form: A modest landing rebuilt along the old line, used by local fishers and people walking the shore. The lamp has successive outer housings around an older internal bracket. Supplies and maintenance have passed between households; the spirit's continued residence is a working present-day premise, not evidence that its wooden shelter survived untouched. A person to meet: Lamp keeper Sabi Nemm shares the founder's surname but relies on neighbourhood trust rather than a proven hereditary office. She wants the light kept useful and dislikes visitors demanding a miracle before donating oil. Adventure: The pier needs moving away from eroding ground. Lastlight recognises the old approach and worries that people will fail to find the new landing.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-lastlight-pier.2",
+      "name": "Lastlight Pier — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Preparing a visible transition and teaching it the changed route can be part of the solution.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-leth-sarai.1",
+      "name": "Leth Sarai — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A Serevan harbour linking coastal cargoes to inland glassworking, gardens, and caravan routes. Its bakery preserves the address that brought Aveline east. Present-day form: A densely inhabited old quarter behind a rebuilt waterfront. Courtyards hold workshops, kitchens, and shared wells. Buildings have changed occupants and functions many times; old signs survive beneath paint or in reused lintels. The town trades in ordinary necessities as well as fine goods. A person to meet: Bakery keeper Azra Sef knows the local property history because changes of ovens, drains, and access rights matter to her business. She makes no claim to descend from Hadi. Adventure: A visitor arrives with evidence that a supposedly lost archive was once stored beneath the bakery. The cellar now supports a busy workplace. Access requires a practical arrangement for food production, labour, and safe examination.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-morrowstep-sanctuary.1",
+      "name": "Morrowstep Sanctuary — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A coastal religious house that helped organise the Pilgrimage of the Unlit Lamps and repair neighbouring shelters. Present-day form: A small sanctuary above a coastal road serving the western approaches to Morrow Strait. Its guest rooms and workshop are used more often than its ceremonial hall. Different communities preserve different explanations of the unlit-lamp emblem. A person to meet: Sister Melren Sore arranges practical relief and hopes to host a shared repair gathering without allowing patrons to turn it into a contest of public piety. Adventure: An old store of lamps is offered for sale as sacred treasure. Identifying the objects can support their return, lawful purchase, or continued use in a new relief effort rather than assuming every old religious object belongs in one place forever.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-nacre-quay.1",
+      "name": "Nacre Quay — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: A sheltered coastal inlet south of Veymouth. Livelihood: Coastal cargo, fishing, rope work, and marine repair. The original night harbour is now a shallow boat basin within a larger, repeatedly rebuilt port. Old shell marks survive on stones reused in warehouses. Its rivalry with Veymouth is expressed as often through rowing contests and insulting pastries as through serious commercial competition. Present-day person: Edda Sal, a night watch supervisor, knows the signal lamps better than the merchants who fund them. She wants money for replacement shutters before another winter. Adventure: A lamp produces an obsolete signal only on certain wet nights. The explanation may be a damaged shutter and a copied repair diagram; someone who benefits from the resulting confusion has started keeping it broken.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-namar-vale.1",
+      "name": "Namar Vale — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A Selvari market town connected to Istravel by the lodging route improved through the Dowry of Maps. Present-day form: A settlement of shaded yards, carriers' lodging, potteries, and leaf warehouses near irrigated cultivation. Fine imported goods pass through, but most residents earn a living from ordinary growing, carrying, repairs, and food. Old survey lines are preserved unevenly beneath later subdivisions. A person to meet: Carrier Laleh Dast has inherited a useful set of route corrections through her business, not the entire authority of the old marriage settlement. She wants a fair price for sharing work that keeps people safe. Adventure: A restored ceremonial atlas sends a caravan toward a failed well. Laleh's plain working copy suggests alternatives, but one crosses land whose current occupants need to be consulted.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-old-merecross.1",
+      "name": "Old Merecross — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: Hadrin and Enna's ferry settlement stands beside a shallow, shifting river channel near the future site of Bramblebridge. Basket-makers, boat repairers, and seasonal fishers live along raised walkways. The warning bell hangs above a stone maintenance shaft on firmer ground. Present-day form: Merecross is an archaeological layer beneath meadow and river silt near Bramblebridge, not a second thriving town. Some descendants of its inhabitants moved to the later bridge settlement. Drought exposes old ferry posts; exceptional floods reveal foundations and then conceal them again. A person to meet: Jory Reed repairs punts and collects fragments of old boats. His family calls itself the last ferry family, a claim several neighbours vigorously contest. A story here: A newly exposed walkway leads toward the bell shaft. Surveying it could reveal a forgotten flood channel before new construction blocks it.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-old-merecross.2",
+      "name": "Old Merecross — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Jory hopes for vindication, while the builders have already borrowed against the work.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-orrel-wood.1",
+      "name": "Orrel Wood — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: North of the Alderwake road. Livelihood: Managed coppice, charcoal, mushrooms, and limited timber cutting. The wood has been felled and regrown in sections many times. Hart's Mouth remains an identifiable limestone sink, surrounded by younger trees. A modest shrine commemorates Branna and, in newer inscriptions, her companions. Forest workers know reliable paths that romantic visitor maps omit. Present-day person: Tovin Holt, a forester, resents paid guides claiming every white deer is supernatural. He carries a careful sketch of the missing antler because that particular danger may be real. Adventure: A collector's newly acquired antler starts redirecting people inside a manor. Recovering Branna's methods offers a way to navigate the effect and safely contain its source.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-penns-reach.1",
+      "name": "Penn's Reach — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A section of river works associated with Halda Penn's surveys and the Open Sluices Agreement. Present-day form: An inhabited waterside district with inspection paths, channels, farms, and several later sluices replacing earlier arrangements. Only part of the old scheme remains functional. Some land deliberately left open for water has acquired other uses through later decisions. A person to meet: Waterworks keeper Joren Vell needs permission to inspect a channel through privately occupied ground. He can explain likely effects but cannot decide who should bear them on his own authority. Adventure: Compare old plans with a recent obstruction and negotiate access before the wet season. Clearing it without understanding downstream occupation could simply transfer the danger.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-redbank-reach.1",
+      "name": "Redbank Reach — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: On the main river downstream of the Bramblebridge area and upstream of Reedminster. Livelihood: Barges, mills, pasture, and a working ferry near later bridges. Redbank's unfinished piers remain as heavily eroded stone islands, altered by salvage and repair. King's Span was replaced more than once and is now represented by abutments near a newer crossing. The shared district outlived the original peace only through later arrangements, some of which still influence local identity. Present-day person: Ferry operator Dessa Noll tells Dama's story as family tradition but admits her documented ancestry reaches back only a few generations. Adventure: Floodwater exposes a gatehouse store below a newer foundation. Recovering its relief supplies is less useful than recovering the record of an emergency channel that could protect the modern settlement.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-reedminster.1",
+      "name": "Reedminster — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: A low island in the lower Vey river system, upstream of the tidal ports. Livelihood: Reed work, gardens, ferry service, and donations for hospitality. Its buildings have been repeatedly raised above flood level. A landing shelter stands outside the devotional precinct, preserving the distinction between accepting hospitality and joining worship. Old guest rules survive through generations of commentary, including disagreements written neatly in the margins. Present-day person: Brother Cassel, responsible for the landing, dislikes theological debate but is skilled at helping angry people sit far enough apart to eat. Adventure: Two travellers arrive with conflicting accounts of an inherited service agreement. One wants sanctuary; the other also needs shelter and insists they came to negotiate. Establishing what either can freely refuse becomes the centre of the story.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-reth-gate.1",
+      "name": "Reth Gate — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A northern district crossing associated with Duke Samel's disputed tax on guest beds and the settlement negotiated by hosts and carriers. Present-day form: A local administrative and lodging cluster in the former Reth jurisdiction. Its current rulers and borders remain for later history to establish. The old tollhouse is partly a shelter, with marks where removable sleeping platforms once fitted. A person to meet: Host Elna Penn is comparing lodging obligations across successive charters while trying to keep winter rooms affordable. She has little use for visitors who treat her working house as an unattended historical exhibit. Adventure: A later collector invokes the wrong version of an agreement. Establishing the applicable renewal requires testimony, records, and an understanding of what support the road still needs.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-ribbon-bridge.1",
+      "name": "Ribbon Bridge — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A small bridge on a local route near Saint Meret's Rest, where people marked expected returns with cloth and Jalen finally removed his uncle's ribbon. Present-day form: Several replacement bridges have occupied the crossing. Ribbons are now tied to a separate frame so they do not obstruct inspections. Households remove them after a return, a confirmed death, or a decision to stop waiting; the meanings differ and are not publicly policed. A person to meet: Bridge tender Arlo Fen keeps fallen ribbons dry until someone claims them. He knows many local stories but will not share private explanations simply because a stranger is curious. Adventure: A preserved ribbon contains a stitched mark matching an unresolved sanctuary case. Following the connection can help a family choose how to remember someone without promising a reunion.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-rusk-hollow.1",
+      "name": "Rusk Hollow — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: A cluster of turf-roofed homes around Maelin's communal kitchen in the Button Hills. Its granary doors opened into the hillside, where the temperature stayed steady and children drew sheep in the chalk. Its prosperity depended on wool, stored grain, and the neighbouring hamlets whose contributions kept the stores full. Present-day form: The original homes lie beneath pasture. A younger village occupies the hollow's sheltered edge, and shepherds still uncover hearthstones after heavy rain. The old kitchen can be entered through a collapsed smoke vent. Later building phases explain why a cellar may contain objects separated by centuries. A person to meet: Bessa Thorn, a tenant shepherd and enthusiastic local historian, wants the storehouses made safe before treasure seekers destroy their records. She has a persuasive theory about Maelin and dislikes evidence that complicates it.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-rusk-hollow.2",
+      "name": "Rusk Hollow — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A story here: A farmer claims an unearthed granary while neighbouring families insist it was held in common. The strongest evidence is not treasure but a sequence of marks showing who repaired the roof during hungry years.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-saint-merets-rest.1",
+      "name": "Saint Meret's Rest — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: Initially called the House of Returning Names, the sanctuary occupies a ridge above the upland road. The designation Saint Meret's Rest belongs to later generations, not to its founder's lifetime. A kitchen, burial ground, and room for notices become a modest institution supported by merchants and grieving households. Present-day form: A working hospice and archive built and rebuilt around the burial ground. Almost all early records survive as later copies; water damage, transcription mistakes, and well-intended corrections are normal. A few original wooden name boards were preserved in dry interior walls and rediscovered during repairs. A person to meet: Archivist Edris Fen has a magnificent memory for records and a terrible memory for visitors' faces. He wants to make family histories accessible, but knows that some entries were written to protect people from being found.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-saint-merets-rest.2",
+      "name": "Saint Meret's Rest — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A story here: An apparently harmless genealogy request could reveal the present descendants of someone whose concealment became a sanctuary obligation. The archive needs a decision about disclosure, not simply a recovered book.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-sallowmere.1",
+      "name": "Sallowmere — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: A shallow lake west of the orchard country, linked to it by a local cart road. Livelihood: Fishing, reeds, copying, and a small guesthouse. The original teaching house is partly incorporated into a later library and partly a garden of low foundations. Its collection has been dispersed and reassembled more than once. A narrow room is still called the Spoon Room after an object that may now be a replacement of a replacement. Present-day person: Copyist Iria Senn earns more producing clean accounts than preserving magical annotations. She nevertheless keeps a shelf of failed experiments because failures are often what make the surviving successes comprehensible. Adventure: Patrons fund a reconstruction of the sound-preserving vessel, each hoping to hear a different dead person's voice. The original notes establish that it can record someone living now. The emotional choice concerns what to preserve for the future.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-old-merecross.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-old-merecross.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-orrel-wood.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-lanterns-end.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-lastlight-pier.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-lastlight-pier.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-leth-sarai.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-nacre-quay.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-namar-vale.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-redbank-reach.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-reedminster.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-sallowmere.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-morrowstep-sanctuary.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-penns-reach.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-reth-gate.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-ribbon-bridge.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

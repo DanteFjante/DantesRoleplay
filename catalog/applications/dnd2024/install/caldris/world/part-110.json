@@ -1,0 +1,415 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.hearths-and-standing-stones",
+      "name": "Hearths and Standing Stones",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Hearths and Standing Stones",
+            "summary": "Permanent villages, managed woods, barrows, river shrines, and seasonal moots established many surviving rights of commons, guest refuge, and sanctuary.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -900000000,
+            "precision": "era",
+            "dateLabel": "c. 3100–1900 BS",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.river-thrones",
+      "name": "The River Thrones",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The River Thrones",
+            "summary": "Irrigation, metalwork, walled river towns, toll writing, and dynastic temples created the first durable states around the Mere, Aur, and Namar waters.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -800000000,
+            "precision": "era",
+            "dateLabel": "c. 1900–840 BS",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "clue.caldris.q01.barge-timing",
+      "name": "The River's Thirteenth Stroke",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.clue",
+          "value": {
+            "status": "unrevealed",
+            "summary": "The first twelve strokes use civic spacing. The final intervals match a quay loading signal: twelve belonged to the town, while one belonged to the river.",
+            "provenance": "Comparison of the bell keeper's timing board with dockworker testimony",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "handout",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "f4b9b932c8357b0fa468dbe81c150acaa31056def510c3cd943139aecdf20f13",
+                "mimeType": "image/png",
+                "width": 1254,
+                "height": 1254,
+                "alt": "A weathered copper barge token on cloth, marked with exactly thirteen single notches around its edge.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Original Caldris storybook artwork generated with OpenAI image generation and reviewed by the project owner.",
+                  "source": "world/caldris/visuals/item-thirteen-stroke-token-v1.png",
+                  "reviewedOn": "2026-08-30",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "opening-clues"
+      }
+    },
+    {
+      "entityId": "clue.caldris.q01.dry-flour",
+      "name": "Dry Flour Beneath Wet Canvas",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.clue",
+          "value": {
+            "status": "unrevealed",
+            "summary": "The wagon canvas is rain-soaked, but loose flour beneath it is dry. The cargo was placed or rearranged after the cover had already become wet.",
+            "provenance": "Physical inspection of the driverless tax wagon",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "opening-clues"
+      }
+    },
+    {
+      "entityId": "clue.caldris.q01.theatre-fibres",
+      "name": "Treated Red Pulley Fibres",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.clue",
+          "value": {
+            "status": "unrevealed",
+            "summary": "Treated red fibres caught at the bell rope match theatre pulley line, including a rehearsal knot designed to keep scenery from falling.",
+            "provenance": "Inspection of the bell rope and Sera Lark's rigging inventory",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "opening-clues"
+      }
+    },
+    {
+      "entityId": "creature.caldris.dragon.ilyr-vaust",
+      "name": "Ilyr Vaust, the Brass Archivist",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Dwells somewhere among Lantern Sea salt caverns and maintains a hoard of testimonies, treaty copies, jokes, trial records, and mutually contradictory memoirs. Ilyr prizes a well-told truthful failure more than gold and has impersonated at least four mediocre historians. The dragon aided the Lantern Concord in its early centuries, then withdrew when its archives became instruments of control. Several Seventh Ledger members wrongly believe Ilyr still authorizes their work.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "creatures"
+      }
+    },
+    {
+      "entityId": "creature.caldris.tradition.door-mouse",
+      "name": "Door mouse",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Common mouse featured in a story that it can enter any promised home. Story use: Hospitality riddle, children's tale, secret passage motif.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "creatures"
+      }
+    },
+    {
+      "entityId": "creature.caldris.tradition.hearthling",
+      "name": "Hearthling",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Tiny household spirit said to reward maintenance and punish boasting. Story use: Domestic humour, missing tools, uncertain reality.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "creatures"
+      }
+    },
+    {
+      "entityId": "creature.caldris.tradition.road-saint",
+      "name": "Road saint",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Stranger who appears at broken waymarks and asks inconvenient questions. Story use: Moral choice, recurring traveler, noncombat test.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "creatures"
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.hearths-and-standing-stones",
+      "name": "Era — Hearths and Standing Stones",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "c. 3100–1900 BS. Permanent villages, managed woodland, long barrows, river shrines, and seasonal moot grounds spread across both continents. Authority was local and layered rather than royal. Many modern customary rights—common grazing, guest-right, sanctuary at a lit hearth—claim origin here. Present residues: village commons, oath stones, funeral breads, taboo groves, and land claims that predate written title. Scholars dispute whether the era's carved “lamps” depict stars, seed baskets, or something held by a dragon's claw.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-crownmaking",
+      "name": "Era — The Crownmaking",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "1–560 AS. Modern kingdoms, marches, leagues, and city institutions consolidated. Borders shifted through marriage, river change, local consent, conquest, and clerical arbitration. This was not constant war: long local peaces alternated with short brutal conflicts. Most present capitals acquired their walls, courts, guild privileges, and civic identities in this era. Present residues: royal law, layered local rights, city charters, noble titles, border monasteries, and the common belief that each current polity is older and more inevitable than it really is.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-first-footprints",
+      "name": "Era — The First Footprints",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "before c. 3100 BS. The oldest stories describe people following immense animals between receding ice and warm river valleys. Dragons appear in these stories as weather, mountains, judges, and neighbours, making it unclear which passages are literal. Present residues include migration songs, standing stones, seasonal rights of passage, and burial mounds placed where no modern border makes sense. Hidden possibility: several “roads of the first people” follow a pattern visible only from the air and converge on six places now occupied by dragon domains.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.era.the-lantern-concord",
+      "name": "Era — The Lantern Concord",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "c. 840–116 BS. The Concord began as mutual protection for merchants, pilgrims, and messengers. It standardized measures, seals, road maintenance, maritime signals, debt arbitration, and the safety of certain archives. Over centuries it accumulated land, courts, armed escorts, hostage guarantees, and the power to declare whose records counted. It never formally called itself an empire. Its critics did. The Concord linked both continents and created many roads, lighthouses, script traditions, and legal concepts still used today. It also turned obligations into inheritable instruments, displaced communities whose claims could not be expressed in its forms, and learned to hide coercion inside neutral procedure. Present residues: Lantern Roads, seven-sided seals, archive houses, standard bridge widths, international guest-right, suspiciously similar court vocabulary, and dormant debt clauses.",
+            "provenance": "Caldris world bible — seven eras",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "clue.caldris.q01.barge-timing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "clue.caldris.q01.dry-flour",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "clue.caldris.q01.theatre-fibres",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.hearths-and-standing-stones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.hearths-and-standing-stones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-crownmaking",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-crownmaking",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-first-footprints",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-first-footprints",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-lantern-concord",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.era.the-lantern-concord",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.hearths-and-standing-stones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.river-thrones",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

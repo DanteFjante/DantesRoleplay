@@ -74,6 +74,7 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     [InlineData("runtime-services.md", "recover a partial workflow result", "previousCommits")]
     [InlineData("trigger-scheduling.md", "run JavaScript when a relationship changes", "directed-relationship")]
     [InlineData("web-composition.md", "bind a page to an application query", "zero or one simple")]
+    [InlineData("use.md", "act as the dungeon master", "procedure.play.storytelling")]
     public async Task Cold_start_manual_selects_platform_contracts_with_lexical_fallback(
         string fileName, string intent, string expectedInstruction)
     {

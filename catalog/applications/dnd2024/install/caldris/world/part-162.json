@@ -1,0 +1,138 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.the-dry-exchange",
+      "name": "The Dry Exchange",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A covered trading hall in Brinefold with raised document rooms and a public counter for inspecting registered cargo pledges. Its rules have been revised under successive authorities. Carved fish on the older beam ends commemorate the early dispute over promises made against the same catch.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 355,
+            "y": 325
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.brinefold",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-evening-market",
+      "name": "The Evening Market",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A modest market yard in Brinefold where sailors, craftspeople, and households sell used equipment and small consignments after the working day. Inspection rules and fees reflect later amendments. Repaired awnings cover stalls carrying practical goods alongside occasional objects with unusual histories.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 650,
+            "y": 480
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.brinefold",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-dry-exchange.1",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-evening-market.1",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-dry-exchange",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.5cb105b24215a039b876",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2fe67036415229516b52",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5cb105b24215a039b876",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e409c1a5835a6715c0f6",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f8e17fb223e341cdb223",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

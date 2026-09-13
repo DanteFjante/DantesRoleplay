@@ -38,7 +38,7 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
     && restored.campaignId === campaignId && restored.perspective === perspective ? restored : null;
   const [query, setQuery] = useState(returnContext?.query ?? "");
   const [draftQuery, setDraftQuery] = useState(returnContext?.query ?? "");
-  const [pages, setPages, resourceEpoch, fresh, resourceReady, deny, evicted] = useCollectionValue<RecipeRegistryPage[]>(
+  const [pages, setPages, resourceEpoch, fresh, resourceReady, deny, evicted, resourceDenied] = useCollectionValue<RecipeRegistryPage[]>(
     JSON.stringify(["registry-recipes", campaignId, perspective, relatedItemId, query]), []);
   const [cursor, setCursor] = useState<string | null>(null);
   const [restorePages, setRestorePages] = useState(returnContext?.pageCount ?? 1);
@@ -51,6 +51,9 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
   const admittedCursor = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
+    if (resourceDenied) {
+      setLoading(false); setError(listError(new ViewReadError("authorization", "Access denied"))); return;
+    }
     if (!resourceReady) return;
     if (readEpoch.current !== resourceEpoch) {
       readEpoch.current = resourceEpoch;
@@ -80,7 +83,7 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
     return () => controller.abort();
     // Page accumulation must not retrigger the current cursor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, loadPage, query, relatedItemId, requestVersion, resourceEpoch]);
+  }, [cursor, loadPage, query, relatedItemId, requestVersion, resourceEpoch, resourceReady, resourceDenied]);
 
   const records = useMemo(() => pages.flatMap((page) => page.records), [pages]);
   const lastPage = pages.at(-1) ?? null;
@@ -168,13 +171,14 @@ export function RecipeRegistryDetails({ route, loadDefinition, onNavigateParty }
 }) {
   const fromRules = window.history.state?.itemMainTab === "rules";
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
-  const [definition, setDefinition, resourceEpoch, fresh, resourceReady, deny] = useCollectionValue<RecipeDefinition | null>(
+  const [definition, setDefinition, resourceEpoch, fresh, resourceReady, deny, , resourceDenied] = useCollectionValue<RecipeDefinition | null>(
     JSON.stringify(["registry-recipe-definition", route.campaignId, route.perspective, route.collection, route.recipeId, route.contentFingerprint]), null);
   const [retry, setRetry] = useState(0);
   const preferCached = useRef(true);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [route.recipeId]);
   useEffect(() => {
+    if (resourceDenied) { setState("error"); return; }
     if (!resourceReady) return;
     if (preferCached.current && fresh && definition) { setState("ready"); return; }
     const controller = new AbortController(); setState("loading");
@@ -190,7 +194,7 @@ export function RecipeRegistryDetails({ route, loadDefinition, onNavigateParty }
     });
     preferCached.current = true;
     return () => controller.abort();
-  }, [loadDefinition, retry, resourceEpoch, route.collection, route.contentFingerprint, route.recipeId]);
+  }, [loadDefinition, retry, resourceEpoch, resourceReady, resourceDenied, route.collection, route.contentFingerprint, route.recipeId]);
   const back = () => readItemReturn(window.history.state)?.kind === "registry" || fromRules ? window.history.back()
     : onNavigateParty ? onNavigateParty("registry", true) : navigateHubRoute("party", "overview", true, { partySection: "registry" });
   const retryRead = () => { preferCached.current = false; setDefinition(null); setRetry((value) => value + 1); };
@@ -221,7 +225,8 @@ export function RecipeRegistryDetails({ route, loadDefinition, onNavigateParty }
         <h2>{state === "loading" ? "Loading recipe" : state === "stale" ? "Recipe changed" : "Recipe unavailable"}</h2>
         <p>{state === "loading" ? "Reading the selected recipe record…"
           : state === "stale" ? "Return to the Registry to open the current recipe."
-            : "This recipe record could not be read."}</p>
+            : resourceDenied ? listError(new ViewReadError("authorization", "Access denied"))
+              : "This recipe record could not be read."}</p>
         {state !== "loading" ? <button type="button" onClick={state === "stale" ? back : retryRead}>
           {state === "stale" ? "Back to current registry" : "Try again"}</button> : null}
       </div>}

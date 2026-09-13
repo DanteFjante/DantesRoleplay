@@ -1,0 +1,610 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "campaign.caldris.measure-of-mercy",
+      "name": "The Measure of Mercy",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.root",
+          "value": {
+            "status": "active",
+            "title": "The Measure of Mercy",
+            "premise": "A bridge toll and a bell that rings thirteen times lead from local corruption to royal succession, transcontinental archives, and the old responsibility of a dragon—without losing sight of supper, friendship, weather, work, and ordinary lives worth protecting.",
+            "partyGoals": [
+              "Become part of Bramblebridge without taking over its life.",
+              "Learn who profits from the new toll orders and why an empty tax wagon reached the market.",
+              "Choose how powerful systems can be made humane without making every victory belong to one conspiracy."
+            ],
+            "toneAndBoundaries": [
+              "Cozy, lightly humorous, storybook medieval adventure grounded in believable work, law, travel, weather, and consequence.",
+              "Magic is rare and remarkable rather than ordinary infrastructure; grief and danger appear beside warmth, eccentricity, and recovery.",
+              "Mysteries reward secrets, riddles, conversation, and creative solutions; apparent bosses may reveal higher layers while completed adventures still matter."
+            ],
+            "rulesetScope": "dnd2024",
+            "creationMethod": "manual",
+            "reviewFingerprint": "5118269bd27dfc3805ef7af962221c5100bfa7c57dabd4528d554d0e7335670c"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.campaign.current-scene",
+          "value": {
+            "location": {
+              "entityId": "location.caldris.bramblebridge"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "campaign"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.crownmaking",
+      "name": "The Crownmaking",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Crownmaking Began",
+            "summary": "The first durable post-Concord kingdoms formed through marriages, city bargains, military oaths, river law, and compromises later retold as cleaner founding legends.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -337435200,
+            "precision": "era",
+            "dateLabel": "1 AS",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.fraying-peace",
+      "name": "The Fraying Peace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Long Reprieve Begins to Fray",
+            "summary": "Trade still moves and harvests remain adequate, but creative tolls, uncertain heirs, unauthorized seven-sided seals, and physical signs of dragons reveal how much of the peace depends on trust no decree can replace.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": 0,
+            "precision": "exact",
+            "dateLabel": "643 AS — present day",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "name": "The First Grafts of Crownroot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Grafts of Crownroot",
+            "summary": "Orchard households planted a shared pear sanctuary using several regional scions and a remembered form of the Harth compact. The planting register distinguished donated trees from promises of magical shelter. The young sanctuary supplied grafts and meeting space, not a second limitless version of the Guest's protection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -951336000,
+            "precision": "approximate",
+            "dateLabel": "About 1810 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "name": "Crownroot Keeps Its Bird Strip",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Crownroot Keeps Its Bird Strip",
+            "summary": "During the recent orchard debates over counting birds and ordinary growing conditions, Crownroot's gardeners rejected a plan to convert its unpicked margin into rented stalls. They widened access to the existing courtyard instead. The compromise preserved habitat but left the kitchen seeking another source of winter income.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -14191200,
+            "precision": "approximate",
+            "dateLabel": "About 27 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "name": "The Court Beneath the Living Roots",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Court Beneath the Living Roots",
+            "summary": "Storm damage and erosion exposed great supporting roots. Gardeners chose to brace the living tree and establish a sunken courtyard instead of filling the ground again. Several institutions helped pay for it; their failure to agree on sole ownership left the courtyard available to a shared kitchen.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -379483200,
+            "precision": "approximate",
+            "dateLabel": "About 722 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "name": "The Whale Enters the Copper Tithe",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Whale Enters the Copper Tithe",
+            "summary": "Officials responding to the sleeping-dragon crisis added the already old glass whale to a disputed schedule of protected copper and furnace works. Contemporary assayers noted its separate construction joints. The schedule established a claim about custody, not proof that the dragon had made or owned the monument.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -703252800,
+            "precision": "approximate",
+            "dateLabel": "About 1338 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "name": "The Jaw Is Opened to Ordinary Visitors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Jaw Is Opened to Ordinary Visitors",
+            "summary": "After a fractured rib forced the interior to close, guides and assayers built a public viewing terrace beside the jaw. Entry money was directed to measured repairs rather than a promised full reconstruction. The safe approach remains outside the unsupported ribs.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -32587200,
+            "precision": "approximate",
+            "dateLabel": "About 62 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "name": "A Mountain Whale Sold in Pieces",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "A Mountain Whale Sold in Pieces",
+            "summary": "During the wider trade in doubtful old relics, merchants offered supposed whale splinters far beyond Kethria. A local glassworker compared several samples with documented repair fragments and found both honest copies and deliberate substitutions. The resulting custody rules protected the remaining structure without making every old attribution certain.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -357933600,
+            "precision": "approximate",
+            "dateLabel": "About 681 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "name": "A Glass Hall for Arriving Cargoes",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "A Glass Hall for Arriving Cargoes",
+            "summary": "Serevan carriers established public receiving rooms in a coastal conservatory, adopting selected inspection signals from the western Two Harbours agreement. Fishers and household carriers received access to its raised arcade. The building acquired no royal household; the palace name came later.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -660153600,
+            "precision": "approximate",
+            "dateLabel": "About 1256 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "name": "The Market Returns Above the Fish",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Market Returns Above the Fish",
+            "summary": "A repair agreement reopened the upper hall for small markets and school visits while reserving the lower galleries from ordinary access. Ferrypersons received authority to refuse landings outside inspected conditions. Visitor income now supports glass and masonry work alongside the working waterfront.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -16293600,
+            "precision": "approximate",
+            "dateLabel": "About 31 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "name": "The Tide Keeps the Lower Gallery",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Tide Keeps the Lower Gallery",
+            "summary": "After repeated subsidence and costly seawall failures, custodians abandoned routine use of the conservatory's lowest gallery. They raised the landing and rebuilt the upper arcade. The flooded rooms gradually became habitat rather than an untouched treasury awaiting recovery.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -280670400,
+            "precision": "approximate",
+            "dateLabel": "About 534 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "name": "The Worker's Hand on the Stop Rope",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Worker's Hand on the Stop Rope",
+            "summary": "After a cradle accident, the harbour's repair cooperative required a visible stop rope and gave the person supervising a lowering authority to halt it. Creditors unsuccessfully tried to make the rule subordinate to contracted departure dates. Subsequent rebuilding replaced several dangerous old fittings.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -61495200,
+            "precision": "approximate",
+            "dateLabel": "About 117 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "name": "Old Hulls Above the Empty Anchorage",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Old Hulls Above the Empty Anchorage",
+            "summary": "During the shortages remembered as Salt Without Sails, Carrowmere shipwrights set retired hulls into repaired cliff cradles and expanded a small-boat repair station. Reusing hulls provided dry work space without waiting for a new quay. The project helped some coastal carriers continue trading but did not solve the wider shortage.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -135604800,
+            "precision": "approximate",
+            "dateLabel": "About 258 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "name": "The Hanging Yard Gives Evidence",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Hanging Yard Gives Evidence",
+            "summary": "During the hearing associated with Gullstrand's Closed Launch, workers from the Hanging Harbour submitted their stop-rope rules and records of delayed launches. The evidence showed how an old safety custom could work in practice, while also exposing occasions when commercial pressure had defeated it.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -18396000,
+            "precision": "approximate",
+            "dateLabel": "About 35 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "name": "The Hearths Inside the Stone Ribs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Hearths Inside the Stone Ribs",
+            "summary": "The first surviving communal repair account for the colossus records a roof built within its already ancient torso. Chalkland households invoked the older Borrowed Hearths tradition to protect three open hearths from enclosure. The account documents a reuse of the monument, not its carving or an unbroken institution since the first famine.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -988128000,
+            "precision": "approximate",
+            "dateLabel": "About 1880 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "name": "The Lanterns Lent Instead of Sold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lanterns Lent Instead of Sold",
+            "summary": "After competing families began fencing off individual ribs as memorial chapels, shepherds and travelling cooks agreed that memorial lanterns would remain communal property. Several existing plaques were retained with disputed names visible. The agreement secured access to the shelter without settling every claim about who had funded it.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -227059200,
+            "precision": "approximate",
+            "dateLabel": "About 432 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "name": "The Colossus Receives a New Left Hand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Colossus Receives a New Left Hand",
+            "summary": "Tessa Flintrill's repair team stabilised the spring-bearing hand with a visible patch of younger stone. A proposed heroic dedication was replaced by a list of cooks, quarry workers and lenders of carts. The repaired hand now shelters the visitors' water jars.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -23126400,
+            "precision": "approximate",
+            "dateLabel": "About 44 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.orchardback.212",
+      "name": "The Orchard Comes Back to Different Keepers",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard Comes Back to Different Keepers",
+            "summary": "After a long absence, the Orchardback returned to a bay whose tending households had changed. Growers traced earlier donors through household letters and sharing lists before renewing their arrangement. Some fruit rights were honoured; others were renegotiated because the old promises had outlived the people expected to maintain them.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -111427200,
+            "precision": "approximate",
+            "dateLabel": "About 212 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.landmark.orchardback.6",
+      "name": "A Light Pontoon for the Orchardback",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "A Light Pontoon for the Orchardback",
+            "summary": "Keepers replaced an overbuilt landing with a light rope pontoon and introduced a daily permission to visit. Boat crews agreed to keep the tortoise's flippers clear and remove the landing when it began to stir. The atlas's present marker follows observations in the resting bay and confers no fixed sailing schedule.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -3153600,
+            "precision": "approximate",
+            "dateLabel": "About 6 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.campaign.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.crownmaking",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.fraying-peace",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.fraying-peace",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

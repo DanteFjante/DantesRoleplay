@@ -1,0 +1,762 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0063-the-open-string-hall-account.1",
+      "name": "The Open String Hall — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Willowrace, music teacher Elna Dast and carpenter Samin Orr converted an old workroom into the Open String Hall. Instruments with missing parts were repaired for lessons, and musicians taught several versions of tunes associated with Ysra and Orven alongside newer local compositions. The hall welcomed adults whose schooling had been interrupted and children with no personal memory of the war. It charged fees where households could afford them and obtained support for some places. Disagreements concerned rehearsal hours, instrument custody, and whether a patron could reserve the best room indefinitely. A performance paired an experienced player with a beginner for each piece. The result was uneven, lively, and popular enough to become an occasional tradition. The hall's founders valued music as part of a life worth rebuilding, not simply as decoration at public memorials.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0069-a-small-light-in-an-unrepaired-room-account.1",
+      "name": "A Small Light in an Unrepaired Room — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A damaged gathering room near Seln reopened with borrowed tables and one pane temporarily lent from Sunborrow House. Its stored daylight allowed fine work during short winter afternoons, but the room still needed fuel, a roof repair, and people willing to clean it. Nivren Sael spent several weeks helping carry materials and teaching a few practical charms. He could not restore what had been lost merely because he was older than the damage. Host Bera Kett asked him to explain each charm's limits to the next keeper before leaving. The pane was eventually returned, as its loan record required. The room continued using ordinary lamps. A later story claimed that Nivren had gifted the village an everlasting sun; the accounts show an exchange of borrowed things, useful labour, and a friendship maintained for several years afterward.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0073-the-bells-returned-from-storage-account.1",
+      "name": "The Bells Returned from Storage — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Several small bells requisitioned during the war survived in depots instead of being melted. Returning them required sorting objects whose clappers, brackets, and labels had become separated. Bell founder Teren Varr compared marks at the Narrow Bell Foundry with civic records and testimony from people who remembered their sound. Two communities claimed the same casting. One had paid for it; the other had maintained and used it for years before requisition. The eventual agreement placed it at a shared crossing and funded an ordinary replacement for one village tower. The first coordinated ringing after the returns became a regional celebration. Some households heard relief; others remembered warnings and departures. Several hosts provided quiet rooms for people who did not want to stand beneath the bells.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0077-the-price-of-opening-a-road-again-account.1",
+      "name": "The Price of Opening a Road Again — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Peace reopened legal passage before it restored every bridge, cart, or roadside store. Carriers returning to smaller routes encountered missing culverts, exhausted draught animals, and settlements unable to finance repairs. Some profitable wartime detours remained more usable than the roads officials wanted celebrated as restored. Surveyor Ossa Pell organised a modest circuit comparing records with actual conditions. Hosts at the Winter Latch and Lantern Hospice contributed observations and supplies. Payments were attached to completed work rather than to declarations that a district was open. Several households relocated beside a surviving branch, leaving empty houses on an older approach. Later visitors mistook the abandonment for destruction during a battle. The surviving accounts describe a slower departure driven by access, cost, and the need to earn a living.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0081-the-names-house-at-rookwater-account.1",
+      "name": "The Names House at Rookwater — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Returning people encountered homes occupied by relatives, purchasers, tenants, or strangers who had also needed shelter. Those searching for missing family members often possessed only fragments: a nickname, a unit, a debt receipt, or the place where a letter had last been forwarded. Nera Coal helped establish the Names House at Rookwater. Copyist Mira Renn kept separate records of confirmed deaths, witnessed departures, uncertain reports, and people found alive. The distinction frustrated officials seeking a final total but prevented guesses from hardening immediately into fact. The house also mediated the return of tools and work animals. Families needed practical means to live, not only recognition of what they had lost. Some disputes ended in shared use or compensation rather than an impossible restoration of the household as it had been before the war.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0083-the-first-protected-grain-sailing-account.1",
+      "name": "The First Protected Grain Sailing — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The war ended 83 years before the present, in 560 AS, through the Lantern Sea Accord. The settlement established protected grain routes, prisoner exchange, pilgrim rights, and regular diplomatic congresses. No coalition obtained a victory that satisfied all its members. The first protected sailings required inspection, interpreters, repaired vessels, and people willing to believe that opposing officials would honour unfamiliar seals. Pilot Edda Noll carried a mixed group of passengers alongside grain, including released prisoners and household representatives searching for news. At Brinefold, unloading continued after the ceremonial welcome ended. Damaged scales, disputed cargo shares, and exhausted workers made the practical peace less elegant than its commemorative paintings. Nevertheless, goods arrived and people stepped ashore who would not have been allowed passage a season earlier.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.1",
+      "name": "The Winter of Common Shovels — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Floodwater threatened camps and nearby homes along a lower river channel. Soldiers on opposing sides informally stopped fighting to repair the same bank. Engineer Hessa Orrel marked urgent work, while fishers and local labourers supplied knowledge of channels that military maps had simplified. The repaired stretch became known as the Shared Bank. Some officers tolerated the work, some helped, and others later claimed to have ordered what had begun without permission. Cooperation kept people alive without ending the war or erasing what participants had done elsewhere. Alderwick changed allegiance a second time, joining the Hearth coalition while arguing for an end to the conflict. Its later public memory preferred this change to the first. Elsewhere, the winter produced both the shared shelter remembered at the Courteous Ruin and the caravan loss commemorated by the Empty Saddles.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.2",
+      "name": "The Winter of Common Shovels — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "These were separate experiences within the same war, not interchangeable stories of universal goodwill.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0087-the-siege-that-consumed-its-wagons-account.1",
+      "name": "The Siege That Consumed Its Wagons — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A prolonged struggle over Low Fen failed to produce the decisive control its commanders promised. Wet ground, camp sickness, poor coordination, and damaged supply roads weakened both besiegers and defenders. Repair timber was burned for fuel; wagons were dismantled to shore up works that would soon be abandoned. Alderwick shifted from the Crown to the River coalition during this period, citing violated passage guarantees. Some units received orders before others, leaving escorts uncertain which checkpoints would recognise their papers. Several local truces lasted only long enough for carts and wounded people to pass. Wheelwright Sera Dast led a civilian repair group that served customers from more than one side. The group accepted payment and took risks; its members were neither immune to danger nor detached from the effects of their work.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0089-the-grain-convoys-under-three-banners-account.1",
+      "name": "The Grain Convoys under Three Banners — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Open warfare began 89 years before the present after seizures and armed escort disputes escalated into organised campaigns. The Crown, River, and Hearth coalitions invoked different obligations to justify controlling crossings and grain stores. Alderwick initially supported the Crown Banner, presenting its commitment as enforcement of a lawful settlement. Northern levies, including troops from Dunmarrow, bore heavy transport and escort duties. Dwarven quartermaster Nera Coal recorded carts lost to broken axles, spoiled provisions, sickness, and requisitions by supposedly friendly commanders. Her accounts make it difficult to separate the fighting front from the roads feeding it. At the temporary Low Fen Redoubt, soldiers fortified a storehouse approach with earthworks and commandeered timber. The settlement nearest the works gained customers and lost much of its capacity to decide who could occupy its barns.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0095-the-inheritance-with-two-seals-account.1",
+      "name": "The Inheritance with Two Seals — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A disputed succession claim became entangled with rights over revenues pledged to grain carriers and local defence. Highmead clerks examined copies bearing two valid seals from different stages of negotiation. Each side possessed authentic evidence; neither document alone settled all the obligations claimed in its name. Envoy Alis Venn and clerk Daro Penn maintained a shared record room that became known as the House of Paired Seals. They achieved limited agreements over shipments and temporary administration while a wider settlement remained unresolved. Several households benefited from those arrangements even as political confidence deteriorated. The failure came through a succession of decisions: payments withheld, escorts reinforced, accusations circulated, and negotiators instructed to concede less. There was no single hidden sentence that forced every later participant to choose war.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0099-the-spring-of-full-inns-account.1",
+      "name": "The Spring of Full Inns — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Carriers on the routes between the Vey Lowlands and the Lantern Sea reported strong business. Brinefold opened the Green Awning Yard, a practical gathering place where small consignments could be combined into affordable shipments. Freight organiser Mara Kell reserved spaces for independent carriers alongside larger contracts. Hosts expanded kitchens, apprentices found work, and several families invested savings in carts. The yard's spring gathering included musicians from Willowrace and cooks carrying recipes learned at Saffron Court. The surviving programme contains more advertisements than speeches about politics. Later histories sometimes describe this prosperity only as the fragile moment before disaster. Contemporary letters show people enjoying it for its own sake. Their decisions were made without knowledge of the war that would begin seven years after this period closed.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0111-the-spring-of-unspent-muster-money-account.1",
+      "name": "The Spring of Unspent Muster Money — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Anxiety over disputed obligations led several districts to set aside money for escorts and possible levies. Some advisers pressed for immediate mobilisation. Others argued that calling workers away during planting would create the shortages officials claimed to fear. Delegate Havren Dorn secured a limited inspection and messenger arrangement in place of one proposed levy. The decision freed money for repairs and avoided disrupting several communities that season. Rival advocates called the delay weakness; the households planting their fields experienced it as a reprieve. At the century's close, the political questions remained unresolved. Cooperation had achieved something real without settling succession, grain passage, or mutual defence for all future rulers. Later conflict should not erase the people who successfully prevented an earlier one.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0119-the-duet-played-without-its-visitor-account.1",
+      "name": "The Duet Played Without Its Visitor — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Nivren Sael promised to return for a small musical gathering near Three-Reed Bridge. Flooded routes and an illness delayed his journey. Musician Ossa Kett, who had prepared the other part, performed with a younger neighbour rather than leaving an empty chair at the centre of the occasion. Nivren arrived after the gathering and heard the revised duet in a kitchen. He disliked discovering that his absence had improved one transition, then asked for a copy. Ossa told him that waiting had once been an act of friendship; making every future gathering depend on him would become an obstacle to living. Their correspondence continued for several years. The episode became a local story about preparing a welcome that could survive the guest arriving late.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0127-the-grain-houses-with-empty-lofts-account.1",
+      "name": "The Grain Houses with Empty Lofts — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Several towns paid advances for grain expected from the same producing district. An adequate harvest concealed losses during storage and transport, and a dispute over payment delayed releases from surviving stocks. Consumers saw rising prices while merchants circulated assurances based on quantities that no longer existed in full. Storehouse examiner Ilren Vask persuaded local authorities to compare physical stock with pledged amounts. Emergency purchases and reduced releases prevented the worst shortages in some places, but poorer households still ate less and sold tools they later needed for work. The response encouraged inspection rights in several renewed supply agreements. It also made officials more anxious about controlling grain passage, contributing another pressure that later political actors could amplify or restrain.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0135-the-last-crossing-of-aurr-account.1",
+      "name": "The Last Crossing of Aurr — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aurr left the Veyr uplands with visiting members of another giant household. Human neighbours helped carry smaller possessions and provisions to the lower meeting place. The giant did not finish the stair or appoint a permanent guardian over it. A winter later, a returning visitor brought word that Aurr had died among kin. Keeper Sela Renn recorded the report beside the Winter Latch's older rescue account. The departure itself had been witnessed locally; knowledge of the death arrived through trusted testimony rather than a human burial procession. Households maintained the lower refuge for their own journeys and continued respecting the older burial shelf. The practice no longer depended on hoping its giant protector would come back to enforce it.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0143-the-maps-that-were-never-sold-account.1",
+      "name": "The Maps That Were Never Sold — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Leth Sarai, chart copyist Dena Orrel assembled conflicting harbour and road surveys in a rented hall. Customers expected a definitive atlas. Dena instead marked uncertainty, seasonal restrictions, and information supplied by witnesses she could not yet corroborate. Several patrons withdrew orders when the maps failed to endorse routes they wanted advertised. The collection became known as the Hall of Unsent Maps, although its keepers continued selling useful extracts and correcting them as reports arrived. One chart showed a tempting coastal shortcut that had never been surveyed throughout its entire length. Dena left the missing section blank. A later decorative copy filled it with an attractive line, which circulated more widely than the qualified original.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0151-the-hound-beside-the-milestone-account.1",
+      "name": "The Hound Beside the Milestone — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Travellers near the Veyr approaches reported a dark, shaggy hound appearing beside a damaged milestone during heavy weather. It followed stragglers toward a sheltered turn and disappeared before reaching the nearest house. Carrier Tovin Kell recorded several sightings without being able to find an owner. Hosts left water and repaired the path. Some travellers credited the Mile Hound with rescues; others never saw it despite searching. A small roadside custom developed around checking whether anyone had fallen behind before leaving the milestone. When a later flood changed the approach, sightings shifted to the surviving stretch of older road. Guides who insisted that the creature must appear beside the stone itself began leading customers away from the most reliable route.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0159-three-copies-of-one-promise-account.1",
+      "name": "Three Copies of One Promise — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Delegates concerned about escorts, grain passage, and emergency aid exchanged agreements meant to clarify mutual support. Their copies used similar language but differed in how they described territorial defence, protection of shipments, and the obligations of successor rulers. Clerk Mera Senn circulated a comparison identifying the differences. The delegates accepted practical arrangements for the next season and postponed a complete reconciliation. Carriers benefited immediately; advisers later cited the same papers in support of incompatible positions. These agreements became part of the background to later political tension. They did not compel a future war. Several renewals narrowed disputed terms, and local cooperation continued despite the unresolved language.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0167-the-host-who-hung-no-banner-account.1",
+      "name": "The Host Who Hung No Banner — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The orc host Havra Renn opened the Lantern Hospice on a Veyr road used by carriers, pilgrims, and seasonal workers. Its name described hospitality rather than a hospital or a claim to cure illness. Havra accepted travellers from rival districts and declined to display an exclusive patron's banner above the door. A sponsor withdrew support, and the house survived its next winter through smaller contributions, paid lodging, and work shared among residents. Havra enforced rules against violence and intimidation while allowing arguments that other hosts preferred to silence. The house's reputation grew after it sheltered a stranded messenger whose employers were unpopular locally. That welcome did not make the messenger admirable, innocent of every accusation, or grateful forever. It established that a meal and a dry place need not depend on complete agreement.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0151-the-hound-beside-the-milestone-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0151-the-hound-beside-the-milestone-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0159-three-copies-of-one-promise-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0159-three-copies-of-one-promise-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0167-the-host-who-hung-no-banner-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0167-the-host-who-hung-no-banner-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0111-the-spring-of-unspent-muster-money-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0111-the-spring-of-unspent-muster-money-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0119-the-duet-played-without-its-visitor-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0119-the-duet-played-without-its-visitor-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0127-the-grain-houses-with-empty-lofts-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0127-the-grain-houses-with-empty-lofts-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0135-the-last-crossing-of-aurr-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0135-the-last-crossing-of-aurr-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0143-the-maps-that-were-never-sold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0143-the-maps-that-were-never-sold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0095-the-inheritance-with-two-seals-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0095-the-inheritance-with-two-seals-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0099-the-spring-of-full-inns-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0099-the-spring-of-full-inns-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0081-the-names-house-at-rookwater-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0081-the-names-house-at-rookwater-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0083-the-first-protected-grain-sailing-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0083-the-first-protected-grain-sailing-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0085-the-winter-of-common-shovels-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0087-the-siege-that-consumed-its-wagons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0087-the-siege-that-consumed-its-wagons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0089-the-grain-convoys-under-three-banners-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0063-the-open-string-hall-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0063-the-open-string-hall-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0069-a-small-light-in-an-unrepaired-room-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0069-a-small-light-in-an-unrepaired-room-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0073-the-bells-returned-from-storage-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0073-the-bells-returned-from-storage-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0077-the-price-of-opening-a-road-again-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0077-the-price-of-opening-a-road-again-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

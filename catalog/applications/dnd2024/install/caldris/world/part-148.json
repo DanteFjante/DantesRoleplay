@@ -1,0 +1,541 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.landmark.lanternback-colossus",
+      "name": "Lanternback Colossus",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "e7da857e16dc3ae31d04374081a0c38523fc17c39c93dc59210c4ba6a733deb6",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A hill-sized, kneeling stone figure shelters a spring and communal hearths inside its broken rib vault. Sheep graze on its bowed head; amber lanterns mark the safe shelters below. Its makers and original purpose remain uncertain. Shepherds maintain the approach, while travellers exchange fuel, gossip and repair work for a place by the fire. The lanterns visible today are maintained lights, not an inexhaustible ancient enchantment.",
+                "caption": "Lanternback Colossus",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/lanternback-colossus.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A hill-sized, kneeling stone figure shelters a spring and communal hearths inside its broken rib vault. Sheep graze on its bowed head; amber lanterns mark the safe shelters below. Its makers and original purpose remain uncertain. Shepherds maintain the approach, while travellers exchange fuel, gossip and repair work for a place by the fire. The lanterns visible today are maintained lights, not an inexhaustible ancient enchantment.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 125,
+            "y": 340
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.landmark.skyharp-of-roven",
+      "name": "Skyharp of Roven",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "c13088729bdded80fb56288d1a5519c6f67aaf532fd75aa999101c1a7cf584ca",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "Two enormous stone horns and the remains of a freight-hoist arch rise above a Roven gorge. Bronze cables and repaired resonators make the frame sing in mountain wind. A keeper tends the grounded work platform, warning bells and brazier. Beyond it is empty air: the Skyharp is a lookout and a former lifting station, never a bridge or a completed upper pass.",
+                "caption": "Skyharp of Roven",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/skyharp-of-roven.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Two enormous stone horns and the remains of a freight-hoist arch rise above a Roven gorge. Bronze cables and repaired resonators make the frame sing in mountain wind. A keeper tends the grounded work platform, warning bells and brazier. Beyond it is empty air: the Skyharp is a lookout and a former lifting station, never a bridge or a completed upper pass.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 160,
+            "y": 205
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.landmark.upward-fall",
+      "name": "The Upward Fall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "e6f8cca0f72505fc0c322edc38fa6c77f20e49ea22153780b6c7196634f87e82",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A slender waterfall climbs from a spring bowl beside a broken aqueduct arch, then runs downhill through an open channel toward the reed beds. The old lifting enchantment operates only on this small diverted flow. Sluice workers maintain the receiving channel; tea sellers and mill apprentices gather on the safe bank platform. No part of the rising water is a stair, lift, or navigable route.",
+                "caption": "The Upward Fall",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/upward-fall.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A slender waterfall climbs from a spring bowl beside a broken aqueduct arch, then runs downhill through an open channel toward the reed beds. The old lifting enchantment operates only on this small diverted flow. Sluice workers maintain the receiving channel; tea sellers and mill apprentices gather on the safe bank platform. No part of the rising water is a stair, lift, or navigable route.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 135,
+            "y": 240
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.alderwake",
+      "name": "Alderwake",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Location: East of Harth's orchard branch, where a drovers' track meets the route toward the river. Livelihood: Livestock, cloth, lodging, and seasonal fairs. The ancient fairground becomes a small town whose widest lanes remain open for temporary stalls. On ordinary days it feels half empty. On fair days kitchens overflow into courtyards and children navigate by stall awnings rather than house numbers. The original fair bell is lost; successive bells inherit its name.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 765,
+            "y": 440
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-alderwake.1",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1887-the-founding-of-alderwake-fair",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1674-the-broken-counter",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1709-the-first-lantern-league",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1199-the-fair-beneath-the-sailcloth",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1087-the-silver-that-would-not-travel",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0909-the-fair-of-three-roads",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.sourapple-ford",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.merecross",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.979765288b2b73af8de7",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.2a12addf740e9383955d",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0676ac60ddb339ccb0d3",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4a18347503ae02483ca8",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.979765288b2b73af8de7",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.access.5ea5de4233",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.access.9a37c9d433",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.custom",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.gmtruth",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.hooks",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.lore",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.lore",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.custom",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.gmtruth",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.hooks",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.access.ca44c4571a",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.access.ea1b6e6e8c",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.custom",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.gmtruth",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.hooks",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.lore",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.19",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.421",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.778",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.148f52d6d097e218df7f",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.264e39598ede53f5cd25",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.4d7cdf152354d3641640",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.5b1d86f103114e0d5c7c",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.7fe8069d52914be039d9",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.84c680a6a57848a56fc6",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.86cbfbad029fde1f3769",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.c3ada5ae2911a8f31297",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.approach.5ea5de4233",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.approach.9a37c9d433",
+      "toEntityId": "location.caldris.landmark.lanternback-colossus",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.approach.8106e482f5",
+      "toEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.approach.ca44c4571a",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.approach.ea1b6e6e8c",
+      "toEntityId": "location.caldris.landmark.upward-fall",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

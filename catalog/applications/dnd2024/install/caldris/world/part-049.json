@@ -1,0 +1,666 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.1968-the-small-wonders-journey-account.1",
+      "name": "The Small Wonders Journey — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aveline returned to find Derren grey-haired, prosperous, and annoyed that she had missed his wedding by twenty-seven years. They travelled together once more, more slowly, collecting useful enchantments from households along the recovering road. Their collection included a charm that revealed a hidden crack in a cup, a verse that coaxed a stubborn cooking flame, and a spell that kept the smell of rain in a folded cloth. Some worked only with particular materials. Some supposed spells proved to be excellent practical advice. Derren insisted those deserved recording too. They lodged copies with three teaching houses. This modest collection later acquired an extravagant reputation as the Book of Gentle Arts. Its most valuable achievement was persuading a few practitioners to teach people outside their own families.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1976-the-war-of-false-weights-account.1",
+      "name": "The War of False Weights — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Trouble began when three neighbouring market authorities certified incompatible measures under the same name. Traders bought wool by one stone and sold it by another; tenants owed rents whose meaning changed at the estate boundary. A confiscated caravan led to reprisals. For two years, armed households seized scales, burned toll shelters, and detained merchants. Later ballads supplied great battles that contemporary burial records do not support. Most suffering came from missed planting, stolen animals, and villages cut off from salt. Sella Venn, a travelling assayer, proposed publicly accessible reference weights and the right to witness a weighing. Merchant houses opposed the expense until a fraudulent shipment embarrassed their own patrons.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1984-the-orchard-compact-account.1",
+      "name": "The Orchard Compact — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An orchard district survived a succession of late frosts unusually well. Its farmers credited a spirit called the Guest Beneath the Boughs, who appeared as a mud-stained old person with blossom caught in their hair. The oldest compact required an unharvested strip of orchard, protection for nesting birds, and a shared meal when the first fruit ripened. The Guest sheltered blossoms against a few nights of frost; the farmers maintained the habitat on which the orchards depended. The compact prospered because both sides worked. A visiting religious house recorded the agreement and offered witnesses for later renewals. Some clergy regarded the Guest as a neighbour; others called it an affliction. The disagreement never divided neatly between kind villagers and cruel priests: several tenants welcomed the clergy because orchard owners were charging them for access to supposedly sacred fruit.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1992-the-road-of-seven-suppers-account.1",
+      "name": "The Road of Seven Suppers — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Recovery depended on moving seed and livestock between valleys. Seven households agreed that a traveller carrying a recognised wooden tally could receive supper and a place beside the fire, then repay the hospitality through work or goods at another participating house. Derren Vale, a muleteer with an unreliable singing voice, carried the first settlement accounts. The elven traveller Aveline Sere accompanied him for four seasons while collecting small household spells. She remembered the journey as a brief, pleasant interruption. Derren built the rest of his life around it. These stopping places established a practical route across the hills. Parts of it are proposed predecessors of the present Lantern Road, although floods, enclosures, and changing markets would later move its course.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.2000-the-winter-of-borrowed-hearths-account.1",
+      "name": "The Winter of Borrowed Hearths — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Three poor harvests culminated in a winter that closed the upland tracks. Smoke rose from fewer chimneys as families gathered in the houses with sound roofs. The chalk-cut storage chambers of the Button Hills became communal granaries, guarded by shepherds and opened before witnesses. Maelin Rusk, a widow responsible for weighing grain, refused to use the measures brought by the estate collectors: their baskets had grown larger since the last harvest. She measured distributions in an ordinary household cooking pot. Her decision saved several hamlets from surrendering seed grain as rent and made her a criminal in the surviving estate accounts. The hill communities adopted the custom of leaving a small portion of supper beside the hearth for an absent traveller. Over time, hospitality replaced hunger in the explanation.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.low-magic-life",
+      "name": "Magic Remains Remarkable",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Magic is real, scarce, unevenly distributed, and socially consequential. It can change a battle, save one patient, or authenticate one message, but it does not replace farming, roads, ships, courts, crafts, medicine, or ordinary labor.",
+            "provenance": "Caldris world bible — Low-magic institutions",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-sealed-alcove",
+      "name": "The Sealed Alcove",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Set into the base of one of Bramblebridge's bridge piers is a small stone alcove, sealed by a door bearing a faded royal crest nobody currently living can place. Since the new toll order arrived, guards have been quietly posted to keep people away from it -- and get oddly tense if asked why.",
+            "provenance": "Observable in Bramblebridge; the guards' behavior is common gossip",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-tax-wagon",
+      "name": "The Empty Tax Wagon",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The season's royal tax wagon arrived at Bramblebridge's market completely empty -- seals unbroken, locks untouched, no sign of a break-in anywhere along the road. The crown's collectors are furious and looking for someone local to blame before word reaches the capital.",
+            "provenance": "Common knowledge in Bramblebridge",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.mystery-vanishing-sheep",
+      "name": "The Vanishing Sheep of Thistlewick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Thistlewick's shepherds have lost eleven sheep this month -- no blood, no tracks, no wolves seen or heard. Each one vanished at night, always from the pastures nearest Sable Hollow. The villagers are more baffled than afraid, but they'd very much like it to stop.",
+            "provenance": "Local rumor, easily heard in Bramblebridge or Thistlewick",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.nine-lamps",
+      "name": "The Nine Lamps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Most Caldrin religious life centers on nine Lamps—Hearth, Road, Measure, Green, Deep, Storm, Forge, Quiet, and Laughing—expressed through household practice, local saints, work, hospitality, mourning, and feast-day misrule.",
+            "provenance": "Caldris world bible — Faith and religious life",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.prediction-court-legend",
+      "name": "No One Crosses Unheard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Sect doctrine holds that nobody can cross the Prediction Court's suspended bells without ringing one — until Ganji did it on the night he escaped.",
+            "provenance": "Tensor Sect legend, now spreading among the monks",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.six-dragons",
+      "name": "Six Known Dragons",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Six dragons are known through credible records and living testimony: Ilyr Vaust, Mourenne Under-Mere, Karsh Veyru, Sable Annek, Oriselle Cloud-Turner, and Tavaros of the Empty Nets. None is an everyday sight.",
+            "provenance": "Caldris world bible — The six known dragons",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor-sect-doctrine",
+      "name": "The Doctrine of Invisible Tension",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect teaches that every movement is joined to every other by invisible tension, and that a sufficiently disciplined mind could perceive the whole pattern at once.",
+            "provenance": "Tensor Sect teaching, widely known within Highmead",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tensor-sect-pursuit",
+      "name": "The Sect's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect raised Ganji as a prodigy and does not easily let go of what it considers its own. If Ganji ever makes a serious, lasting break from them, the Sect may dispatch monks to retrieve him. This is a live, unresolved threat for the GM to invoke at a dramatically appropriate moment, not a scheduled event.",
+            "provenance": "GM worldbuilding note, from player-provided character background",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.twelve-polities",
+      "name": "The Twelve Polities",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Twelve major polities hold an imperfect peace through marriages, toll rights, grain contracts, pilgrim protections, mutual fear, and shared memory of the Three Banner War.",
+            "provenance": "Caldris world bible — The twelve polities",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.two-continents",
+      "name": "Two Continents and the Lantern Sea",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Eredane and Solasca face one another across the Lantern Sea. Neither continent is culturally uniform or inherently more advanced, and crossings usually take eight to eighteen days depending on vessel, route, and season.",
+            "provenance": "Caldris world bible — Physical World",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "faction.caldris.alderwick-crown-council",
+      "name": "Alderwick Crown Council",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "The council charged with preserving lawful succession and the kingdom's fragile peace while Queen Adela refuses to name an heir.",
+            "visibility": "public",
+            "goals": [
+              "Preserve lawful succession.",
+              "Prevent uncertainty from becoming war."
+            ],
+            "methods": [
+              "Committee review and sealed advice.",
+              "Selective disclosure intended to project confidence."
+            ],
+            "assets": [
+              "Royal clerks",
+              "Provincial correspondence",
+              "Emergency legal powers"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Contain the toll scandal before it becomes evidence that the Crown has lost control of its own orders."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.aur-river-judges",
+      "name": "Aur River Judges",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Aur River Judges operates across Ordelain. Keep navigation and water rights predictable.",
+            "visibility": "public",
+            "goals": [
+              "Keep navigation and water rights predictable."
+            ],
+            "methods": [
+              "Elite training isolates judges from villages; rival schools weaponize precedent."
+            ],
+            "assets": [
+              "Reach: Ordelain"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "The river changes course around a ducal estate."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.bellafont-water-courts",
+      "name": "Bellafont Water Courts",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "Bellafont Water Courts operates across Bellafont. Allocate scarce water by charter and need.",
+            "visibility": "public",
+            "goals": [
+              "Allocate scarce water by charter and need."
+            ],
+            "methods": [
+              "Ancient documents privilege abbeys and estates; reformers forge consensus statistics."
+            ],
+            "assets": [
+              "Reach: Bellafont"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Orchard blight and drought coincide."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    },
+    {
+      "entityId": "faction.caldris.bramblebridge-watch",
+      "name": "Bramblebridge Watch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.faction",
+          "value": {
+            "status": "active",
+            "summary": "A tiny civic watch trying to keep a busy market town safe with too little money, uneven social skills, borrowed equipment, and considerable local loyalty.",
+            "visibility": "public",
+            "goals": [
+              "Keep Bramblebridge safe.",
+              "Prevent toll anger from becoming violence."
+            ],
+            "methods": [
+              "Foot patrols, witness interviews, and local favors.",
+              "Maps, labeled string, and reluctant cooperation with guilds."
+            ],
+            "assets": [
+              "Tibb's Watch Post",
+              "Town maps",
+              "A whistle everyone recognizes"
+            ],
+            "agenda": {
+              "state": "ready",
+              "summary": "Find the missing tax-wagon driver and learn why the noon bell rang thirteen times before someone is arrested for convenience."
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "factions"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.low-magic-life",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.low-magic-life",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.nine-lamps",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.nine-lamps",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.six-dragons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.six-dragons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.twelve-polities",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.twelve-polities",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.two-continents",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.alderwick-crown-council",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.bramblebridge-watch",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.aur-river-judges",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "faction.caldris.bellafont-water-courts",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.faction.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1984-the-orchard-compact-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1992-the-road-of-seven-suppers-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.2000-the-winter-of-borrowed-hearths-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1968-the-small-wonders-journey-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1976-the-war-of-false-weights-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1984-the-orchard-compact-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1992-the-road-of-seven-suppers-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.2000-the-winter-of-borrowed-hearths-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1968-the-small-wonders-journey-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1976-the-war-of-false-weights-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

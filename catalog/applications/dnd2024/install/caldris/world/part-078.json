@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.1",
+      "name": "The Last Mile Porch — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A covered waiting and message space at Bramblebridge's Lantern Road approach, supported by nearby food and lodging. Travellers mend straps, arrange deliveries, and compare current directions. Posted notices distinguish confirmed information from reports still awaiting a witness. A person to meet: Keeper Ossa Kell maintains the board and asks messengers to remove outdated requests. She knows who has left a message, not necessarily whether every story behind it is true. Adventure: Take an ordinary delivery, locate a recent traveller, bring back a route report, or return a borrowed object. These are optional starting opportunities; no notice has been accepted, no character has arrived, and no encounter has begun merely because the porch exists. ## Two thousand years behind the next doorway Caldris's authored historical sequence now reaches from two thousand years before the campaign to its present threshold.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.2",
+      "name": "The Last Mile Porch — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "It contains old communal stores, vanished households, revised charters, surviving local wonders, wars, repairs, and choices that later people have understood imperfectly. Ysra has been dead for 594 years, and Orven for 279. Aurr's death is settled. Aveline, Leris, and Nen retain their established identities and shared history. Nera Coal remains a living dwarven witness whose knowledge follows her experience. Nivren remains eligible to appear, but his present location and participation are still unset; no unfinished ancient life is required to make the present interesting. Little Lastlight, the Siltwife, the Mile Hound, ember herons, rainbell pears, and old light panes have particular histories and limits. Their current condition can be established through local evidence and later maintenance records. They are neither universal solutions nor automatic manifestations of one hidden power.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.3",
+      "name": "The Last Mile Porch — history and story material (3)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The quest situations attached to these chapters remain opportunities. Their people may seek help, decline involvement, disagree, or change their minds when play begins. The history supplies things worth finding and reasons for people to care; it does not decide what the party will value, whom they will trust, or where they will go. The campaign clock remains at its starting point. The next footsteps belong to the story still to be played.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-long-table-rooms.1",
+      "name": "The Long Table Rooms — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: Lodging and dining rooms in the Seven Lamps League used by small delegations, interpreters, and travellers conducting civic business. Meals and language services have stated prices. Informal discussion can prepare a formal case but confers no automatic authority over council proceedings. A person to meet: Host Bera Amat needs help resolving a complaint against an intermediary claiming influence through her household. She wants to protect visiting delegates without dismissing the useful work of independent interpreters. Adventure: Compare translations, find the missing copy of a petition, or connect visitors with a credible witness. A shared meal can introduce competing interests and useful friendships without obliging everyone to agree afterward.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0050-0000-place-the-open-ledger-room.1",
+      "name": "The Open Ledger Room — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A public reading and teaching room in Highmead with comparative seal casts, local measures, and copies of disputed obligations. Original records remain with their custodians unless specifically deposited. Staff distinguish teaching examples, authenticated evidence, and unanswered questions. A person to meet: Reader Samin Vell still works here with younger assistants. He wants to establish how an impression associated with a teaching copy entered circulation, while refusing to blame everyone who attended his lessons. Adventure: Trace a seal impression, compare dates and units, or locate the later renewal behind an old claim. A genuine object may have been used misleadingly, and a copied document may preserve an authentic agreement.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-gm-truth.1",
+      "name": "The Congress after the Harvest — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Dena retained a private comparison of public speeches with negotiated exceptions. It shows compromise and selective presentation, not a single conspiracy controlling every toll. The most useful discovery may be an overlooked precedent that gives a small community a fairer opportunity to be heard.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-traces-and-stories.1",
+      "name": "The Congress after the Harvest — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Interpreters' notes, postponed petitions, and travel cases that reveal how broad promises were applied. A present dispute may begin with a fee adopted as a temporary measure whose justification has disappeared. Recovering the original decision can support a new hearing without settling its outcome in advance.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0063-the-open-string-hall-gm-truth.1",
+      "name": "The Open String Hall — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Elna and Samin quarrelled over selling a valuable instrument to fund ordinary repairs. They eventually sold it with a documented loan-back arrangement for certain performances. Its later appearance in a private collection is not proof that it was stolen from the hall.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0063-the-open-string-hall-traces-and-stories.1",
+      "name": "The Open String Hall — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Repair labels, lesson books, and scores marked for paired performers. A present commission could retrieve an instrument, establish who owns a donated collection, or reunite parts of an arrangement carried away by a former pupil.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0069-a-small-light-in-an-unrepaired-room-gm-truth.1",
+      "name": "A Small Light in an Unrepaired Room — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nivren initially offered a spell too demanding for the person expected to maintain it. Bera asked for something simpler, and he listened. The useful contribution came from adapting to the household rather than demonstrating the most impressive magic available.",
+            "provenance": "history-100-50-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0063-the-open-string-hall-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0063-the-open-string-hall-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0063-the-open-string-hall-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0063-the-open-string-hall-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0069-a-small-light-in-an-unrepaired-room-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0069-a-small-light-in-an-unrepaired-room-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0057-the-congress-after-the-harvest-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.3",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-long-table-rooms.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-open-ledger-room.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

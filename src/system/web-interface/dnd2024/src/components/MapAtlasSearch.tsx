@@ -9,13 +9,23 @@ export function MapAtlasSearch({
   world,
   activeMapId,
   onNavigate,
+  onOpenLocation,
 }: {
   world: WorldReadModel;
   activeMapId: string;
   onNavigate: (mapId: string, featureId: string) => void;
+  onOpenLocation: (locationId: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const results = searchMapFeatures(world.maps, query, activeMapId) as MapSearchResult[];
+  const mappedResults = searchMapFeatures(world.maps, query, activeMapId) as MapSearchResult[];
+  const mappedLocationIds = new Set(mappedResults.map((result) => result.locationId));
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const results = [...mappedResults.map((result) => ({ ...result, target: "map" as const })),
+    ...world.locations.filter((location) => normalizedQuery && !mappedLocationIds.has(location.id) &&
+      [location.name, location.summary, location.region, location.kind].some((value) =>
+        value.toLocaleLowerCase().includes(normalizedQuery)))
+      .map((location) => ({ name: location.name, locationId: location.id, region: location.region, target: "location" as const }))]
+    .sort((left, right) => left.name.localeCompare(right.name));
   const shownResults = results.slice(0, RESULT_LIMIT);
   const hasQuery = query.trim().length > 0;
 
@@ -23,7 +33,7 @@ export function MapAtlasSearch({
     <section className="map-atlas-search" aria-label="Search this atlas">
       <label htmlFor="map-atlas-search-input">
         <Icon name="Search" size={15} />
-        <span>Find a place across every known map</span>
+        <span>Search loaded places</span>
       </label>
       <div className="map-atlas-search__field">
         <input
@@ -40,15 +50,17 @@ export function MapAtlasSearch({
           </button>
         ) : null}
       </div>
+      <p className="world-map-panel__note">Search includes the maps and locations opened so far. Browse closer areas to load more places.</p>
       {!hasQuery ? null : shownResults.length === 0 ? (
-        <p className="map-atlas-search__empty">No known mapped place matches that search.</p>
+        <p className="map-atlas-search__empty">No loaded place matches that search.</p>
       ) : (
         <div className="map-atlas-search__results" role="list">
           {shownResults.map((result) => (
             <button
-              key={`${result.mapId}:${result.featureId}`}
+              key={result.target === "map" ? `${result.mapId}:${result.featureId}` : `location:${result.locationId}`}
               onClick={() => {
-                onNavigate(result.mapId, result.featureId);
+                if (result.target === "map") onNavigate(result.mapId, result.featureId);
+                else onOpenLocation(result.locationId);
                 setQuery("");
               }}
               role="listitem"
@@ -56,7 +68,7 @@ export function MapAtlasSearch({
             >
               <span>
                 <strong>{result.name}</strong>
-                <small>{result.mapName} · {result.mapScope} map</small>
+                <small>{result.target === "map" ? `${result.mapName} · ${result.mapScope} map` : `${result.region} · location details`}</small>
               </span>
               <Icon name="ArrowRight" size={15} />
             </button>

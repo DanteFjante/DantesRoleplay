@@ -268,6 +268,43 @@ public sealed class CaptureMemoryToolTests
     }
 
     [Fact]
+    public async Task An_idle_initialized_watch_does_not_rewrite_its_checkpoint()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "capture-memory-idle-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var database = Path.Combine(root, "capture.db");
+        var checkpoint = Path.Combine(root, "capture.checkpoint.json");
+        try
+        {
+            await CreateDatabaseAsync(database);
+            var common = Options(root, checkpoint, "thread.idle", "session.idle");
+            var client = new WatchCaptureClient("thread.idle", "turn.baseline", "turn.unused", idle: true);
+            var connect = new CaptureMemoryTool(_ => client, () => new StringReader(string.Empty));
+            Assert.Equal(0, await connect.RunAsync(Context(database, common, connect: true), default));
+            await CodexCaptureCheckpointFile.SaveAsync(checkpoint, new([], ["turn.baseline"], true));
+            File.SetLastWriteTimeUtc(checkpoint, new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            var originalWriteTime = File.GetLastWriteTimeUtc(checkpoint);
+            common["watch"] = "";
+            common["watch-ms"] = "350";
+            common["poll-ms"] = "100";
+
+            Assert.Equal(0, await connect.RunAsync(Context(database, common), default));
+
+            Assert.True(client.Discoveries > 0);
+            Assert.Equal(originalWriteTime, File.GetLastWriteTimeUtc(checkpoint));
+            var retained = await CodexCaptureCheckpointFile.LoadAsync(checkpoint);
+            Assert.True(retained.WatchInitialized);
+            Assert.Empty(retained.Pending);
+            Assert.Equal("turn.baseline", Assert.Single(retained.CompletedTurnIds));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Watch_gap_after_an_empty_baseline_preserves_checkpoint_and_journal()
     {
         var root = Path.Combine(Path.GetTempPath(), "capture-memory-watch-gap-" + Guid.NewGuid().ToString("N"));
@@ -309,6 +346,27 @@ public sealed class CaptureMemoryToolTests
             SqliteConnection.ClearAllPools();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task Watch_rejects_an_untested_version_before_discovery_or_initializing_checkpoint()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "capture-memory-version-" + Guid.NewGuid().ToString("N"));
+        var checkpoint = Path.Combine(root, "capture.checkpoint.json");
+        var database = Path.Combine(root, "capture.db");
+        var common = Options(root, checkpoint, "thread.gameplay", "session.gameplay");
+        common["watch"] = "";
+        common["watch-ms"] = "100";
+        var client = new UnsupportedWatchClient();
+        var tool = new CaptureMemoryTool(_ => client, () => new StringReader(string.Empty));
+
+        var error = await Assert.ThrowsAsync<CodexBridgeException>(() =>
+            tool.RunAsync(Context(database, common), default));
+
+        Assert.Equal("CODEX_CAPTURE_VERSION_UNSUPPORTED", error.Code);
+        Assert.Equal(0, client.Discoveries);
+        Assert.False(File.Exists(checkpoint));
+        Assert.False(File.Exists(database));
     }
 
     [Fact]
@@ -518,10 +576,11 @@ public sealed class CaptureMemoryToolTests
         }
     }
 
-    private sealed class WatchCaptureClient(string threadId, string existingTurnId, string newTurnId) :
+    private sealed class WatchCaptureClient(string threadId, string existingTurnId, string newTurnId, bool idle = false) :
         ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
     {
         private int discoveries;
+        public int Discoveries => discoveries;
 
         public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(CodexCaptureVersions.SupportedCliVersion);
@@ -537,6 +596,12 @@ public sealed class CaptureMemoryToolTests
         {
             Assert.Equal(threadId, requestedThreadId);
             discoveries++;
+            if (idle)
+            {
+                Assert.Equal(existingTurnId, afterTurnId);
+                Assert.False(initializeBaseline);
+                return Task.FromResult<IReadOnlyList<string>>([]);
+            }
             Assert.Equal(discoveries == 1 ? null : discoveries == 2 ? existingTurnId : newTurnId, afterTurnId);
             Assert.Equal(discoveries == 1, initializeBaseline);
             return Task.FromResult<IReadOnlyList<string>>(discoveries == 1
@@ -569,6 +634,21 @@ public sealed class CaptureMemoryToolTests
                     }
                 }
             }));
+        }
+    }
+
+    private sealed class UnsupportedWatchClient : ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
+    {
+        public int Discoveries { get; private set; }
+        public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult("0.154.0-alpha.6.3");
+        public Task<JsonElement> ReadThreadAsync(string threadId, bool includeTurns,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(string threadId, string? afterTurnId,
+            bool initializeBaseline, CancellationToken cancellationToken = default)
+        {
+            Discoveries++;
+            throw new InvalidOperationException("An unsupported client must not read gameplay history.");
         }
     }
 

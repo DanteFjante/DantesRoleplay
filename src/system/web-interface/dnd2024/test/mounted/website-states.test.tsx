@@ -567,6 +567,21 @@ test("party fetches only the selected dossier and ignores an obsolete completion
   } finally { await mounted.cleanup(); }
 });
 
+test("failed origin and biography reads never claim their records are absent", async () => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  const member = { ...partyMember({ status: "ready", source: "canonical", data: [] }), origin: [], backstory: [] };
+  const mounted = await mount(<PartyView party={[member]}
+    loadCharacterDetails={async () => { throw new Error("Dossier projection unavailable"); }} />);
+  try {
+    for (const section of ["Origin", "Biography"]) {
+      await click(button(mounted.container, section));
+      assert.match(mounted.container.textContent ?? "", /Character section unavailable/);
+      assert.match(mounted.container.textContent ?? "", /Record count unavailable/);
+      assert.doesNotMatch(mounted.container.textContent ?? "", /No (origin|backstory) recorded|0 recorded entries/);
+    }
+  } finally { await mounted.cleanup(); }
+});
+
 test("Character overview loads the selected summary once while broader details stay on demand", async () => {
   const { PartyView } = await import("../../src/components/PartyView");
   const member = partyMember({ status: "idle", data: null });
@@ -1214,6 +1229,39 @@ test("same-scope bootstrap refresh rehydrates the selected Campaign details and 
   });
 });
 
+test("sidebar distinguishes an unloaded chapter from a failed read and a validated title", async (t) => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  for (const fails of [false, true]) await t.test(fails ? "failed" : "ready", async () => {
+    const initial = envelope("dm");
+    const details = { ...structuredClone(initial.campaign), chapter: "The Thirteenth Bell" };
+    initial.campaign.chapter = "Active chapter information unavailable.";
+    initial.campaign.detailFields = { chapters: "absent", arcs: "absent", sessions: "absent", visits: "absent" };
+    let finish: (error?: Error) => void = () => {};
+    let reads = 0;
+    const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadCampaignDetails={() => {
+        reads += 1;
+        return new Promise((resolve, reject) => {
+          finish = (error) => error ? reject(error) : resolve(details);
+        });
+      }} />);
+    const chapter = () => mounted.container.querySelector(".main-nav__chapter strong")?.textContent;
+    try {
+      assert.equal(reads, 0);
+      assert.equal(chapter(), "Chapter not yet loaded");
+      await click(button(mounted.container, "Campaign"));
+      assert.equal(reads, 1);
+      assert.equal(chapter(), "Campaign details loading");
+      await act(async () => {
+        finish(fails ? new Error("Campaign detail read failed") : undefined);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      assert.equal(chapter(), fails ? "Campaign details unavailable" : "The Thirteenth Bell");
+    } finally { await mounted.cleanup(); }
+  });
+});
+
 test("Campaign details load on Overview before counts render and every Campaign section uses the validated result", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("dm");
@@ -1460,6 +1508,34 @@ test("deferred hub sections stay unloaded until navigation and never display fai
   } finally { await mounted.cleanup(); }
 });
 
+test("History can reopen after an abandoned read and a still-pending Lore continuation", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.world.history = [];
+  const calls: string[] = [];
+  const signals: AbortSignal[] = [];
+  let historyCalls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_scope, section, signal, _preferCached, onProgress) => {
+      calls.push(section); signals.push(signal);
+      if (section === "history" && ++historyCalls > 1) return deferredUpdate("history");
+      if (section === "lore") await onProgress?.(deferredUpdate("lore"));
+      // A retired transport is permitted to remain pending; navigation owns cancellation.
+      return new Promise<DeferredHubUpdate>(() => {});
+    }} />);
+  try {
+    await click(button(mounted.container, "History"));
+    assert.match(mounted.container.textContent ?? "", /Opening history/);
+    await click(button(mounted.container, "Lore"));
+    assert.equal(signals[0].aborted, true);
+    await click(button(mounted.container, "History"));
+    assert.equal(signals[1].aborted, true);
+    assert.deepEqual(calls, ["history", "lore", "history"]);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Opening history/);
+  } finally { await mounted.cleanup(); }
+});
+
 test("Campaign Clues loads its authorized collection on navigation and can retry without claiming absence", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("dm");
@@ -1490,6 +1566,42 @@ test("Campaign Clues loads its authorized collection on navigation and can retry
     await click(button(mounted.container, "Overview"));
     await click(button(mounted.container, "Browse clues"));
     assert.equal(calls, 2, "the confirmed Redux collection is reused while fresh");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Lore labels its growing prefix until the owned continuation finishes", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.world.lore = [];
+  initial.world.loreCoverage = "partial";
+  const prefix = structuredClone(initial);
+  prefix.world.lore = [{
+    id: "lore.first", title: "The first tale", category: "World lore", status: "Known",
+    summary: "A readable fact.", body: "The first readable fact.",
+    linkedLocations: [], linkedPeople: [], linkedFactions: [], linkedHistory: [],
+  }];
+  const complete = structuredClone(prefix);
+  complete.world.lore.push({ ...prefix.world.lore[0]!, id: "lore.second", title: "The second tale" });
+  let finish!: (update: DeferredHubUpdate) => void;
+  const terminal = new Promise<DeferredHubUpdate>((resolve) => { finish = resolve; });
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_scope, section, _signal, _preferCached, onProgress) => {
+      assert.equal(section, "lore");
+      await onProgress?.(deferredUpdate("lore", prefix));
+      return terminal;
+    }} />, "https://table.example.test/ui/dnd2024-play#view?tab=world&section=lore");
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    assert.match(mounted.container.textContent ?? "", /1 shown · 1 loaded so far/);
+    assert.match(mounted.container.textContent ?? "", /Loading more lore/);
+    assert.match(mounted.container.textContent ?? "", /The first tale/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /1 of 1 visible|Some lore fields or records are unavailable/);
+    await act(async () => { finish(deferredUpdate("lore", complete)); });
+    assert.match(mounted.container.textContent ?? "", /2 of 2 visible/);
+    assert.match(mounted.container.textContent ?? "", /The second tale/);
+    assert.match(mounted.container.textContent ?? "", /Some lore fields or records are unavailable/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /loaded so far|Loading more lore/);
   } finally { await mounted.cleanup(); }
 });
 

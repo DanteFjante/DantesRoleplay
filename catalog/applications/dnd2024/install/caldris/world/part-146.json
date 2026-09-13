@@ -1,0 +1,643 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.alderwick.highmead",
+      "name": "Highmead",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "348fe63f8371afb4304ca3c205bcaa9a88680d8fb3dc450dcf1315537e7a731c",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Highmead fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/highmead.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "348fe63f8371afb4304ca3c205bcaa9a88680d8fb3dc450dcf1315537e7a731c",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Highmead fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/highmead.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Highmead stands on a defensible chalk ridge above sheep country. It is known for wool halls, teacher-priests, legal schools, large skies, and citizens who regard climbing the hill as evidence of moral seriousness.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 580,
+            "y": 290
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.mallow-quay",
+      "name": "Mallow Quay",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small river landing for honey, medicinal herbs, and cheap pottery, perfumed by marsh mallow and woodsmoke. Present pressure: Barges refuse to stop after three crews report a singing light beneath the pilings.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.ragmans-mile",
+      "name": "Ragman's Mile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "road hamlet in Alderwick. Repairs anything, asks no questions, knows every cart by sound.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 755,
+            "y": 525
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.sevenpost-field",
+      "name": "Sevenpost Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "ancient moot field in Alderwick. Six visible stones and one buried under the road; land-right riddle.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 480,
+            "y": 460
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.sourapple-ford",
+      "name": "Sourapple Ford",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A shallow cattle crossing, cider hamlet, and eel-smoking stop where every fence leans in the same prevailing wind. Present pressure: A new upstream weir has deepened the ford and stranded the autumn drove.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.the-button-hills",
+      "name": "The Button Hills",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "3a4cdc0eefb0cdc1a6f95a0cdc2275b48cd601b993ce95d242d86c8a9515f50d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "The Button Hills fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/the-button-hills.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "3a4cdc0eefb0cdc1a6f95a0cdc2275b48cd601b993ce95d242d86c8a9515f50d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "The Button Hills fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/the-button-hills.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Chalk sheep country dotted with round barrows and generations of lost coat buttons gathered by children after rain. Present pressure: Sinkholes are opening along the wool road.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 275,
+            "y": 245
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.the-drowned-groves",
+      "name": "The Drowned Groves",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "submerged forest in Alderwick. Mourenne's old compact, fishing taboos, exposed trunks during drought.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "name": "The White Lamb Downs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "upland pasture in Alderwick. Sheep trails reveal older aerial pattern; annual comic shepherd trial.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 330,
+            "y": 435
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.reth-road-fork",
+      "name": "Reth Road Fork",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A signed fork north of Reth Gate. The maintained winter route turns toward Hearthscar; the smaller Crowstep branch climbs toward the Winter Latch and ends below the unfinished stair.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 500,
+            "y": 500
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.ganji.button-hills-origin",
+      "toEntityId": "location.caldris.alderwick.the-button-hills",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.ganji.the-missing-folio",
+      "toEntityId": "location.caldris.alderwick.the-button-hills",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.highmead",
+      "toEntityId": "location.caldris.alderwick.ragmans-mile",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.highmead",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.sevenpost-field",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.highmead",
+      "toEntityId": "location.caldris.central-eredane.mothglass-ruin",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4d0936637f813e2c9b07",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.6f543beaa16b9ff74829",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.921b0ea35bfe4cf87ad9",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a12d9f9673e279c72988",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b6325a9835561cb32def",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.eb44a4c1d1ce4e7e556e",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.da5df9a2d6d98deffcca",
+      "toEntityId": "location.caldris.alderwick.mallow-quay",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a65deea4688e362b5bc6",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b63038162af22fb208ef",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.62a74a35bec731421704",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e428d99d7d27b90cb532",
+      "toEntityId": "location.caldris.alderwick.ragmans-mile",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4db1bec02d029e5dc7b5",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4d0936637f813e2c9b07",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.73a3b904023c9ebc16c8",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.921b0ea35bfe4cf87ad9",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a12d9f9673e279c72988",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a12d9f9673e279c72988",
+      "toEntityId": "location.caldris.alderwick.ragmans-mile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b6325a9835561cb32def",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b6325a9835561cb32def",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b727d772eb72a67ba396",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b727d772eb72a67ba396",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c696c5fa766cc6f88b77",
+      "toEntityId": "location.caldris.alderwick.ragmans-mile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c696c5fa766cc6f88b77",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d83cfb19f99720d3c24f",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d83cfb19f99720d3c24f",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e7a2cfddc5f4782b0879",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb44a4c1d1ce4e7e556e",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb44a4c1d1ce4e7e556e",
+      "toEntityId": "location.caldris.alderwick.sevenpost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.42ccc7cb3afe396eb696",
+      "toEntityId": "location.caldris.alderwick.mallow-quay",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.57fd2ff3c34bc8a0a128",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b8d31448c84e3ded2aa8",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e091596615d964e67ca7",
+      "toEntityId": "location.caldris.alderwick.mallow-quay",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0d1bdd109fe40625704d",
+      "toEntityId": "location.caldris.alderwick.the-drowned-groves",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2f77d3c2dbd8ed7e0f63",
+      "toEntityId": "location.caldris.alderwick.the-drowned-groves",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6f543beaa16b9ff74829",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3fbfa38726dbfd0073d",
+      "toEntityId": "location.caldris.alderwick.sourapple-ford",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a65deea4688e362b5bc6",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b63038162af22fb208ef",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b654a22621670954ae2a",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c5f08209c76df14da66a",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccc4370e4d128f836094",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cfac9627ab2632a7e452",
+      "toEntityId": "location.caldris.atlas.reth-road-fork",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.access.9a37c9d433",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "toEntityId": "location.caldris.alderwick.the-button-hills",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "toEntityId": "location.caldris.alderwick.the-button-hills",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "toEntityId": "location.caldris.alderwick.highmead",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "toEntityId": "location.caldris.alderwick.the-button-hills",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.148f52d6d097e218df7f",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.5b1d86f103114e0d5c7c",
+      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

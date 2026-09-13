@@ -1,0 +1,576 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.place-the-south-turning.1",
+      "name": "The South Turning — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A stopping place that prospered when a Lantern Road section was shifted away from eroding banks. Present-day form: A much-rebuilt inn at a junction where visitors can choose the main road or the old local track toward the Seventh Hearth. A milestone in its yard gives a distance that ceased to be accurate centuries ago. Older inn cellars lie farther along the abandoned alignment. A person to meet: Innkeeper Olan Marr sends a neighbour to check the old hearth when weather permits, treating the duty as a local friendship rather than a marketable attraction. Adventure: A storm prevents the customary visit. A journey along the old road becomes a small rescue and repair story, with discoveries in the bypassed stopping places along the way.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-twelve-windows.1",
+      "name": "The Twelve Windows — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A rebuilt school and communal dining room in Highmead's Dunmere quarter. Successive windows preserve the tradition of mixed donated glass. Its early slates survive mainly as reused fragments and copied exercises. A person to meet: Teacher Bera Cor offers evening lessons and is organising repairs without pricing out adult learners. Adventure: A wall repair exposes accounts connecting an anonymous patron to a forgotten teacher. The evidence may help restore a neglected educational endowment through its later, still-recognised terms.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-thistlewood-arch.1",
+      "name": "Thistlewood Arch — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: In wooded pasture beyond Wetherfold, away from the main road. Livelihood: Surrounding smallholdings; the arch itself supports no settlement. The visible arch was dismantled in Oren's time. Its foundations lie beneath a rectangular thicket that flowers oddly in exceptional years. No continuously open portal or convenient shortcut is established. A surviving fiddle and regional songs supply clues to the old crossing's cost. Present-day person: Fiddler Wenna Bell inherited the instrument through a documented recent purchase, not a proven ancient bloodline. She is learning why one tune makes local elders uncomfortable. Adventure: A flowering coincides with the discovery of a formal invitation. Investigating the story first allows travellers to make an informed decision about attending, seeking a missing person, or leaving the opening alone.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-veymouth.1",
+      "name": "Veymouth — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: A tidal port farther downriver from Merecross, connected to offshore fisheries and coastal salt traders. Ossa Pell buys cargo space here for the Salt Petition. Warehouses stand above a lower shore of rope sheds, smokehouses, and flood-prone lodging. The town's councils quarrel over whose money maintains the harbour mouth. Present-day form: A smaller working port beside the silted remains of a former harbour. Commercial importance has shifted elsewhere more than once. Inland families remember Ossa as a champion, while local tradition celebrates the otherwise obscure boat crews who brought the cargoes through. A person to meet: Mara Pell, a harbour bookkeeper who shares Ossa's surname but makes no claim of descent, is organising repairs to a communal landing stage. A wealthy patron will fund it if the town adopts his flattering version of its history.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-veymouth.2",
+      "name": "Veymouth — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A story here: Low tide exposes a cargo bell bearing marks from the independent convoy. Establishing its provenance leads through salvage rights, a family's guarded letters, and an obsolete shoreline map. The useful reward is a surviving route through the mudflats.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-veyrs-lantern.1",
+      "name": "Veyr's Lantern — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A small island north of the usual Morrow Strait crossing, where a damaged glass court became a hazard by projecting an old star pattern onto tidal water. Present-day form: A rough landing, seabird cliffs, and partially buried foundations reached only in suitable conditions. Erosion has changed access and may uncover screened glass. No continuously inhabited lighthouse settlement is established by its name. A person to meet: Pilot Enna Avet has compared later warnings with current soundings and wants a survey before another salvage crew treats the site as a safe anchorage. Adventure: Reach the island, make the reflecting surface safe, and document exposed inscriptions before the next weather window closes. Further investigation of the observing court can follow once the immediate maritime danger is addressed.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-wetherfold-common.1",
+      "name": "Wetherfold Common — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: Upland grazing shared by several hamlets under Tavin Orr's emergency settlement. Low walls shelter lambing pens; a seasonal fair trades fleeces and breeding animals. Herding rights are recorded by household marks rather than precise acreage. Present-day form: A smaller common surrounded by successive enclosures. Later grants renew parts of the original arrangement, giving the ancient settlement practical relevance without making it automatically binding. A boundary stone has been reused as the base of a roadside shrine. A person to meet: Halwen Dorr, a young surveyor, wants to map rights accurately. Her employer expects a cleaner and more profitable answer than the evidence supports. A story here: Moving the shrine to restore a boundary offends its current worshippers. Leaving it in place conceals a mark vital to smallholders' grazing rights.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-wetherfold-common.2",
+      "name": "Wetherfold Common — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A negotiated survey, witnessed by both communities, may resolve the dispute without either side surrendering its history.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-whitewindow.1",
+      "name": "Whitewindow — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Location: Northern stone hills reached by a branch road from the Chalklands. Livelihood: Metal fittings, stonework, repair contracts, and upland husbandry. Pale mineral seams give the outer cliff the appearance of narrow lit windows. Most trade takes place in a rebuilt guest hall with a very old floor. Interior neighbourhoods are homes, not an invitation to explore ancestral rooms. The hold imports food in good years as well as bad and regards reliable contracts as part of its winter defences. Present-day person: Guestmaster Runa Tal cares intensely about making visitors comfortable and believes comfort includes explaining every rule before anyone accidentally breaks one. Adventure: A blocked surface route threatens winter deliveries. The old causeway could help, but reopening it crosses a burial chamber exposed by a later landslide. A practical alternative may require more labour and less treasure hunting.",
+            "provenance": "history-1900-1600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-willowrace.1",
+      "name": "Willowrace — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A branch-river mill rebuilt from equipment salvaged across the Seven-Month War's opposing sides. Present-day form: A working mill occupying a repeatedly repaired site in the former Linden Corridor. Its oldest documented fittings are now displayed safely apart from the operating machinery. A memorial wall stands along the yard's quiet edge, while wagons continue arriving with grain. A person to meet: Millkeeper Dena Trent wants to restore the memorial and keep the business viable. She dislikes the assumption that charging for work dishonours Osa's generosity. Adventure: A damaged supply channel exposes timbers marked with a former owner's name. Claims over historical salvage complicate repairs urgently needed by several present households.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-windowmere-garden.1",
+      "name": "Windowmere Garden — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small teaching garden within the Boughmeet nursery district. The walls have been rebuilt and the original plants replaced or propagated. Successful and failed trials receive equally legible labels. A person to meet: Gardener Sella Brin is testing a northern graft and wants help retrieving a neglected record before accepting a donor's expensive remedy. Adventure: Find the account of an earlier failed trial, then obtain a modest material or propagation method that addresses the actual growing conditions.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.missing-folio",
+      "name": "The Missing Folio",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The pages removed from Ganji's childhood record have resurfaced among documents pulled from a Button Hills sinkhole — proof the sect knew more about his ancestry than it admitted.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-sealed-alcove-solution",
+      "name": "The Sealed Alcove -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The alcove holds an old binding ward tied to a pact struck generations ago with a dragon that once guarded this river crossing before any bridge existed. The ward is failing, slowly. The new toll order exists because someone in the crown found out and wants the site quietly monitored without causing public panic ahead of the succession. This is a slow-burn campaign-arc thread, not meant to resolve in one session -- no fixed reward or XP yet; the GM should let its shape emerge through play rather than solving it early.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-tax-wagon-solution",
+      "name": "The Empty Tax Wagon -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The wagon has a false bottom, cut and reset by a Bramblebridge cartwright who owed a debt to a moneylender. Somewhere along the route the real silver was swapped for lead-weighted sacks and offloaded at a covered mill outside town; the seals were never broken because the swap happened before the wagon was sealed for the day. Expected solution path: examine the wagon's underside (Investigation), trace the route and timing (Insight/Investigation with witnesses), confront or catch the cartwright. Reward: 30 gp finder's fee plus real goodwill with the tollhouse if the silver is recovered; 75 XP for solving it, more if handled with unexpected cleverness or mercy.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.mystery-vanishing-sheep-solution",
+      "name": "The Vanishing Sheep -- Solution",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A fey-touched cat with a will of its own has been quietly herding sheep into a hidden glen in Sable Hollow, keeping them as its own odd little kingdom -- not malicious, just lonely and mischievous. It can understand speech even if it doesn't answer. Expected solution path: track it (Survival/Perception), follow it into the Hollow, and either negotiate, play, or simply be kind to it rather than fight -- violence toward it should feel wrong and unnecessary once found. This cat may be the same one hinted at in Ganji's cat-companion hook; GM discretion on making the connection explicit. Reward: the shepherds' genuine gratitude, 20 gp, a wheel of cheese, and 50 XP; a possible ongoing feline companion if Ganji makes friends with it.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.prediction-court-truth",
+      "name": "How He Really Crossed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "capability",
+            "sensitivity": "confidential"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "No one helped Ganji cross the Prediction Court unheard — it was entirely his own perception. But at least one monk suspects otherwise, and privately wonders if they should have helped him leave sooner.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "name": "Volume I — Thirteen Bells",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.arc",
+          "value": {
+            "status": "active",
+            "title": "Volume I — Thirteen Bells",
+            "partyStake": "Can Bramblebridge gain a fair road without losing the imperfect people and services that keep it alive?",
+            "gmContext": "Levels 1–2. Toll abuse leads from Fara Dint to Rusk Pettifer and then Provost Halwen Drail. Preserve the value of each victory; the orchard-fungus handoff opens an unrelated Bellafont story."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "arcs"
+      }
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "name": "The Thirteenth Bell",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.chapter",
+          "value": {
+            "status": "active",
+            "title": "The Thirteenth Bell",
+            "partyQuestion": "Why did Bramblebridge's noon bell ring thirteen times as an empty tax wagon entered the market?",
+            "gmContext": "Account for wagon, driver, horse, cargo, and bell access. Clues include dry flour under wet canvas, theatre-pulley fibers, a changed whistle, an altered alley map, and barge-signal timing. Failure advances the carriers but leaves clearer tracks."
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "chapters"
+      }
+    },
+    {
+      "entityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
+      "name": "Ganji campaign participation",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.character-participation",
+          "value": {
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.caldris.measure-of-mercy",
+        "slot": "character-participation"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.first-footprints",
+      "name": "The First Footprints",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Footprints",
+            "summary": "The oldest remembered migrations followed immense animals between ice and warming river valleys. Migration songs, standing stones, passage rights, and borderless burial mounds remain.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -990000000,
+            "precision": "era",
+            "dateLabel": "before c. 3100 BS",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "history"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "qualifiedKind": "game.core.campaign.has-arc",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "qualifiedKind": "game.core.campaign.has-chapter",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "toEntityId": "campaign.caldris.measure-of-mercy.arc.thirteen-bells",
+      "qualifiedKind": "game.core.campaign.chapter.in-arc",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.first-footprints",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.caldris.measure-of-mercy",
+      "toEntityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
+      "qualifiedKind": "game.core.campaign.has-character-participation",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-veymouth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-veymouth.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-wetherfold-common.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-wetherfold-common.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-whitewindow.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-south-turning.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-thistlewood-arch.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-twelve-windows.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-veyrs-lantern.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-willowrace.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-windowmere-garden.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

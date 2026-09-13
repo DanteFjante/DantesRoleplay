@@ -116,6 +116,12 @@ export function ScopedMapWorkspace({
   const trail = buildMapBreadcrumbs(world.maps, map.id);
   const childScopes = (resolveMapChildScopes(world.maps, map.id) as MapChildScope[])
     .filter((child) => child.baseState !== "absent");
+  const directChildIds = new Set(world.locationScopes.find((scope) => scope.id === map.subject.id)?.childIds ?? []);
+  const plottedLocationIds = new Set(map.features.map((entry) => entry.locationId));
+  const unplacedLocations = world.locations.filter((location) =>
+    (directChildIds.has(location.id) || location.parentId === map.subject.id) && !plottedLocationIds.has(location.id));
+  const childMapLocationIds = new Set(childScopes.map((child) =>
+    world.maps.find((entry) => entry.id === child.mapId)?.subject.id));
   const feature = resolveSelectedMapFeature(visibleMap, selectedFeatureId);
   const mapOverlays = resolveMapOverlays(overlays, map.id) as CampaignMapOverlay[];
   const annotatedFeatureIds = new Set<string>(
@@ -161,7 +167,8 @@ export function ScopedMapWorkspace({
           <h1 id="main-view-heading" tabIndex={-1}>{map.subject.name} map</h1>
         </div>
         <p>
-          {visibleFeatures.length} of {map.features.length} visible {map.features.length === 1 ? "place" : "places"}
+          {visibleFeatures.length} of {map.features.length} map {map.features.length === 1 ? "marker" : "markers"} shown
+          {unplacedLocations.length ? <> · {unplacedLocations.length} known {unplacedLocations.length === 1 ? "place" : "places"} without map positions</> : null}
         </p>
       </header>
 
@@ -184,6 +191,7 @@ export function ScopedMapWorkspace({
       <MapAtlasSearch
         activeMapId={map.id}
         onNavigate={onNavigateToFeature}
+        onOpenLocation={onOpenLocation}
         world={world}
       />
 
@@ -244,6 +252,8 @@ export function ScopedMapWorkspace({
             onOpenScope={onMapChange}
             scopeLinkFeatureIds={scopeLinkFeatureIds}
             selectedFeatureId={selectedFeatureId}
+            unplacedLocations={unplacedLocations}
+            onOpenLocation={onOpenLocation}
           />
         )}
         <div className="map-side-column">
@@ -269,7 +279,9 @@ export function ScopedMapWorkspace({
             onSelectFeature={selectFeature}
             overlays={mapOverlays}
           />
-          <MapScopeLinks childScopes={childScopes} onOpenScope={onMapChange} />
+          <MapScopeLinks childScopes={childScopes} onOpenScope={onMapChange}
+            unplacedLocations={unplacedLocations.filter((location) => !childMapLocationIds.has(location.id))}
+            onOpenLocation={onOpenLocation} />
         </div>
       </div>
     </div>

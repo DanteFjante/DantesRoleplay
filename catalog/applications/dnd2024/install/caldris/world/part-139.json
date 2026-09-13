@@ -1,0 +1,548 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.ordelain.aurent",
+      "name": "Aurent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Aurent spans both banks of the Aur with broad quays, palaces, law schools, grain exchanges, shaded courts, and public fountains. River cases can make or end political careers.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 400
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.inkfish-wharf",
+      "name": "Inkfish Wharf",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Mud-brick landing for scribes' ink, fish oil, reeds, and legal couriers, notorious for black-stained cats. Present pressure: Official documents fade to blank within days.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 420,
+            "y": 575
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.malvar",
+      "name": "Malvar",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Malvar is the kingdom's granary city and cattle market, built around enormous brick storehouses and a temple distribution complex.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 660,
+            "y": 220
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.old-aur-island",
+      "name": "Old Aur Island",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "exposed foundation in Ordelain. River shift reveals River Throne palace and modern property crisis.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 375,
+            "y": 330
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.pomegranate-court",
+      "name": "Pomegranate Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Shaded caravan court where fruit sellers, petition writers, and musicians share a long cistern. Present pressure: The cistern tastes of copper and rumors blame a curse.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 525
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.reed-judges-rest",
+      "name": "Reed Judge's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Small island courthouse and ferry inn that hears cases when the Aur changes local boundaries. Present pressure: The island is drifting downstream faster than precedent allows.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 595,
+            "y": 585
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.the-bent-mile",
+      "name": "The Bent Mile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Riverbank farming strip where every boundary curves around a channel that no longer exists. Present pressure: Surveyors arrive to straighten titles and displace tenant families.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 325,
+            "y": 720
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "name": "The Court of Wet Feet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "seasonal tribunal in Ordelain. Judges hear flood claims standing ankle-deep to discourage abstraction.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 735,
+            "y": 790
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.vessa",
+      "name": "Vessa",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Vessa makes paper from river reeds and houses private, royal, temple, and commercial archives. Its streets are shaded by cloth awnings and patrolled aggressively for fire.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 545,
+            "y": 755
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.old-aur-island",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.reed-judges-rest",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.malvar",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.pomegranate-court",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.var-keth",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.namarra.reedcrown",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0ca916b6bbbdbfa88bca",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4422d0cb50a08ff1e4ba",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.070aa93f3a29b815d102",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.69e3a6bdafdbc513bc54",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.d80c39e84e993188a24e",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.168a0afe55cbd714136e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.168a0afe55cbd714136e",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "toEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b042090691086adede1",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b042090691086adede1",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.db7a3ef4b7709964a2e4",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.db7a3ef4b7709964a2e4",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1b677665479af7a2791b",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1b677665479af7a2791b",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b35c2df06f981e45055",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b35c2df06f981e45055",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.895623bda5b183530740",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.895623bda5b183530740",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    }
+  ]
+}

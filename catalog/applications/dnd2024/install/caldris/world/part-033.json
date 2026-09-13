@@ -1,0 +1,648 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.lore",
+      "name": "Glass-Tide Palace — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The conservatory's public receiving rooms were established after the Marriage of the Two Harbours as Serevan carriers borrowed useful signal and inspection practices from Veymouth and Nacre Quay. It was not a royal wedding palace, and the western harbours did not acquire sovereignty here. Silting, subsidence and repeated rebuilding gradually put the lower rooms underwater. Today ferryperson Liora Senn carries schoolchildren beside traders, charging by a posted fare rather than the grandeur of their ancestors' portraits. Historical threads: The Marriage of the Two Harbours; The Address Beneath the Blue Paint.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.access.1ea62b52ca",
+      "name": "The Hanging Harbour — Approach from Saltmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Hanging Harbour — Saltmere: Boat passage. A boat passage reaches the lower landing when the swell and the harbour keeper permit. No on-foot journey is registered for this water connection.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.access.4f18aae983",
+      "name": "The Hanging Harbour — Approach from Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Hanging Harbour — Gullstrand: Footpath. A maintained cliff-top path reaches the inspected upper yard. It grants no automatic access to moving cradles or the lower hoist.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.approach.1ea62b52ca",
+      "name": "The Hanging Harbour — Approach from Saltmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Hanging Harbour — Saltmere: Boat passage. A boat passage reaches the lower landing when the swell and the harbour keeper permit. No on-foot journey is registered for this water connection.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.approach.4f18aae983",
+      "name": "The Hanging Harbour — Approach from Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Hanging Harbour — Gullstrand: Footpath. A maintained cliff-top path reaches the inspected upper yard. It grants no automatic access to moving cradles or the lower hoist.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.custom",
+      "name": "The Hanging Harbour — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Before a boat is lowered, the newest worker reads the stop signal and the oldest worker demonstrates that it still works. Hulls carry names of lost vessels, but the crew maintains a list distinguishing memorial names from original timbers. Visitors buy lunch at the cooperative table; paying for a tour does not authorise entry to a suspended work cradle.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.gmtruth",
+      "name": "The Hanging Harbour — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The chain was substituted by a supplier trying to keep an underpaid workshop solvent, not by a foreign saboteur. The material is unsafe for the heaviest cradle. Records hidden in a patched rib also show that the cooperative once accepted a profitable priority repair that delayed a poorer community's boat. The lower loading gear can be shut without cutting off the inspected upper-yard path.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.hooks",
+      "name": "The Hanging Harbour — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A valuable keel has been pledged to two creditors who each claim the next repaired ship. A replacement chain arrives with excellent paperwork and the wrong iron. An apprentice finds a refuge account inside a reused hull, complicating a celebrated story about which merchants kept people fed during the sailing shortage.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.hanging-harbour.lore",
+      "name": "The Hanging Harbour — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The upper works were expanded during the Salt Without Sails disruptions, when inland and coastal shortages made repairing smaller craft more useful than waiting for a great fleet. Later generations replaced most of the original timber. Recent arguments at Gullstrand's Closed Launch revived the harbour workers' older right to refuse an unsafe lowering, making this an important witness site for the history of practical judgement and maritime labour. Historical threads: Salt Without Sails; The Hearing at the Closed Launch.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.access.5ea5de4233",
+      "name": "Lanternback Colossus — Approach from Wetherfold Common",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Lanternback Colossus — Wetherfold Common: Footpath. The southern grazing track approaches the spring hand. Livestock and nesting seasons can require local detours.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.access.9a37c9d433",
+      "name": "Lanternback Colossus — Approach from The White Lamb Downs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Lanternback Colossus — The White Lamb Downs: Footpath. The shepherds' chalk path reaches the open rib shelter and ends there; it does not enter the buried chambers.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.approach.5ea5de4233",
+      "name": "Lanternback Colossus — Approach from Wetherfold Common",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lanternback Colossus — Wetherfold Common: Footpath. The southern grazing track approaches the spring hand. Livestock and nesting seasons can require local detours.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.approach.9a37c9d433",
+      "name": "Lanternback Colossus — Approach from The White Lamb Downs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lanternback Colossus — The White Lamb Downs: Footpath. The shepherds' chalk path reaches the open rib shelter and ends there; it does not enter the buried chambers.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.custom",
+      "name": "Lanternback Colossus — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A visitor may hang one lantern for someone who helped them, but the keeper lends the lantern rather than selling ownership of a rib. The last bowl of stew goes to whoever has arrived most recently. Climbing the head is forbidden during lambing, and the deep crawlspaces beneath the spring are outside the open shelter.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.gmtruth",
+      "name": "Lanternback Colossus — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The strange lantern was hung by a frightened descendant using an old family name, not by a power predicting death. Beneath the spring is a reused grain chamber containing evidence that several respectable households charged for shelter during a later famine. The chamber is structurally unsafe and has no registered open approach. The stone figure itself neither wakes nor grants wishes.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.hooks",
+      "name": "Lanternback Colossus — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A wealthy family offers to restore the cracked left hand if the communal hearth becomes its private memorial. A lantern bearing the name of a living traveller appears in a row usually used for the dead. Tessa needs someone to recover her first repair sketch from Highmead; without it, a well-meant new brace may obstruct the spring.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.lanternback-colossus.lore",
+      "name": "Lanternback Colossus — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The colossus belongs to the same chalk country as the Button Hills granaries. People connect its open hearths with the Winter of Borrowed Hearths, but no surviving account proves that Maelin Rusk herself came here. A bowl is still set out for an absent guest. The dwarf mason Tessa Flintrill has returned every eleventh spring for almost a century; she recognises several families by their repaired cooking pots before she recognises their faces. Historical threads: The Winter of Borrowed Hearths; The War of False Weights.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
+      "name": "The Orchardback — Approach from Orangewake",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Orchardback — Orangewake: Boat passage. Orchard tenders use a boat passage from Orangewake to the temporary pontoon. Access ceases when the animal stirs or leaves; no on-foot route is registered.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
+      "name": "The Orchardback — Approach from Mariselle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Orchardback — Mariselle: Boat passage. A small-boat passage to the currently observed resting bay, subject to the keeper's daily invitation. This is not a permanent island crossing or a route aboard a controllable conveyance.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
+      "name": "The Orchardback — Approach from Orangewake",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Orchardback — Orangewake: Boat passage. Orchard tenders use a boat passage from Orangewake to the temporary pontoon. Access ceases when the animal stirs or leaves; no on-foot route is registered.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.access.5ea5de4233",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.access.9a37c9d433",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.1ea62b52ca",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.4f18aae983",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.approach.1ea62b52ca",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.approach.4f18aae983",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.approach.5ea5de4233",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.lanternback-colossus.approach.9a37c9d433",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

@@ -1,0 +1,674 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "actor.caldris.ylsa-kern",
+      "name": "Ylsa Kern",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Quietly intense smith and keeper of Rook Anvil, speaking mostly in questions about workmanship. Wants to identify the brittle scrap before someone dies; reads fracture patterns expertly; fears a recall will bankrupt neighboring families. Buys tools from Pella Sorn and distrusts mine owners. She supports public disclosure once a repair fund exists.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.yselle-marr",
+      "name": "Yselle Marr",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "severe irrigation judge. Immediate want: ration water lawfully. Hidden depth: anonymous patron of radical archive copies.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "name": "The Three-Day Queen",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Three-Day Queen",
+            "summary": "Mara Vale ruled for three days, signed emergency flood orders, then yielded to her elder cousin. Present consequence: River communities invoke “Mara's hearing” against modern toll reforms.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "name": "The Winter Sharing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter Sharing",
+            "summary": "Camps along the Mere exchanged smoked fish, flint, and shelter during a severe winter. Present consequence: Competing museums claim the Button Hills storehouses; descendants want a shared memorial instead.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "name": "Seeds Beneath Ash",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Seeds Beneath Ash",
+            "summary": "Charred pear and quince seeds show people replanted orchards after a volcanic haze darkened summers. Present consequence: Orchard blight revives debate over sharing protected old rootstock.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "name": "The Feast Without Knives",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Feast Without Knives",
+            "summary": "Rival orchard lords negotiated irrigation rights at a feast where all knives were locked away. Present consequence: Their descendants possess an overlooked right to witness water treaties.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -700000000,
+            "precision": "era",
+            "dateLabel": "Lantern Concord",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "name": "The Forty Oars",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Forty Oars",
+            "summary": "Forty crews rescued a coastal settlement after an earthquake-driven wave. Present consequence: Brinewife's Steps reveals the shared compact and possible mutual harbour rights.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "name": "The Grain Fleet Refusal",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Grain Fleet Refusal",
+            "summary": "Shipwrights refused to launch unsafe grain vessels despite royal pressure during famine. Present consequence: Current labour leaders seek the clerk's descendants while officials fear precedent.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -20000000,
+            "precision": "era",
+            "dateLabel": "Long Reprieve",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "name": "The Lanternless Watch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Lanternless Watch",
+            "summary": "Greyharrow held its walls for eleven nights after its signal oil ran out. Present consequence: Veterans and villagers argue over names on a new monument.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -400000000,
+            "precision": "era",
+            "dateLabel": "Sundering",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "name": "The Road Away",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Road Away",
+            "summary": "Highland communities built a stone route leading south from defensive ridges. Present consequence: Peat fire at Blackcap Fell exposes markers pointing toward sealed mines.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "name": "The Empty Saddles",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Empty Saddles",
+            "summary": "A winter ambush killed an entire caravan, memorialized by saddles at the pass. Present consequence: Returning saddles may expose families whose peace depends on an honorable lie.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -45000000,
+            "precision": "era",
+            "dateLabel": "Three Banner War",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "name": "The Mountain Portion",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Mountain Portion",
+            "summary": "Copper, bread, and woven cloth were carried to a high cleft each winter. Present consequence: Modern tithe advocates and skeptics possess only half the moral history.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "name": "The Widows' Descent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Widows' Descent",
+            "summary": "Miners' families used freight sledges to evacuate Copperdeep during a tunnel fire. Present consequence: The cooperative now challenges royal control of the Widow's Incline.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "name": "The Woven Silence",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Woven Silence",
+            "summary": "Copper curtains were hung in mountain chambers for unknown ceremonies. Present consequence: Seven Echo Quarry has reopened one such chamber, challenging sacred and industrial claims.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -950000000,
+            "precision": "era",
+            "dateLabel": "Hearths and Standing Stones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "name": "The Door Above Water",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Door Above Water",
+            "summary": "A stone granary was built on high ground before the delta took its present shape. Present consequence: Drowned Door Orchard becomes important to both food security and identity.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -1000000000,
+            "precision": "era",
+            "dateLabel": "First Footprints",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "name": "The Villages That Declined Counting",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Villages That Declined Counting",
+            "summary": "Several delta villages stopped appearing in tax rolls after a disastrous census. Present consequence: Their descendants face legal nonexistence when seeking aid or land protection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -20000000,
+            "precision": "era",
+            "dateLabel": "Long Reprieve",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "name": "The Blank Decree",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Blank Decree",
+            "summary": "A peace decree survives only as seals around a blank centre. Present consequence: Modern factions invent convenient wording while Inkfish Wharf offers a way to recover impressions.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -400000000,
+            "precision": "era",
+            "dateLabel": "Sundering",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "name": "The Floating Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Floating Court",
+            "summary": "Judges heard river disputes from a movable platform so no bank controlled proceedings. Present consequence: Reed Judge's Rest drifting downstream creates a serious constitutional absurdity.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "name": "The First Borrowed Bell",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Borrowed Bell",
+            "summary": "Islanders raised a wrecked foreign bell as a storm warning. Present consequence: A return order at Borrowed Bell Isle threatens to reopen the story.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -850000000,
+            "precision": "era",
+            "dateLabel": "River Thrones",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "name": "The Palace Vote",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Palace Vote",
+            "summary": "An unfinished palace became public land after architects failed to agree on a roof. Present consequence: A private ownership suit could unexpectedly change tax obligations across the kingdom.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "history"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

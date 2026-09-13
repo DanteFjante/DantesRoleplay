@@ -44,7 +44,7 @@ function ItemRegistryList({ campaignId, perspective, loadPage, loadRecipePage, e
   const [section, setSection] = useState<"items" | "recipes">(returnContext?.section ?? "items");
   const [query, setQuery] = useState(returnContext?.query ?? "");
   const [draftQuery, setDraftQuery] = useState(returnContext?.query ?? "");
-  const [pages, setPages, resourceEpoch, fresh, resourceReady, deny, evicted] = useCollectionValue<ItemRegistryPage[]>(
+  const [pages, setPages, resourceEpoch, fresh, resourceReady, deny, evicted, resourceDenied] = useCollectionValue<ItemRegistryPage[]>(
     JSON.stringify(["registry-items", campaignId, perspective, query]), []);
   const [cursor, setCursor] = useState<string | null>(null);
   const [restorePages, setRestorePages] = useState(returnContext?.pageCount ?? 1);
@@ -57,6 +57,9 @@ function ItemRegistryList({ campaignId, perspective, loadPage, loadRecipePage, e
   const admittedCursor = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
+    if (resourceDenied) {
+      setLoading(false); setError(listError(new ViewReadError("authorization", "Access denied"))); return;
+    }
     if (section !== "items" || !resourceReady) return;
     if (readEpoch.current !== resourceEpoch) {
       readEpoch.current = resourceEpoch;
@@ -93,7 +96,7 @@ function ItemRegistryList({ campaignId, perspective, loadPage, loadRecipePage, e
     return () => controller.abort();
     // Page accumulation must not retrigger the current cursor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, loadPage, query, requestVersion, resourceEpoch, section]);
+  }, [cursor, loadPage, query, requestVersion, resourceEpoch, resourceReady, resourceDenied, section]);
 
   const records = useMemo(() => pages.flatMap((page) => page.records), [pages]);
   const lastPage = pages.at(-1) ?? null;
@@ -217,11 +220,12 @@ function RegistryItemDetails({ route, loadDefinition, loadRecipePage, onNavigate
 }) {
   const fromRules = window.history.state?.itemMainTab === "rules";
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
-  const [definition, setDefinition, resourceEpoch, fresh, resourceReady, deny] = useCollectionValue<ItemDefinition | null>(
+  const [definition, setDefinition, resourceEpoch, fresh, resourceReady, deny, , resourceDenied] = useCollectionValue<ItemDefinition | null>(
     JSON.stringify(["registry-item-definition", route.campaignId, route.perspective, route.collection, route.itemId, route.contentFingerprint]), null);
   const [retry, setRetry] = useState(0);
   const preferCached = useRef(true);
   useEffect(() => {
+    if (resourceDenied) { setState("error"); return; }
     if (!resourceReady) return;
     if (preferCached.current && fresh && definition) { setState("ready"); return; }
     const controller = new AbortController();
@@ -238,7 +242,7 @@ function RegistryItemDetails({ route, loadDefinition, loadRecipePage, onNavigate
     });
     preferCached.current = true;
     return () => controller.abort();
-  }, [loadDefinition, retry, resourceEpoch, route.collection, route.contentFingerprint, route.itemId]);
+  }, [loadDefinition, retry, resourceEpoch, resourceReady, resourceDenied, route.collection, route.contentFingerprint, route.itemId]);
   const back = () => {
     const context = readItemReturn(window.history.state);
     if (context?.kind === "registry" || fromRules) window.history.back();
@@ -258,7 +262,8 @@ function RegistryItemDetails({ route, loadDefinition, loadRecipePage, onNavigate
         <h2>{state === "loading" ? "Loading item definition" : state === "stale" ? "Item definition changed" : "Item definition unavailable"}</h2>
         <p>{state === "loading" ? "Reading the selected registry record…"
           : state === "stale" ? "Return to the registry to open the current definition."
-            : "This registry record could not be read."}</p>
+            : resourceDenied ? listError(new ViewReadError("authorization", "Access denied"))
+              : "This registry record could not be read."}</p>
         {state !== "loading" ? <button type="button" onClick={state === "stale" ? back : retryRead}>
           {state === "stale" ? "Back to current registry" : "Try again"}</button> : null}
       </div>}

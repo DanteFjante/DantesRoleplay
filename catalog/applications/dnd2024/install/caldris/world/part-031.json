@@ -1,0 +1,610 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.atlas.connection.febc449aac9e5a11680d",
+      "name": "Road: Var Keth — The Door Valley",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Var Keth — The Door Valley: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.connection.fff27e61d091e9e4f311",
+      "name": "Road: Cresset — Swallowwatch Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Cresset — Swallowwatch Orchard: Road. This connection is usable in either direction.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.geography.1",
+      "name": "Atlas geography: 1",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The lower Mere is called the Lower Vey in the historical river-country records; the Weir and Lark join it at Merecross.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.geography.2",
+      "name": "Atlas geography: 2",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Serevan is a historic district of the Seven Lamps League shore; Selvar is an inland historic district of Ordelain. These districts are not extra sovereign polities.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.geography.3",
+      "name": "Atlas geography: 3",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Lantern Road ends at Bramblebridge. Roads continuing east and downstream have separate names.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.geography.4",
+      "name": "Atlas geography: 4",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Unfinished Stair, Thistlewood Arch and sealed workings do not create shortcuts.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.atlas.geography.5",
+      "name": "Atlas geography: 5",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Anchors are display coordinates. Registered route durations are authored separately; water links never create on-foot routes.",
+            "provenance": "Present-day Caldris atlas, reconciled with the authored history before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.common-calendar",
+      "name": "The Common Calendar",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The common commercial year has twelve thirty-day months followed by five Turning Days for debts, memorial meals, civic misrule, household repair, and renewed oaths.",
+            "provenance": "Caldris world bible — Calendar and everyday time",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "rule",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-cat-companion-hook",
+      "name": "A Cat With Its Own Will",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ganji has a natural affinity for cats. A planned future story hook: he may cross paths with a cat of unusual, independent will that can understand him -- a possible companion, given his affinity, playable as a small optional thread rather than a major plot point.",
+            "provenance": "GM worldbuilding note, from player-provided character background",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-elvish-lessons",
+      "name": "An Improper Silence",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An elven sect-brother felt it improper that Ganji didn't speak Elvish, and privately taught him the language during free hours.",
+            "provenance": "Ganji's own account",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-escape",
+      "name": "Ganji's Departure",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Two weeks ago, Ganji left the Tensor Sect in the dark of night and has been travelling the Lantern Road toward Bramblebridge since.",
+            "provenance": "Witnessed by Ganji himself",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-musician-friend",
+      "name": "The Old Musician",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An old traveling musician once stayed at the Tensor Sect for a short time. Music wasn't permitted within the Sect's walls, so he played just outside them instead -- where Ganji, sneaking out from his required hours of solitary religious study, heard him. The two struck a quiet bargain not to tell on each other, became friends over the musician's short stay, and Ganji learned to play the flute from him. It was Ganji's first real experience of music, and part of why he later carved his quarterstaff to double as one.",
+            "provenance": "Witnessed by Ganji himself",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.ganji-unbidden-eye",
+      "name": "The Unbidden Eye",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Tensor Sect named Ganji 'the Unbidden Eye,' believing his birth fulfilled an old teaching about a student who sees before learning how to look.",
+            "provenance": "Tensor Sect internal teaching, known to Ganji and sect members",
+            "visibility": "party"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "discreet"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.access.699a86203a",
+      "name": "Crownroot Cathedral — Approach from Amberstile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Crownroot Cathedral — Amberstile: Footpath. A signed graft-carriers' lane reaches the root court. Crownroot is a destination, with no registered onward road through the tree or its orchard boundary.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.approach.699a86203a",
+      "name": "Crownroot Cathedral — Approach from Amberstile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Crownroot Cathedral — Amberstile: Footpath. A signed graft-carriers' lane reaches the root court. Crownroot is a destination, with no registered onward road through the tree or its orchard boundary.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.custom",
+      "name": "Crownroot Cathedral — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The first ripe fruit is shared after a meal rather than auctioned. A graft must be accompanied by the name of the person who tended its parent tree. Sellers rent tables by the day; they cannot purchase a permanent root alcove. No pilgrimage fee buys a promise of frost protection.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.gmtruth",
+      "name": "Crownroot Cathedral — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "One celebrated branch was quietly replaced after disease killed it. Its fruit is excellent, but a merchant markets it as the unchanged scion of the original compact. Exposing the claim threatens honest gardeners as well as the merchant. The Guest's limited capacity remains limited; the tree cannot be used to extend protection across all Alderwick by selling cuttings.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.hooks",
+      "name": "Crownroot Cathedral — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The old teacher returns and finds the pupil she remembers as a boy preparing to retire. A lucrative new fruit variety threatens the unharvested bird strip. Two villages each possess a sound but incompatible record of a donated branch, and both need its crop to fund their winter kitchen.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.crownroot-cathedral.lore",
+      "name": "Crownroot Cathedral — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Crownroot is a later daughter sanctuary of the Orchard Compact associated with Harth, not the original compact's birthplace. Successive grafts, living root columns and repeated soil work explain much of its size; small sheltering spells supplement that labour. The Guest Beneath the Boughs has been offered a place here on several occasions, but a vast canopy is not proof that the Guest protects every nearby field. The human grafter Oswin Pell keeps an empty seat for his former elven teacher, who last visited thirty-seven years ago. Historical threads: The Orchard Compact; The Orchard that Counted Birds.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.access.da0b776d65",
+      "name": "Emberglass Whale — Approach from Var Keth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Emberglass Whale — Var Keth: Footpath. The assayers' terrace path ends at the public jaw platform. The fragile rib interior and tail scaffold are not onward routes.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.common-calendar",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.common-calendar",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fff27e61d091e9e4f311",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.febc449aac9e5a11680d",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.geography.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.geography.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.geography.3",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.geography.4",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.geography.5",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.access.699a86203a",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.access.da0b776d65",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.approach.699a86203a",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

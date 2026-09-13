@@ -1,0 +1,648 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "route.caldris.atlas.fe87bb8bf837cf3661d2",
+      "name": "Brinewife's Steps to Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Brinewife's Steps to Gullstrand in Carrowmere. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "name": "The Door Valley to Var Keth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from The Door Valley to Var Keth in Kethria. The ordinary on-foot journey is 240 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 240
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.fee944aba76483f03b79",
+      "name": "The Iron Choir to Rook Anvil",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Footpath from The Iron Choir to Rook Anvil in Dunmarrow. The ordinary on-foot journey is 90 minutes. Approach to the abandoned mine only; sealed workings are not an onward road.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 90
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.atlas.fff27e61d091e9e4f311",
+      "name": "Cresset to Swallowwatch Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Road from Cresset to Swallowwatch Orchard in Bellafont. The ordinary on-foot journey is 180 minutes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 180
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.148f52d6d097e218df7f",
+      "name": "Lanternback Colossus to The White Lamb Downs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Lanternback Colossus to The White Lamb Downs. The shepherds' chalk path reaches the open rib shelter and ends there; it does not enter the buried chambers.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 70
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.264e39598ede53f5cd25",
+      "name": "The Upward Fall to Redbank Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "The Upward Fall to Redbank Reach. The north-bank inspection path reaches the public viewing platform and the ordinary sluice works.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 65
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "name": "Skyharp of Roven to Hearthscar Shelter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Skyharp of Roven to Hearthscar Shelter. A maintained ledge spur ends at the grounded harp platform. There is no crossing to Juniper Gate, Crowstep, or the Unfinished Stair from the monument.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 110
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.3b4bd62f3138222703fc",
+      "name": "Var Keth to Emberglass Whale",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Var Keth to Emberglass Whale. The assayers' terrace path ends at the public jaw platform. The fragile rib interior and tail scaffold are not onward routes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 150
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.3ca6027dd49a55591f8d",
+      "name": "Gullstrand to The Hanging Harbour",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Gullstrand to The Hanging Harbour. A maintained cliff-top path reaches the inspected upper yard. It grants no automatic access to moving cradles or the lower hoist.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 80
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.41506da5b3e4c1e42039",
+      "name": "The Hanging Harbour to Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "The Hanging Harbour to Gullstrand. A maintained cliff-top path reaches the inspected upper yard. It grants no automatic access to moving cradles or the lower hoist.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 80
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.4d7cdf152354d3641640",
+      "name": "Wetherfold Common to Lanternback Colossus",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Wetherfold Common to Lanternback Colossus. The southern grazing track approaches the spring hand. Livestock and nesting seasons can require local detours.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 100
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "name": "Hearthscar Shelter to Skyharp of Roven",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Hearthscar Shelter to Skyharp of Roven. A maintained ledge spur ends at the grounded harp platform. There is no crossing to Juniper Gate, Crowstep, or the Unfinished Stair from the monument.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 110
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.5b1d86f103114e0d5c7c",
+      "name": "The White Lamb Downs to Lanternback Colossus",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "The White Lamb Downs to Lanternback Colossus. The shepherds' chalk path reaches the open rib shelter and ends there; it does not enter the buried chambers.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 70
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
+      "name": "Rain Crown of Orovant to Red Cup Spring",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Rain Crown of Orovant to Red Cup Spring. A marked water-carriers' path reaches the cistern and ends there. No bridge, flight route, or climb to the floating crown is registered.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 140
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.6ef59a263fe0d196e074",
+      "name": "Emberglass Whale to Var Keth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Emberglass Whale to Var Keth. The assayers' terrace path ends at the public jaw platform. The fragile rib interior and tail scaffold are not onward routes.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 150
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.77dd6854b428c4044ccc",
+      "name": "Crownroot Cathedral to Amberstile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Crownroot Cathedral to Amberstile. A signed graft-carriers' lane reaches the root court. Crownroot is a destination, with no registered onward road through the tree or its orchard boundary.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 85
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.7fe8069d52914be039d9",
+      "name": "The Upward Fall to Willowrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "The Upward Fall to Willowrace. A mill-workers' embankment path follows maintained ground. It never passes through the rising water or the old aqueduct gallery.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 95
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.84c680a6a57848a56fc6",
+      "name": "Lanternback Colossus to Wetherfold Common",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Lanternback Colossus to Wetherfold Common. The southern grazing track approaches the spring hand. Livestock and nesting seasons can require local detours.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 100
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.86cbfbad029fde1f3769",
+      "name": "Willowrace to The Upward Fall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Willowrace to The Upward Fall. A mill-workers' embankment path follows maintained ground. It never passes through the rising water or the old aqueduct gallery.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 95
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.c3ada5ae2911a8f31297",
+      "name": "Redbank Reach to The Upward Fall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Redbank Reach to The Upward Fall. The north-bank inspection path reaches the public viewing platform and the ordinary sluice works.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 65
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fe87bb8bf837cf3661d2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fee944aba76483f03b79",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.148f52d6d097e218df7f",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.264e39598ede53f5cd25",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.4d7cdf152354d3641640",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.5b1d86f103114e0d5c7c",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.77dd6854b428c4044ccc",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.7fe8069d52914be039d9",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.84c680a6a57848a56fc6",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.86cbfbad029fde1f3769",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.c3ada5ae2911a8f31297",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3b4bd62f3138222703fc",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3ca6027dd49a55591f8d",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.41506da5b3e4c1e42039",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.6ef59a263fe0d196e074",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    }
+  ]
+}

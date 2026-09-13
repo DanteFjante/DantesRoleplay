@@ -1,0 +1,582 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.tessarane.orovant",
+      "name": "Orovant",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Orovant makes glass, lenses, instruments, and blue ceramics using desert-edge sand and caravan fuel.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 505,
+            "y": 455
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.red-cup-spring",
+      "name": "Red Cup Spring",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Caravan water stop whose iron-rich spring stains every drinking cup rust-red. Present pressure: The flow dwindles as three caravans converge.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 465,
+            "y": 710
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.tessa",
+      "name": "Tessa",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Tessa is a seasonal royal city of pale stone, wind courts, horse markets, observatories, and broad public cisterns. The court moves here for clear summer skies.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 620
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.the-patient-stair",
+      "name": "The Patient Stair",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Thousands of shallow steps carry pilgrims, salt, and pack animals over a high pass. Present pressure: Sections have been rearranged, sending travelers in circles.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 155,
+            "y": 575
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.tessarane.the-thirteen-shadows",
+      "name": "The Thirteen Shadows",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "standing stones in Tessarane. Cast twelve shadows except during one comet year.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 850,
+            "y": 375
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.foxglove-relay",
+      "name": "Foxglove Relay",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Hilltop courier station breeding small hardy horses and drying purple flowers for safe medicinal trade. Present pressure: Messages arrive resealed but apparently unread.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 660,
+            "y": 320
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.ninepost-field",
+      "name": "Ninepost Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Neutral meadow where nine carved posts mark grazing, court, market, and muster rights for different marches. Present pressure: A tenth post appears overnight with convincing weathering.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 420,
+            "y": 280
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.oakshield",
+      "name": "Oakshield",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Oakshield guards forest passes with layered timber walls designed to be repaired, not admired. It exports horses, charcoal, leather, and excellent preserved mushrooms.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 725,
+            "y": 635
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.lore.the-lantern-hospice",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.dunwarren",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.blue-step",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.blue-step",
+      "toEntityId": "location.caldris.tessarane.the-patient-stair",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.cloud-apricot-farm",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.mares-table",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.mares-table",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.orovant",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.tessarane.tessa",
+      "toEntityId": "location.caldris.tessarane.the-thirteen-shadows",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copperwell",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.290e02b245721468c050",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.834d095935d4fefaaae3",
+      "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b6b4d5434686c3aa69e8",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1bbc5c753be41339f5f1",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.509d1c88ca26c4f8e4b0",
+      "toEntityId": "location.caldris.tessarane.the-patient-stair",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.9ce42de27b32eb35d299",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3b89a0a5a2b051d03fe1",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.de1b9e33294f4f2eb305",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8782c2d38030896bfbe2",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.385e776073a462ce21a3",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.54f162b08f383f83f9bb",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.54f162b08f383f83f9bb",
+      "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5bcbba549022350e4489",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.834d095935d4fefaaae3",
+      "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b6b4d5434686c3aa69e8",
+      "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b6b4d5434686c3aa69e8",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d65f7f68132f3e3b1c60",
+      "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.00a86a2d41da59aeb165",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6dc70c6df9e5a7743fea",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1bbc5c753be41339f5f1",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1fb433c139c8930d5f5a",
+      "toEntityId": "location.caldris.tessarane.the-patient-stair",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.213a2a0f812687e95b9e",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.48e4f13b5bd2a965b70b",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4b4c5add87eace9d01cf",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4eabf183fe8eac1fe00a",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.509d1c88ca26c4f8e4b0",
+      "toEntityId": "location.caldris.tessarane.the-patient-stair",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.83b27c95415302e29222",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.83b27c95415302e29222",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9ce42de27b32eb35d299",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9ce42de27b32eb35d299",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e531c67e92debd92c936",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1697b1ff2e2f6553c961",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b89a0a5a2b051d03fe1",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.de1b9e33294f4f2eb305",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.de1b9e33294f4f2eb305",
+      "toEntityId": "location.caldris.tessarane.the-thirteen-shadows",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.debed05faca867477935",
+      "toEntityId": "location.caldris.tessarane.the-thirteen-shadows",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.debed05faca867477935",
+      "toEntityId": "location.caldris.tessarane.tessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
+      "toEntityId": "location.caldris.tessarane.red-cup-spring",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

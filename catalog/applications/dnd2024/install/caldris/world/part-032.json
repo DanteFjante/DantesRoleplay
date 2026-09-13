@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.approach.da0b776d65",
+      "name": "Emberglass Whale — Approach from Var Keth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Emberglass Whale — Var Keth: Footpath. The assayers' terrace path ends at the public jaw platform. The fragile rib interior and tail scaffold are not onward routes.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.custom",
+      "name": "Emberglass Whale — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Visitors borrow tinted viewing tiles to watch sunlight travel through the ribs. A chip is never taken as a souvenir; licensed makers sell copies from their own furnaces. Traders leave one jar of water for the return climb, an ordinary courtesy at a monument shaped like a creature of the sea.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.gmtruth",
+      "name": "Emberglass Whale — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The whale's hollow ribs once demonstrated differences in furnace temperatures and sound, combining art with a teaching instrument. Its joined construction was obscured by later glazing. The missing pattern is an old repair key rather than a prophecy. Karsh did not make the whale, and its existence neither proves the old tithe was legitimate nor cancels real obligations arising elsewhere.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.hooks",
+      "name": "Emberglass Whale — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A collector produces a fragment that appears to complete a pattern absent from every published drawing. A new copper claim would require a cart road beneath the tail. Someone sells accurate copies as relics, but the workshop making them needs the income to repair the genuine monument.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.emberglass-whale.lore",
+      "name": "Emberglass Whale — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The whale was already damaged when Kethrian accounts first describe it. During the Sleeper Opens One Eye period, some officials tried to present it as evidence that all local glasswork belonged to the sleeping dragon's tithe. Later assayers challenged that convenient claim. The false-relic controversies of later centuries sent carved splinters abroad under extravagant labels. Guide Iven Sar keeps genuine repair fragments beside cheap copies and explains why either may still be beautiful. Historical threads: The Sleeper Opens One Eye; The Glassmaker's Daughter and the False Relics.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.access.97942221d0",
+      "name": "Glass-Tide Palace — Approach from Leth Sarai",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Glass-Tide Palace — Leth Sarai: Boat passage. A keeper-approved ferry reaches the raised landing. Tide and weather are checked locally; there is no dry causeway or on-foot journey across the water.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.approach.97942221d0",
+      "name": "Glass-Tide Palace — Approach from Leth Sarai",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Glass-Tide Palace — Leth Sarai: Boat passage. A keeper-approved ferry reaches the raised landing. Tide and weather are checked locally; there is no dry causeway or on-foot journey across the water.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.custom",
+      "name": "Glass-Tide Palace — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A seller points out both a repair pane and an older pane before displaying goods, acknowledging what has changed. Market bells announce the inspected landing window, not a guarantee that every submerged gallery is safe. The easiest public view of the fish lies from the raised arcade; visitors need not descend beneath the dome.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.gmtruth",
+      "name": "Glass-Tide Palace — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The suspicious cargo seal reached the palace in a later repair shipment, so its presence cannot prove the original cargo landed here. A surviving clerk's index identifies the shipment, but it is mixed with an heirloom household archive in Istravel. Draining the whole structure would damage both its foundations and the nursery habitat; preserving the upper hall remains possible.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.glass-tide-palace.hooks",
+      "name": "Glass-Tide Palace — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A conservator needs a lost formula for sea-glass mortar while salvage bidders prepare to dismantle the lower arcade. A seal from a disputed cargo lies beneath a transparent floor panel. Fishers oppose a plan to drain the building because its lower rooms now shelter the young fish that support their catch.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.access.97942221d0",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.approach.da0b776d65",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.approach.97942221d0",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import type { CurrentViewUpdate } from "./object-resources";
 import { isVisualMedia } from "../state.js";
 import { normalizeCurrentSituation } from "./current-situation.js";
+import { entityMediaContentUrl } from "./media-content-url.js";
 
 function currentObjectRow(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
@@ -11,7 +12,7 @@ function safeCurrentVisualMedia(value: unknown): Record<string, unknown> | null 
   const imageUrl = media && Object.hasOwn(media, "imageUrl") ? media.imageUrl : undefined;
   if (!media || !Object.hasOwn(media, "imageUrl") || !Object.hasOwn(media, "alt") ||
       !Object.hasOwn(media, "width") || !Object.hasOwn(media, "height") || !isVisualMedia(media) ||
-      typeof imageUrl !== "string" || !imageUrl.startsWith("/api/applications/") || !imageUrl.endsWith("/content")) return null;
+      !entityMediaContentUrl(imageUrl)) return null;
   return { imageUrl: media.imageUrl, alt: media.alt, width: media.width, height: media.height };
 }
 

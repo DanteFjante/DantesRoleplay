@@ -46,5 +46,6 @@ export function useCollectionValue<T>(key: string, initial: T, maximumAgeMs = 60
   }, [empty, generation, scope, store]);
   return [store ? value ?? empty : local, setValue, epoch,
     Boolean(entry && Date.now() - entry.confirmedAt < maximumAgeMs),
-    !store || scope !== null && !store.getState().collections.denied, deny, evicted] as const;
+    !store || scope !== null && !store.getState().collections.denied, deny, evicted,
+    Boolean(store?.getState().collections.denied)] as const;
 }

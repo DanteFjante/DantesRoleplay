@@ -112,126 +112,126 @@
     {
       "kind": "mechanic",
       "id": "mechanic.check.threshold",
-      "version": 1,
+      "version": 3,
       "contentHash": "BFD02949C96DCF59C2E8EB5A1F9ABB8C9B354E55081316040083EF34F3920BF5",
       "path": "mechanics/mechanic/check/threshold.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.armor-class.write",
-      "version": 1,
+      "version": 2,
       "contentHash": "530110C2671E7FE097E2AA6D6560AE49308301B22089543927F4D63E65C70CC0",
       "path": "mechanics/mechanic/dnd2024/armor-class/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.character-level.record",
-      "version": 1,
+      "version": 2,
       "contentHash": "2E2D4098BC1E6328F5952F49314A0B4637968DBBE42F5B2C20FB68B7F0FE7D28",
       "path": "mechanics/mechanic/dnd2024/character-level/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.check.ability",
-      "version": 1,
+      "version": 5,
       "contentHash": "E35C48CBFEFE7DE30FF4FE42BD1C1BA8A9D195B6BB42392FA6070EE479E9D8A6",
       "path": "mechanics/mechanic/dnd2024/check/ability.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.dice",
-      "version": 1,
+      "version": 2,
       "contentHash": "1FA34A01C9DCACFE3D9E5BC6C57670B9ADD19F42C9E8C7481B74CDFD1BE9EFE3",
       "path": "mechanics/mechanic/dnd2024/dice.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.encounter-initiative-order",
-      "version": 1,
+      "version": 6,
       "contentHash": "FBDCDDB68D1208CAFD13E47F98661117F1BEDCB17EE38153BBA1465396464736",
       "path": "mechanics/mechanic/dnd2024/encounter-initiative-order.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.hit-points.write",
-      "version": 1,
+      "version": 2,
       "contentHash": "39A0D4BE00E68D5FC143C7C69BFF007982BA928767BD5F86BACDC04884C88FFB",
       "path": "mechanics/mechanic/dnd2024/hit-points/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.initiative.roll",
-      "version": 1,
+      "version": 4,
       "contentHash": "0331FE4A07C75BE720A7CBEAD86FC547AABA46F0B2A44F09B84A47B5ADC73AAC",
       "path": "mechanics/mechanic/dnd2024/initiative/roll.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.saving-throw",
-      "version": 1,
+      "version": 3,
       "contentHash": "86CD7E6FC618256E9F43BB209553F84129DEC5898CCECB0BF74DA5681597EAC0",
       "path": "mechanics/mechanic/dnd2024/saving-throw.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.saving-throw-proficiencies.record",
-      "version": 1,
+      "version": 2,
       "contentHash": "C31C19501F1F50C12349FADCEC0377AD6470CC0E4225816FA0D2F95B0F103AA2",
       "path": "mechanics/mechanic/dnd2024/saving-throw-proficiencies/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.skill-proficiencies.record",
-      "version": 1,
+      "version": 2,
       "contentHash": "9941CF5586684B1E79101B79B6DE9C5C50F8A41E2462724E67C236DDB27A1B0D",
       "path": "mechanics/mechanic/dnd2024/skill-proficiencies/record.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-attack",
-      "version": 1,
+      "version": 2,
       "contentHash": "230944EF8167836078EAC8A8328F566245AE16FBE94C8A14C0AD589CDDD47131",
       "path": "mechanics/mechanic/dnd2024/weapon-attack.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-damage.apply",
-      "version": 1,
+      "version": 2,
       "contentHash": "6A5472D35490AE4052ECDF59E07BD2B24CF54FF91A4595633FC7538A36CBA4E4",
       "path": "mechanics/mechanic/dnd2024/weapon-damage/apply.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-damage.roll",
-      "version": 1,
+      "version": 2,
       "contentHash": "AFB5BFDDD69EA1AB4F316C919BB65E47A63B129C2AA90D40B1709DD34557211E",
       "path": "mechanics/mechanic/dnd2024/weapon-damage/roll.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-proficiencies.write",
-      "version": 1,
+      "version": 2,
       "contentHash": "46CD6463B9F3AE51C6227FB5A6076811462D6D0C34F2ED6E3397AC6E759BCB54",
       "path": "mechanics/mechanic/dnd2024/weapon-proficiencies/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.dnd2024.weapon-profile.write",
-      "version": 1,
+      "version": 2,
       "contentHash": "E6FE8FE412D5E95EFBD6E921986F4F566900DE18BD11A8F2D64EBF9E3DF49AC6",
       "path": "mechanics/mechanic/dnd2024/weapon-profile/write.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.game.core.world.aerial-conveyance.travel",
-      "version": 1,
+      "version": 2,
       "contentHash": "310B65E649CF2CE58220C40B7678B01A5878667F1FF511ED715B39ABE920A98E",
       "path": "mechanics/mechanic/game/core/world/aerial-conveyance/travel.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.game.core.world.clock.advance",
-      "version": 1,
+      "version": 2,
       "contentHash": "9767194A9979F6D7605FA112D6F25FA9DCD3D5D46FF323C1DC96A6E467A9B09B",
       "path": "mechanics/mechanic/game/core/world/clock/advance.md"
     },
@@ -259,7 +259,7 @@
     {
       "kind": "mechanic",
       "id": "mechanic.game.core.world.conveyance.travel-ground",
-      "version": 1,
+      "version": 2,
       "contentHash": "404FA575195875005F1E0EAF21DB19B440E5597D80D0212ACCF901810EDCFA95",
       "path": "mechanics/mechanic/game/core/world/conveyance/travel-ground.md"
     },
@@ -350,7 +350,7 @@
     {
       "kind": "mechanic",
       "id": "mechanic.game.core.world.route.travel-on-foot",
-      "version": 1,
+      "version": 2,
       "contentHash": "090F3DB83424A3CE1406B2F69F158737E6DF947EFF307180155B77EAED42ED87",
       "path": "mechanics/mechanic/game/core/world/route/travel-on-foot.md"
     },
@@ -371,147 +371,147 @@
     {
       "kind": "mechanic",
       "id": "mechanic.lock.pick",
-      "version": 1,
+      "version": 2,
       "contentHash": "462D03BFD9C9B1A930EE1358168B2DD21137217D4A141DF226DDC6A30D88938C",
       "path": "mechanics/mechanic/lock/pick.md"
     },
     {
       "kind": "mechanic",
       "id": "mechanic.value.adjust",
-      "version": 1,
+      "version": 2,
       "contentHash": "D9C47E5115C4756B41F23E79CA60364A212D46955111A391F4A3F764A0D5070F",
       "path": "mechanics/mechanic/value/adjust.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.abilities",
-      "version": 1,
+      "version": 2,
       "contentHash": "C35C1F49ADEA8DCCD6ED1801B0DB8A1DA17E96858FC26920F6D8616447A461B4",
       "path": "procedures/dnd2024/procedure/mechanic/abilities.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.armor-class",
-      "version": 1,
+      "version": 2,
       "contentHash": "46CA8972706FEC42340FD6BC5CC24206360C7C520E09EAD9831A9E67D8BDBE27",
       "path": "procedures/dnd2024/procedure/mechanic/armor-class.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.character-level",
-      "version": 1,
+      "version": 2,
       "contentHash": "73DF25BBAD39CDBB2E4690D3A5407FF49375F94F4594372E2C0D78A33D3C7F56",
       "path": "procedures/dnd2024/procedure/mechanic/character-level.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.check.ability",
-      "version": 1,
+      "version": 2,
       "contentHash": "4FC97FBA833ECD48C185343FD91F8854E34D25DCCB8CCE60D399C8DC1E8D8F8B",
       "path": "procedures/dnd2024/procedure/mechanic/check/ability.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.dice",
-      "version": 1,
+      "version": 2,
       "contentHash": "0E14A3CCA64C687894C19060809970BB55BE18CE2816410B21D2BA35BED79388",
       "path": "procedures/dnd2024/procedure/mechanic/dice.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.encounter-initiative-order",
-      "version": 1,
+      "version": 2,
       "contentHash": "14AF08A680590E2820BBB383323A56D7F5FD764FBD27674869B1022AC942EBAD",
       "path": "procedures/dnd2024/procedure/mechanic/encounter-initiative-order.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.hit-points",
-      "version": 1,
+      "version": 2,
       "contentHash": "ECEFD05CEA275FE2AAB342C7A41605D36028810381421E64335C38D269E45B0F",
       "path": "procedures/dnd2024/procedure/mechanic/hit-points.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.initiative",
-      "version": 1,
+      "version": 2,
       "contentHash": "EA492124B7DF499DC866D7D0C95C34B8C31BEF153AA7942FB3459E4CE77A22ED",
       "path": "procedures/dnd2024/procedure/mechanic/initiative.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.play",
-      "version": 1,
+      "version": 2,
       "contentHash": "516BAAE49F88C7DC733255CF89297901B4578CDD58251E78A4FCF88B62C84711",
       "path": "procedures/dnd2024/procedure/mechanic/play.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.ruleset",
-      "version": 1,
+      "version": 2,
       "contentHash": "DF04819409E3942C859024B74EB580552D0A74F021B40928B9DAD814FF8D5609",
       "path": "procedures/dnd2024/procedure/mechanic/ruleset.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.saving-throw",
-      "version": 1,
+      "version": 2,
       "contentHash": "08CE3DD0459FAA1D39AAB7A5E3D579D9E2E06A9300D05C7E8BED751D8A6C05A3",
       "path": "procedures/dnd2024/procedure/mechanic/saving-throw.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.skill-proficiencies",
-      "version": 1,
+      "version": 2,
       "contentHash": "0E8B487C05BCF599DE256931EEEA090A8BF55AFCDE73A93FF3E8B9248A0A9599",
       "path": "procedures/dnd2024/procedure/mechanic/skill-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.source-registry",
-      "version": 1,
+      "version": 2,
       "contentHash": "36A510866E8720C1A9ACCA346B64BDBFD187A659A8C08401C9A0C5026A3F747D",
       "path": "procedures/dnd2024/procedure/mechanic/source-registry.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-attack",
-      "version": 1,
+      "version": 2,
       "contentHash": "441AD872304613CF6966608B8994AE6393F1CFD5CF28E7383487C98018C35768",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-attack.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-damage.apply",
-      "version": 1,
+      "version": 2,
       "contentHash": "491A569491632ED178C4E7A53E83F3B22C1421F6666A06488FCC18F1C09E6275",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/apply.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-damage.roll",
-      "version": 1,
+      "version": 2,
       "contentHash": "9592543DCA4F95CB9633A7D19EB435B5E586A1AB36B46353D5BCB9373C20E4B0",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/roll.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-proficiencies",
-      "version": 1,
+      "version": 2,
       "contentHash": "B5D85033DB50569B433B622E0C59826FAEA49EF2260181D3A19250839A26B4D4",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-profile",
-      "version": 1,
+      "version": 2,
       "contentHash": "4D0A057CE485C7C7CB423F7A4A6D15132FD4EE6915152F0FFA41FD366197523C",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-profile.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.action.run",
-      "version": 1,
+      "version": 6,
       "contentHash": "1CBA17437D32F35A7A106345C4BF4359CF071643533F55C4B3479BD6B1758A76",
       "path": "procedures/procedure/action/run.md"
     },
@@ -539,63 +539,63 @@
     {
       "kind": "procedure",
       "id": "procedure.campaign.chapter",
-      "version": 1,
+      "version": 2,
       "contentHash": "22F0B9CBBC9BF5678A412BDF424B4675D482E44D449895D17D52C6B93753E542",
       "path": "procedures/procedure/campaign/chapter.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.character-participation",
-      "version": 1,
+      "version": 2,
       "contentHash": "7870A7037229D0225E64A99C4A3F0E27430907E3110DC8FAF53E9700A3D60C89",
       "path": "procedures/procedure/campaign/character-participation.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.create",
-      "version": 1,
+      "version": 2,
       "contentHash": "F6AE2F20D816EBC5B3EE7E00617111A6422990BB7891E07028147F57F85335DB",
       "path": "procedures/procedure/campaign/create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.current-scene",
-      "version": 1,
+      "version": 2,
       "contentHash": "0F387E768F908E888E347866C02669F639B9DA785D0A6C3A0C831818E038D363",
       "path": "procedures/procedure/campaign/current-scene.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.quest-context",
-      "version": 1,
+      "version": 5,
       "contentHash": "8A1D2D107EB8E70AF7C0D7D9A462FB46D9729BB6CA44D29CC53C4B8775C3421A",
       "path": "procedures/procedure/campaign/quest-context.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.scene-affordances",
-      "version": 1,
+      "version": 2,
       "contentHash": "66DACDA9E16D6D64924A7F5E70CECAF9CE5BAC449B00E3AD79E05D4EBFF19158",
       "path": "procedures/procedure/campaign/scene-affordances.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.campaign.session",
-      "version": 1,
+      "version": 2,
       "contentHash": "7E48C0D59005620B70FB1A3C1F40B19DC5248F8DE270686F9516013B50FACB64",
       "path": "procedures/procedure/campaign/session.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.character.playtest-bootstrap",
-      "version": 1,
+      "version": 3,
       "contentHash": "5F6E249AF0561409D4A845ECBFD1094178354736AEFC5C7ACEE7E2F0F7579471",
       "path": "procedures/procedure/character/playtest-bootstrap.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.contract.create",
-      "version": 1,
+      "version": 6,
       "contentHash": "D6F1A500717A7D4D21301F034B6C544F224E253198DADD43A6DB73BB40C65961",
       "path": "procedures/procedure/contract/create.md"
     },
@@ -609,91 +609,91 @@
     {
       "kind": "procedure",
       "id": "procedure.event.define",
-      "version": 1,
+      "version": 3,
       "contentHash": "BA45678F39274576E33562A2CD0F1A973137E7FDB5177C1B680746E6F97160B8",
       "path": "procedures/procedure/event/define.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.event.guard",
-      "version": 1,
+      "version": 4,
       "contentHash": "18AA177C88F1B1F889745985F505911B7E33CEC85B86577A7335E8A022AF6252",
       "path": "procedures/procedure/event/guard.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.event.inspect",
-      "version": 1,
+      "version": 3,
       "contentHash": "17F829B7973AEA747130C65F51F0A86BF2B10CF8EAE71B3DBD1E5DD150C15871",
       "path": "procedures/procedure/event/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.event.react",
-      "version": 1,
+      "version": 2,
       "contentHash": "0A93604C6FFD91068F7F71D96D949B2BFD0F4BC28C539F87AEEF979E271CD516",
       "path": "procedures/procedure/event/react.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.media",
-      "version": 1,
+      "version": 2,
       "contentHash": "DFEF163D5ABEE7B047886F8C393A8DA5B0FB07672A0249D24F1614700F4E8B5B",
       "path": "procedures/procedure/game/core/media.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.chronology",
-      "version": 1,
+      "version": 2,
       "contentHash": "D82F7AC2FE5CF677949F38C086D8785DCBAC7F07B8D3D2BC27F30B91F3EEB3E4",
       "path": "procedures/procedure/game/core/world/chronology.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.condition",
-      "version": 1,
+      "version": 2,
       "contentHash": "C51059FD6AC1E2C32278236C20565EF790A1B415C964C98265C01771A3D7B7A3",
       "path": "procedures/procedure/game/core/world/condition.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.creation",
-      "version": 1,
+      "version": 2,
       "contentHash": "BA882576982D9D32A8F39C41932C7E77B2A6C59692CEA261A922693CD90950AB",
       "path": "procedures/procedure/game/core/world/creation.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.faction",
-      "version": 1,
+      "version": 2,
       "contentHash": "DDFDA90B859B40FA3BF4FC7F0366E37C7699241B108A806CE87DD2A7C267ED87",
       "path": "procedures/procedure/game/core/world/faction.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.itinerary",
-      "version": 1,
+      "version": 2,
       "contentHash": "DBF5931AD851BD6B2D20E719CC5719CE676E9AD00D6D4838B9EABC2C9E8D1481",
       "path": "procedures/procedure/game/core/world/itinerary.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.knowledge",
-      "version": 1,
+      "version": 3,
       "contentHash": "A911D476AE26872800636B44F78D459CA2E474335F80FEEE9A4C849BAD7FD94A",
       "path": "procedures/procedure/game/core/world/knowledge.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.location",
-      "version": 1,
+      "version": 3,
       "contentHash": "97C6B04A6689C9EEE1012F216A888069C6FB16F5F22D0868FDD1F84893FA6D91",
       "path": "procedures/procedure/game/core/world/location.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.media",
-      "version": 1,
+      "version": 3,
       "contentHash": "3CFBA4183370ED95D6B527207FF281327B0B6D9912B3D6BE2872F2E135C8F4BE",
       "path": "procedures/procedure/game/core/world/media.md"
     },
@@ -707,35 +707,35 @@
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.read",
-      "version": 1,
+      "version": 3,
       "contentHash": "FC8902D00E3A2214CA49E9B2ED5D77067D5BE6AAB4925DD9407E741A606D2865",
       "path": "procedures/procedure/game/core/world/read.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.spatial",
-      "version": 1,
+      "version": 6,
       "contentHash": "9F804A9D358ECDC396A82864FCB87B5C045C8A5B70F91FB4DBF390678A48A30E",
       "path": "procedures/procedure/game/core/world/spatial.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.time",
-      "version": 1,
+      "version": 3,
       "contentHash": "D4349D17793BE2CEB7C6D3FA21E5FF56831DB0F1E901D6AEF449CE89A331DF89",
       "path": "procedures/procedure/game/core/world/time.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.travel",
-      "version": 1,
+      "version": 3,
       "contentHash": "650326EFFCD1A796C3ED6829AFE1BD14E80848127B223062EF875359BCFE085E",
       "path": "procedures/procedure/game/core/world/travel.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.information.action",
-      "version": 1,
+      "version": 2,
       "contentHash": "38283EE46A9F1AB323AF4279AD5B37861FDCA38153E40F372488217ED01FDAD7",
       "path": "procedures/procedure/information/action.md"
     },
@@ -749,217 +749,217 @@
     {
       "kind": "procedure",
       "id": "procedure.information.manage",
-      "version": 1,
+      "version": 2,
       "contentHash": "A0790770267A9DE77665D3D3A71AA672D00F2702A7BF0B75E6D66E1651348C95",
       "path": "procedures/procedure/information/manage.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mcp.add-tool",
-      "version": 1,
+      "version": 4,
       "contentHash": "3F09B51C507EF621F1F468C2BFC42B3165EBC2460A030B7C61A495C85A62FC7E",
       "path": "procedures/procedure/mcp/add-tool.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.create",
-      "version": 1,
+      "version": 2,
       "contentHash": "2EE626A3EB6FD0469807DCB02B1C3F9712B79BB0E00EA692C26DF099BCD674ED",
       "path": "procedures/procedure/mechanic/create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.abilities",
-      "version": 1,
+      "version": 2,
       "contentHash": "C35C1F49ADEA8DCCD6ED1801B0DB8A1DA17E96858FC26920F6D8616447A461B4",
       "path": "procedures/procedure/mechanic/dnd2024/abilities.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.armor-class",
-      "version": 1,
+      "version": 2,
       "contentHash": "46CA8972706FEC42340FD6BC5CC24206360C7C520E09EAD9831A9E67D8BDBE27",
       "path": "procedures/procedure/mechanic/dnd2024/armor-class.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.character-level",
-      "version": 1,
+      "version": 2,
       "contentHash": "73DF25BBAD39CDBB2E4690D3A5407FF49375F94F4594372E2C0D78A33D3C7F56",
       "path": "procedures/procedure/mechanic/dnd2024/character-level.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.check.ability",
-      "version": 1,
+      "version": 4,
       "contentHash": "4FC97FBA833ECD48C185343FD91F8854E34D25DCCB8CCE60D399C8DC1E8D8F8B",
       "path": "procedures/procedure/mechanic/dnd2024/check/ability.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.dice",
-      "version": 1,
+      "version": 2,
       "contentHash": "0E14A3CCA64C687894C19060809970BB55BE18CE2816410B21D2BA35BED79388",
       "path": "procedures/procedure/mechanic/dnd2024/dice.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.encounter-initiative-order",
-      "version": 1,
+      "version": 2,
       "contentHash": "14AF08A680590E2820BBB383323A56D7F5FD764FBD27674869B1022AC942EBAD",
       "path": "procedures/procedure/mechanic/dnd2024/encounter-initiative-order.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.hit-points",
-      "version": 1,
+      "version": 2,
       "contentHash": "ECEFD05CEA275FE2AAB342C7A41605D36028810381421E64335C38D269E45B0F",
       "path": "procedures/procedure/mechanic/dnd2024/hit-points.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.initiative",
-      "version": 1,
+      "version": 2,
       "contentHash": "EA492124B7DF499DC866D7D0C95C34B8C31BEF153AA7942FB3459E4CE77A22ED",
       "path": "procedures/procedure/mechanic/dnd2024/initiative.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.play",
-      "version": 1,
+      "version": 4,
       "contentHash": "516BAAE49F88C7DC733255CF89297901B4578CDD58251E78A4FCF88B62C84711",
       "path": "procedures/procedure/mechanic/dnd2024/play.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.ruleset",
-      "version": 1,
+      "version": 5,
       "contentHash": "DF04819409E3942C859024B74EB580552D0A74F021B40928B9DAD814FF8D5609",
       "path": "procedures/procedure/mechanic/dnd2024/ruleset.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.saving-throw",
-      "version": 1,
+      "version": 2,
       "contentHash": "08CE3DD0459FAA1D39AAB7A5E3D579D9E2E06A9300D05C7E8BED751D8A6C05A3",
       "path": "procedures/procedure/mechanic/dnd2024/saving-throw.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.skill-proficiencies",
-      "version": 1,
+      "version": 3,
       "contentHash": "0E8B487C05BCF599DE256931EEEA090A8BF55AFCDE73A93FF3E8B9248A0A9599",
       "path": "procedures/procedure/mechanic/dnd2024/skill-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.source-registry",
-      "version": 1,
+      "version": 2,
       "contentHash": "36A510866E8720C1A9ACCA346B64BDBFD187A659A8C08401C9A0C5026A3F747D",
       "path": "procedures/procedure/mechanic/dnd2024/source-registry.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-attack",
-      "version": 1,
+      "version": 2,
       "contentHash": "441AD872304613CF6966608B8994AE6393F1CFD5CF28E7383487C98018C35768",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-attack.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-damage.apply",
-      "version": 1,
+      "version": 2,
       "contentHash": "491A569491632ED178C4E7A53E83F3B22C1421F6666A06488FCC18F1C09E6275",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/apply.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-damage.roll",
-      "version": 1,
+      "version": 2,
       "contentHash": "9592543DCA4F95CB9633A7D19EB435B5E586A1AB36B46353D5BCB9373C20E4B0",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/roll.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-proficiencies",
-      "version": 1,
+      "version": 2,
       "contentHash": "B5D85033DB50569B433B622E0C59826FAEA49EF2260181D3A19250839A26B4D4",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-profile",
-      "version": 1,
+      "version": 2,
       "contentHash": "4D0A057CE485C7C7CB423F7A4A6D15132FD4EE6915152F0FFA41FD366197523C",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-profile.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.find",
-      "version": 1,
+      "version": 3,
       "contentHash": "ED27DD03E1907F91FD0317A2C58962AA18836B41EF3465E9F36E89357D321076",
       "path": "procedures/procedure/mechanic/find.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.projection",
-      "version": 1,
+      "version": 7,
       "contentHash": "D3F13A59004766F6091CE5CF8BCC3F4B90FC18A043ECE3C9CB88B817D4C1F324",
       "path": "procedures/procedure/mechanic/projection.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.run",
-      "version": 1,
+      "version": 2,
       "contentHash": "E2C724A719A22A8B840295FFB4B94C8967CA8DC8D01A39C31AA2C5ECBBBFAC6B",
       "path": "procedures/procedure/mechanic/run.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.write",
-      "version": 1,
+      "version": 4,
       "contentHash": "885175B03603C9973758193749A689F0F7BC9A16ACE8F47E39E50E462A783D34",
       "path": "procedures/procedure/mechanic/write.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.notification.inspect",
-      "version": 1,
+      "version": 2,
       "contentHash": "3D5C883E52199AB2AA17A44B16877C1788A2C4808DCE8FC4D5384DF1A585590E",
       "path": "procedures/procedure/notification/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.play.story-plan",
-      "version": 1,
+      "version": 2,
       "contentHash": "370863CF75F7E4656AE5751B033E6C40976C46526D53DDA6B869EFF3A519B25D",
       "path": "procedures/procedure/play/story-plan.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.play.storytelling",
-      "version": 1,
+      "version": 3,
       "contentHash": "82A7FAFF6FBBA20EDAA2285164B07BC40C31441773B168C6C488206E8CADF856",
       "path": "procedures/procedure/play/storytelling.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.create",
-      "version": 1,
+      "version": 5,
       "contentHash": "446CD9EA0BEAF66E61D70B9842F8F0D138777DEDAB7F1B77F71A105444C428CA",
       "path": "procedures/procedure/quest/create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.inspect",
-      "version": 1,
+      "version": 5,
       "contentHash": "94C1867765368B32E5A37959225F78F6C1E7FEAF9A4D93FA8AB0AFBDCDEDC0D6",
       "path": "procedures/procedure/quest/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.quest.modify",
-      "version": 1,
+      "version": 5,
       "contentHash": "68776F25A9A2CB4E7F3C687E3A970700D54686BCCC3ED71CE1A0B6EE13CE3B6E",
       "path": "procedures/procedure/quest/modify.md"
     },
@@ -973,14 +973,14 @@
     {
       "kind": "procedure",
       "id": "procedure.subscription.create",
-      "version": 1,
+      "version": 4,
       "contentHash": "1B1726F15E7F287AA0A9574BC554578D8FA9471F3160EF877934A7D2449AD32E",
       "path": "procedures/procedure/subscription/create.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.subscription.modify",
-      "version": 1,
+      "version": 3,
       "contentHash": "BBF84CA64900EC6001837BB51F64134BEB83B31585F894977B08FB9231D962D8",
       "path": "procedures/procedure/subscription/modify.md"
     },
@@ -1064,14 +1064,14 @@
     {
       "kind": "procedure",
       "id": "procedure.system.create-feature",
-      "version": 1,
+      "version": 7,
       "contentHash": "29D53710CA350F2C3067182766EB039BA40E4232225E43BD52AA9456FF3BC6AE",
       "path": "procedures/procedure/system/create-feature.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.system.extend-application",
-      "version": 1,
+      "version": 3,
       "contentHash": "379EEADA69A33BF699C6E1F48F6B011860ED77A46E5806678B09FD1DE8D9F29A",
       "path": "procedures/procedure/system/extend-application.md"
     },
@@ -1127,14 +1127,14 @@
     {
       "kind": "procedure",
       "id": "procedure.system.inspect",
-      "version": 1,
+      "version": 4,
       "contentHash": "5E8F90CC4BEBB2CCE994A748E9A961CCBE1090E7A29ED744A8A532302A419940",
       "path": "procedures/procedure/system/inspect.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.system.modify",
-      "version": 1,
+      "version": 2,
       "contentHash": "D4944852F0CB5BF406E0FA39C09C2DC6883CABC96B614065076662248099810D",
       "path": "procedures/procedure/system/modify.md"
     },
@@ -1169,35 +1169,35 @@
     {
       "kind": "procedure",
       "id": "procedure.system.use",
-      "version": 1,
+      "version": 22,
       "contentHash": "3A435A17A7F8A399942A6D83B5585829B8144E84FD254B94B053E84413EB2E69",
       "path": "procedures/procedure/system/use.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.system.verify",
-      "version": 1,
+      "version": 3,
       "contentHash": "6922298C0E92CE5192DD506BCF6CDDD5954EE4B70748E3503BE0F118FD44BAC4",
       "path": "procedures/procedure/system/verify.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.system.web-composition",
-      "version": 1,
+      "version": 2,
       "contentHash": "A496A3AFE0BCBE6E471BFB177181E293586A43E045FD4D1501555752B916F577",
       "path": "procedures/procedure/system/web-composition.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.world.change",
-      "version": 1,
+      "version": 3,
       "contentHash": "9988CFB37F6B732F135E9893C3319ECC562FEE33FDAAE610EB09AF77F0AB7AC8",
       "path": "procedures/procedure/world/change.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.world.model",
-      "version": 1,
+      "version": 5,
       "contentHash": "176DF80E8DB71181B7F38BD78377003B373A30C888DB082CC097E5C2DC76C1BE",
       "path": "procedures/procedure/world/model.md"
     },
@@ -1610,7 +1610,7 @@
     {
       "kind": "eventType",
       "id": "dnd2024.damage.dealt",
-      "version": 1,
+      "version": 2,
       "contentHash": "C417F98E039C7F94DED330DC16B44F399270B8569F71C2EB961789D422B6061F",
       "path": "event-types/dnd2024/damage/dealt.json"
     },
@@ -1862,70 +1862,70 @@
     {
       "kind": "eventType",
       "id": "game.core.world.clock.advanced",
-      "version": 1,
+      "version": 2,
       "contentHash": "FE6D9A7BDB2DE8A6EE13E7231CD0A42877BF72D4379717E35612028011A70813",
       "path": "event-types/game/core/world/clock/advanced.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.added",
-      "version": 1,
+      "version": 2,
       "contentHash": "2628786F498681322A058C915C72BD4F87D4AFC1D38C8A7BAA2A0B54A7FBF032",
       "path": "event-types/world/component/added.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.merged",
-      "version": 1,
+      "version": 2,
       "contentHash": "92893536736275205DEEDCB83006F5BE43073730D449561016E0967E595DC25F",
       "path": "event-types/world/component/merged.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.removed",
-      "version": 1,
+      "version": 2,
       "contentHash": "6994F134C26DBD0F78B432A4D8F5CC46A388BDDA47A35C6A5806D19D392ACD79",
       "path": "event-types/world/component/removed.json"
     },
     {
       "kind": "eventType",
       "id": "world.component.replaced",
-      "version": 1,
+      "version": 2,
       "contentHash": "9726DFAF59E90A85719F97BF342F1081BAAC1F6CC6E1E36BF1F575FD8FE01DBE",
       "path": "event-types/world/component/replaced.json"
     },
     {
       "kind": "eventType",
       "id": "world.containment.moved",
-      "version": 1,
+      "version": 2,
       "contentHash": "ECB6B72820F44E57431B55B9675772C135F44C17B5F713692451014E1DF392E0",
       "path": "event-types/world/containment/moved.json"
     },
     {
       "kind": "eventType",
       "id": "world.entity.created",
-      "version": 1,
+      "version": 2,
       "contentHash": "41E512D718D16AE8757B08991DB4F9DECF868E2E3745CDCF5F35195EF317B250",
       "path": "event-types/world/entity/created.json"
     },
     {
       "kind": "eventType",
       "id": "world.entity.deleted",
-      "version": 1,
+      "version": 2,
       "contentHash": "1BDB012654DCBB4E3E63CFDF7EFA819607EE6037C63E3D2122648C374DE89375",
       "path": "event-types/world/entity/deleted.json"
     },
     {
       "kind": "eventType",
       "id": "world.relationship.created",
-      "version": 1,
+      "version": 2,
       "contentHash": "F20FD219E35FD605A1AC1B6DC1A26C9655424DDA684D4015FE19B80B41C184CA",
       "path": "event-types/world/relationship/created.json"
     },
     {
       "kind": "eventType",
       "id": "world.relationship.removed",
-      "version": 1,
+      "version": 2,
       "contentHash": "756D0DF36C520494C69E9FA010F3AE0188C83B733EB41831605BF675E8637770",
       "path": "event-types/world/relationship/removed.json"
     },

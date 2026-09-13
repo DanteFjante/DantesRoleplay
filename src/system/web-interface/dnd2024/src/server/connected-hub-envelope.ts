@@ -862,12 +862,14 @@ export function connectedCampaignToHubEnvelope(
         route.durationMinutes > 1_440) continue;
     const origin = baseLocationById.get(route.originId);
     const destination = baseLocationById.get(route.destinationId);
+    const destinationName = typeof route.destinationName === "string" ? route.destinationName.trim() : "";
     const detail = typeof route.detail === "string" ? route.detail.trim() : "";
-    if (!origin || !destination || destination.name !== route.destinationName) continue;
+    // The authorized route reader resolves its destination independently of the shallow directory.
+    if (!origin || !destinationName || (destination && destination.name !== destinationName)) continue;
     seenRouteIds.add(route.id);
     const values = routesByLocation.get(origin.id) ?? [];
     values.push({
-      destination: destination.name,
+      destination: destinationName,
       detail: `${detail || "Route details unavailable."} · On foot, ${route.durationMinutes} ${route.durationMinutes === 1 ? "minute" : "minutes"}.`,
     });
     routesByLocation.set(origin.id, values);

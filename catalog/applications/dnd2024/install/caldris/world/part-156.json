@@ -1,0 +1,434 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "name": "The Mile of Little Bridges",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "The route has a different count of spans after centuries of channel movement, rebuilding, and diversion. Some ancient abutments stand beside active crossings; others lie in grass away from the modern road. Its maintenance remains local and visible.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 480,
+            "y": 590
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.aunholt",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-seventh-hearth",
+      "name": "The Seventh Hearth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Repeated repairs have replaced nearly every timber, while the original hearthstone and threshold remain. The road bypassed it long ago. Brambles obscure the approach; inside, ordinary dust lies beside a carefully swept place at the table. Whether its spirit has remained awake continuously is left for later history to establish.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 210,
+            "y": 170
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-south-turning",
+      "name": "The South Turning",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A much-rebuilt inn at a junction where visitors can choose the main road or the old local track toward the Seventh Hearth. A milestone in its yard gives a distance that ceased to be accurate centuries ago. Older inn cellars lie farther along the abandoned alignment.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 385,
+            "y": 470
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-unfinished-stair",
+      "name": "The Unfinished Stair",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A partly maintained ascent in the Veyr uplands, ending at abandoned gallery sockets above a ravine. The lower steps serve shepherds and surveyors. A sheltered burial shelf lies beyond the intended road alignment, and later walkers have marked a respectful route around its approach.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 845,
+            "y": 150
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-winter-latch",
+      "name": "The Winter Latch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small maintained refuge near the lower approach to the Unfinished Stair in the Veyr uplands. Its walls incorporate stones placed during the old rescue. It serves a limited seasonal route and keeps an ordinary store of fuel, fodder, and food when local deliveries succeed.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 785,
+            "y": 245
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.thistlewood-arch",
+      "name": "Thistlewood Arch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Location: In wooded pasture beyond Wetherfold, away from the main road. Livelihood: Surrounding smallholdings; the arch itself supports no settlement. The visible arch was dismantled in Oren's time. Its foundations lie beneath a rectangular thicket that flowers oddly in exceptional years. No continuously open portal or convenient shortcut is established. A surviving fiddle and regional songs supply clues to the old crossing's cost.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 140,
+            "y": 770
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.1",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.2",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-south-turning.1",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-thistlewood-arch.1",
+      "toEntityId": "location.caldris.lore.thistlewood-arch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-mile-of-little-bridges.1",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-unfinished-stair.1",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-winter-latch.1",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.boughmeet",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.harth-orchard",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.saint-merets-rest",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-seventh-hearth",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.crowstep-shelter",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.goats-ledger",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.seln",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-unfinished-stair",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.19034d126ae44268ce4e",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.78fb9b78cfe5638a69f4",
+      "toEntityId": "location.caldris.lore.thistlewood-arch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb9c184ce8ff832b8311",
+      "toEntityId": "location.caldris.lore.thistlewood-arch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.443801fb266076d4ef4d",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fd9c2ca57160f6cc5117",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86dccd5cca0b297c999e",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.887c41f3674887aad3c4",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.19034d126ae44268ce4e",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.19034d126ae44268ce4e",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fb5e90af1c40f36afc51",
+      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fb5e90af1c40f36afc51",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3d02fc28ee579ceaf5c9",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d48fc258aa45fc41bdd9",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

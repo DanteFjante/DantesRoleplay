@@ -1104,7 +1104,9 @@ public sealed class Dnd2024ApplicationReadViewTests
         const string classId = "dnd2024.content.class.monk.v1";
         const string martialArtsId = "dnd2024.content.feature.monk.martial-arts.v1";
         const string unarmoredDefenseId = "dnd2024.content.feature.monk.unarmored-defense.v1";
-        const string originFeatId = "dnd2024.content.feature.magic-initiate.v1";
+        const string originFeatId = "dnd2024.feat.magic-initiate";
+        using var authoredFeat = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "content", "entities", "character-options", "feats", "feat.magic-initiate.json")));
         var subject = Entity("actor.caldris.ganji", "Ganji", new()
         {
             ["dnd2024.character-creation-record"] = Json(new
@@ -1150,7 +1152,9 @@ public sealed class Dnd2024ApplicationReadViewTests
             [classId] = Definition(classId, "Monk (SRD 5.2.1, content v1)", "class", "monk"),
             [martialArtsId] = Definition(martialArtsId, "Martial Arts (SRD 5.2.1, content v1)", "feature", "martial-arts"),
             [unarmoredDefenseId] = Definition(unarmoredDefenseId, "Unarmored Defense (SRD 5.2.1, content v1)", "feature", "unarmored-defense"),
-            [originFeatId] = Definition(originFeatId, "Magic Initiate (SRD 5.2.1, content v1)", "feature", "magic-initiate"),
+            [originFeatId] = new(originFeatId, authoredFeat.RootElement.GetProperty("components")
+                .EnumerateObject().ToDictionary(value => value.Name, value => value.Value.GetRawText()),
+                authoredFeat.RootElement.GetProperty("name").GetString()),
             ["dnd2024.equipment.weapon.quarterstaff"] = new("dnd2024.equipment.weapon.quarterstaff", new Dictionary<string, string>
             {
                 ["dnd2024.item-definition"] = Json(new
@@ -1190,14 +1194,17 @@ public sealed class Dnd2024ApplicationReadViewTests
             References = references,
             Children =
             {
-                ["sheet"] = [Child("dnd2024.mechanic.character-sheet-v2.project", "subject", subject.Id, sheet)],
-                ["levelOneRules"] = [Child("dnd2024.mechanic.character.level-one-rules.project", "subject", subject.Id, levelOneRules)]
+                ["sheet"] = [Child("dnd2024.mechanic.character-sheet-v2.project", "subject", subject.Id,
+                    sheet.Replace("dnd2024.content.feature.magic-initiate.v1", originFeatId, StringComparison.Ordinal))],
+                ["levelOneRules"] = [Child("dnd2024.mechanic.character.level-one-rules.project", "subject", subject.Id,
+                    levelOneRules.Replace("dnd2024.content.feature.magic-initiate.v1", originFeatId, StringComparison.Ordinal))]
             }
         };
 
         if (hasRecordedSense)
         {
-            var recordedSheet = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sheet)!;
+            var recordedSheet = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                sheet.Replace("dnd2024.content.feature.magic-initiate.v1", originFeatId, StringComparison.Ordinal))!;
             recordedSheet["senses"] = JsonSerializer.SerializeToElement(new[]
             {
                 new { sense = new { id = "dnd2024.vocabulary.sense.darkvision", label = "Darkvision" },
@@ -1220,6 +1227,9 @@ public sealed class Dnd2024ApplicationReadViewTests
         Assert.Equal("Acolyte", data.GetProperty("origin").GetProperty("background").GetProperty("label").GetString());
         Assert.Equal("Monk", data.GetProperty("classes")[0].GetProperty("definition").GetProperty("label").GetString());
         Assert.Equal(3, data.GetProperty("features").GetArrayLength());
+        Assert.Equal(originFeatId, data.GetProperty("features")[2].GetProperty("definition").GetProperty("id").GetString());
+        Assert.Equal("dnd2024.source.srd-5.2.1",
+            data.GetProperty("features")[2].GetProperty("definition").GetProperty("source").GetProperty("sourceId").GetString());
         Assert.Equal("active", data.GetProperty("origin").GetProperty("traits")[0].GetProperty("status").GetString());
         Assert.Equal("executable", data.GetProperty("features")[0].GetProperty("implementation").GetProperty("status").GetString());
         Assert.Equal("pending", data.GetProperty("features")[2].GetProperty("implementation").GetProperty("status").GetString());

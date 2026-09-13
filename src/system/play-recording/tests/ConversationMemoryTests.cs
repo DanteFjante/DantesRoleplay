@@ -453,7 +453,69 @@ public sealed class ConversationMemoryTests : IDisposable
         Assert.Equal(0, spool.Count);
         Assert.Equal(["item.user", "item.assistant"],
             inner.GetMessages(Binding().Scope, null, 8).Messages.Select(value => value.SourceMessageId));
+        Assert.All(captured.Messages, message => Assert.Equal(
+            "codex-app-server/turn-items@" + CodexCaptureVersions.SupportedDesktopVersion,
+            message.CaptureProvenance));
         Assert.NotEqual(Binding().Scope.SessionContextId, captureBinding.ExternalCodexThreadId);
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("text")]
+    [InlineData("identity")]
+    [InlineData("timestamp")]
+    [InlineData("order")]
+    public async Task Lost_checkpoint_acknowledgement_across_a_supported_client_upgrade_preserves_receipt_and_content_checks(
+        string change)
+    {
+        using var db = fixture.CreateContext();
+        RegisterStateSpace(db);
+        var store = new ApplicationConversationMemoryStore(db);
+        var captureBinding = new CodexGameplayCaptureBinding(
+            "C:\\repo\\fixture", "project.fixture", "session.fixture", "thread.fixture");
+        var originalSpool = new CodexCaptureCorrelationSpool();
+        var original = new ConversationMemoryCodexCaptureService(
+            new FailFirstAppendStore(store, afterCommit: true), Binding(),
+            new CodexCaptureAdapter(new CaptureReadClient(CodexCaptureVersions.SupportedCliVersion),
+                captureBinding, originalSpool), captureBinding, new SequenceTimeProvider(CapturedAt));
+        original.Connect();
+        Assert.True(original.TryAcceptHook(new("Stop", "thread.fixture", "C:\\repo\\fixture",
+            "C:\\ignored.jsonl", "turn.capture", "")));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => original.CaptureNextAsync());
+        var retainedReceipt = db.Set<ApplicationConversationMemoryDeliveryRecord>().Single().Id;
+        Assert.Equal(2, store.GetState(Binding().Scope)!.TotalMessageCount);
+        Assert.Equal(1, originalSpool.Count);
+
+        var checkpoint = originalSpool.Snapshot();
+        if (change == "timestamp") checkpoint = checkpoint with
+        {
+            Pending = checkpoint.Pending.Select(value => value with { ReceivedAtUtc = value.ReceivedAtUtc.AddSeconds(1) }).ToArray()
+        };
+        var resumedSpool = CodexCaptureCorrelationSpool.Restore(checkpoint);
+        var resumed = new ConversationMemoryCodexCaptureService(store, Binding(),
+            new CodexCaptureAdapter(new CaptureReadClient(CodexCaptureVersions.SupportedDesktopVersion,
+                change == "text" ? "Changed answer." : "Answer.",
+                change == "identity" ? "item.changed" : "item.assistant", change == "order"), captureBinding, resumedSpool),
+            captureBinding, new SequenceTimeProvider(CapturedAt.AddMinutes(5)));
+        if (change != "none")
+        {
+            var conflict = await Assert.ThrowsAsync<ConversationMemoryException>(() => resumed.CaptureNextAsync());
+            Assert.Equal("CONVERSATION_MEMORY_REPLAY_CONFLICT", conflict.Code);
+            Assert.Equal(1, resumedSpool.Count);
+        }
+        else
+        {
+            var replay = await resumed.CaptureNextAsync();
+            Assert.True(replay!.Replayed);
+            Assert.Equal(retainedReceipt, replay.ReceiptId);
+            Assert.Equal(0, resumedSpool.Count);
+        }
+        var messages = store.GetMessages(Binding().Scope, null, 8).Messages;
+        Assert.Equal(["Prompt.", "Answer."], messages.Select(message => message.Text));
+        Assert.All(messages, message => Assert.Equal(
+            "codex-app-server/turn-items@" + CodexCaptureVersions.SupportedCliVersion, message.CaptureProvenance));
+        Assert.Equal(2, db.Set<ApplicationConversationMemoryMessageRecord>().Count());
+        Assert.Equal(retainedReceipt, db.Set<ApplicationConversationMemoryDeliveryRecord>().Single().Id);
     }
 
     private static ConversationMemoryBinding Binding() => new(
@@ -486,10 +548,12 @@ public sealed class ConversationMemoryTests : IDisposable
             new("play-fixture-space", revision, new string('A', 64)));
     }
 
-    private sealed class CaptureReadClient : ICodexThreadReadClient
+    private sealed class CaptureReadClient(
+        string version = CodexCaptureVersions.SupportedDesktopVersion, string assistantText = "Answer.",
+        string assistantId = "item.assistant", bool reverseMessages = false) : ICodexThreadReadClient
     {
         public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(CodexCaptureVersions.SupportedCliVersion);
+            Task.FromResult(version);
 
         public Task<JsonElement> ReadThreadAsync(
             string threadId, bool includeTurns, CancellationToken cancellationToken = default) =>
@@ -503,24 +567,35 @@ public sealed class ConversationMemoryTests : IDisposable
                         new
                         {
                             id = "turn.capture", status = "completed",
-                            items = new object[]
-                            {
-                                new { id = "item.user", type = "userMessage", content = new[] { new { type = "text", text = "Prompt." } }, visibility = "visible" },
-                                new { id = "item.assistant", type = "agentMessage", text = "Answer.", phase = "final_answer", visibility = "visible" }
-                            }
+                            items = Items()
                         }
                     }
                 }
             }));
+
+        private object[] Items()
+        {
+            object[] items =
+            [
+                new { id = "item.user", type = "userMessage", content = new[] { new { type = "text", text = "Prompt." } }, visibility = "visible" },
+                new { id = assistantId, type = "agentMessage", text = assistantText, phase = "final_answer", visibility = "visible" }
+            ];
+            return reverseMessages ? items.Reverse().ToArray() : items;
+        }
     }
 
-    private sealed class FailFirstAppendStore(IConversationMemoryStore inner) : IConversationMemoryStore
+    private sealed class FailFirstAppendStore(IConversationMemoryStore inner, bool afterCommit = false) : IConversationMemoryStore
     {
         private bool failed;
         public ConversationMemoryJournalDocument Connect(ConversationMemoryBinding binding) => inner.Connect(binding);
         public ConversationMemoryAppendResult AppendTurn(ConversationMemoryTurnAppend append)
         {
-            if (!failed) { failed = true; throw new InvalidOperationException("Injected journal failure."); }
+            if (!failed)
+            {
+                failed = true;
+                if (afterCommit) inner.AppendTurn(append);
+                throw new InvalidOperationException("Injected journal failure.");
+            }
             return inner.AppendTurn(append);
         }
         public ConversationMemoryJournalDocument MarkRetryPending(ConversationMemoryScope scope, string failureCode) => inner.MarkRetryPending(scope, failureCode);

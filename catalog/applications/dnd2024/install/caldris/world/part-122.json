@@ -1,0 +1,241 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "actor.caldris.bren-vanner",
+      "name": "Bren Vanner",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "charming opportunist. Immediate want: win the wardenship. Hidden depth: financed false escort raids without knowing injuries followed.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.brother-tovan-crust",
+      "name": "Brother Tovan Crust",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Gentle grump and Breadshield baker who considers praise suspicious but remembers every hungry household. Wants winter flour saved; can grade grain by touch and organize ovens; concealed the steward's debt out of compassion. Trades recipes with Bramblebridge's Gilded Kettle. A rescue plan that avoids public humiliation earns his full account.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.cadoc-rill",
+      "name": "Cadoc Rill",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Grandiose amateur mountain guide with six embroidered titles and only three climbs beyond the marked road. Wants to break the escort monopoly at Saint Vey's Crutch; excellent at weather signs and calming frightened travelers; hides his limited range. Apprenticed briefly under a Grey Mantle scout. He becomes honest if trusted with a task he can genuinely do well.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.captain-mae-brindle",
+      "name": "Captain Mae Brindle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict, fair Moorwatch commander. Immediate want: prove quartermaster honest. Hidden depth: fears her own family profits from army lobbying.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.captain-sadi-reed",
+      "name": "Captain Sadi Reed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict water captain. Immediate want: protect flood channels. Hidden depth: coordinates villages' deliberate invisibility.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.chair-mira-doss",
+      "name": "Chair Mira Doss",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Strict but fair former council chair who can end any speech in exactly one minute and bakes terrible diplomatic biscuits. Wants remote testimony restored at Chairman's Nap; masters procedure; fears appearing nostalgic and irrelevant. Mentored the missing League chair. Evidence of deliberate clause removal brings her back into public conflict.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.chancellor-sera-vane",
+      "name": "Chancellor Sera Vane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "the higher official who wants a stronger peace. Queen Adela's Chancellor of Roads and Revenue, composed, funny in private, and increasingly willing to manipulate law. Vane fears a succession crisis will break the Lantern Sea Accord. She uses old Concord methods to centralize tolls, messages, and emergency authority, believing temporary control can prevent war. Vane is not formally a member of the Seventh Ledger. Her confidential adviser is. She can become an antagonist, reluctant ally, deposed reformer, or architect of a less coercive system depending on what the party proves and what alternatives they build.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.clerk-ollo-fen",
+      "name": "Clerk Ollo Fen",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "cringy procedural prodigy. Immediate want: become indispensable. Hidden depth: can identify every counterfeit seal except the first one he made.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.colette-fane",
+      "name": "Colette Fane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "dramatic orchard heiress. Immediate want: preserve one diseased grove. Hidden depth: grove marks a First Footprint line.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.cook-berto-sill",
+      "name": "Cook Berto Sill",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "eccentric culinary genius. Immediate want: avoid being forced into royal service. Hidden depth: vanished voluntarily to help a dock strike kitchen.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.dockmaster-ina-ro",
+      "name": "Dockmaster Ina Ro",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back, formidable organizer. Immediate want: keep repair dock open. Hidden depth: knows Saint Orro relic is a very good ordinary rope.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.doctor-tal-oren",
+      "name": "Doctor Tal Oren",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "literal sky scholar. Immediate want: publish the comet's ordinary orbit. Hidden depth: has overlooked one genuinely impossible observation.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.dom-peri",
+      "name": "Dom Peri",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "eccentric beekeeper-diplomat. Immediate want: save Honey Parliament hives. Hidden depth: met Ilyr Vaust and thought it a talkative noble.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    }
+  ],
+  "relationships": []
+}

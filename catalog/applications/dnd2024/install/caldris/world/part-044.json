@@ -1,0 +1,388 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.1061-the-seven-month-war-account.1",
+      "name": "The Seven-Month War — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A dispute over armed escorts and toll collection escalated between Highmead's crown and South Vey's margravate. Both claimed that a stretch of road called the Linden Corridor was necessary to protect their traders. Both had supporters within its villages. The Reedbank Association tried to maintain passage while refusing exclusive access to either army. The principal fighting lasted seven months, although requisitions and local violence extended beyond them. Soldiers burned stores, damaged mills, and seized animals. Two significant battles decided control of crossings; neither produced the sweeping conquest later commemorated in royal art. At Darnel Field, Captain Edris Voss of Highmead accepted a withdrawal agreement proposed by Lady Saela Halren after both sides ran short of provisions. A negotiated peace left the corridor under local administration with limits on permanent garrisons.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1074-the-bridge-of-untied-ribbons-account.1",
+      "name": "The Bridge of Untied Ribbons — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ysra returned from a lengthy coastal journey to find Jalen elderly and using a cane. His daughter had taken over most repair work. He still played well on good evenings and had kept a box of unfinished instruments for tasks he hoped to resume. They made a final short journey together to Ribbon Bridge, a small crossing where travellers tied cloth strips for people expected home. Jalen removed a ribbon he had left for his uncle decades before. He gave Ysra a repaired travelling fiddle and asked her to return his unfinished work to those who could complete it. He died at home during the following years. Ysra visited his family before setting out again. She did not inherit their grief or authority over their household simply because she remembered a version of him they had never known.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1087-the-silver-that-would-not-travel-account.1",
+      "name": "The Silver That Would Not Travel — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Highmead's mint reduced the silver content of a new coin issue while retaining familiar names and designs. Officials expected the coins to circulate locally at the old rate. Foreign counters weighed them and offered less. Sellers at Alderwake began quoting two prices, producing arguments that spread faster than reliable explanations. Assayer Pel Marrin published comparison tables and offered witnessed tests. He became unpopular with the crown's collectors and with opportunists misrepresenting older coins as equally debased. A small deficit in royal accounts became a much wider crisis of confidence. The settlement accepted the new coins for specified crown dues and stopped insisting that distant markets value them identically. It also replaced one mint official whose concealed private dealings had worsened an openly adopted policy.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1099-the-orchard-behind-the-wall-account.1",
+      "name": "The Orchard Behind the Wall — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Harth, the Guest remained asleep while orchard land became more valuable. A wealthy household enclosed an old access path to create a private garden. The path was used by nursery workers, pilgrims, and residents taking the short way to a well. Keeper Sena Brill organised a careful account of who used it and under what arrangements. The resulting settlement preserved a narrow public passage and changed the route around the family's private rooms. It satisfied nobody completely and worked well enough to endure through several later renewals. The enclosure also exposed a buried bowl and the roots of an older tree. Excitement over a supposed divine judgement brought more visitors than the path could comfortably carry. Sena spent much of the following summer asking people not to stand on the fragile ground they had come to revere.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1109-the-night-of-a-hundred-names-account.1",
+      "name": "The Night of a Hundred Names — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Saint Meret's Rest hosted a gathering of families seeking relatives missing after journeys, wars, marriages, and migration. The sanctuary's keepers compared regional editions of the Book of Roads Left Open with household testimony and burial notices. Some people found answers. Some discovered that a relative had chosen another life. Many went home with nothing certain. Clerk Adelin Ross kept a separate list of unresolved cases rather than allowing the closing celebration to imply that all had been solved. Ysra attended with Jalen, who sought news of an uncle lost along the northern roads. They learned that he had survived his presumed accident and died years later at a distant hospice. The answer brought grief and relief, along with a letter explaining why he had never returned.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1122-the-companions-of-the-late-blossom-account.1",
+      "name": "The Companions of the Late Blossom — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An elven herb collector named Ysra Leth, born 1,310 years before the campaign present, began travelling with Jalen Fen, a human repairer of musical instruments. Ysra sought plants described in older nursery records. Jalen needed paying work and wanted to hear regional songs before their older singers died. They spent four seasons moving between Boughmeet, Hazelstairs' lower approaches, and the fairs. Their disagreements concerned food, money, and whether a promising detour was worth missing a festival booking. Jalen taught Ysra to ask how long someone could afford to wait. At Bluecup Hollow, they found a tiny blue flower whose opening petals were used in a modest charm to retain a scent in linen. The plant grew only in a particular damp limestone pocket. Overharvesting threatened it more immediately than any monster.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1135-the-meeting-of-three-widows-account.1",
+      "name": "The Meeting of Three Widows — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At a reed-market landing, three women whose households had lost boats formed a shared reserve to support replacement craft and bereaved families. Talla Oren, Bess Hal, and Nim Sareth brought different resources: a workshop lease, trusted accounts, and connections among the boat crews. Their Reed Chest grew through small regular contributions. It distinguished losses eligible for replacement help from ordinary maintenance, and investigated suspicious claims through people familiar with the boats. Several members disliked paying during years in which they needed nothing. The arrangement supported families that would otherwise lose their livelihoods after a single accident. It also failed some applicants, especially newcomers unable to produce the required contributions or witnesses. A fund with limited money could not repair every tragedy.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1148-the-island-of-the-wrong-stars-account.1",
+      "name": "The Island of the Wrong Stars — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Three vessels approaching the small island of Veyr's Lantern, north of the usual Morrow Strait crossing, reported star reflections on water covered by cloud. A wreck followed when a captain trusted the reflected pattern more than his pilot's warning. The island held an abandoned observing court fitted with dark glass tiles. Earlier damage had tilted part of it toward a tidal pool. On particular nights, a surviving enchantment projected an old recorded arrangement of stars across the water. It had once been an instructional device; in its altered setting, it became a navigational hazard. Pilot Soren Avet and glassworker Dima Rell led an expedition to screen the reflecting surface and recover inscriptions. They left much of the buried court undisturbed because their hired boat could not remain through the next weather change.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1161-the-queen-of-the-second-table-account.1",
+      "name": "The Queen of the Second Table — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The final Sorne sovereign of Highmead died after a reign marked by disputed levies and a failed succession arrangement. The most credible claimant, Queen Maressa of House Merrow, secured recognition through renewed estate agreements and the support of several market councils. Maressa held formal audiences at the great table of her predecessors. She also kept a smaller table near the household kitchens where petitioners with urgent practical complaints could be heard. Its usefulness depended on her time and judgement, not an automatic right of access available to everyone. She confirmed selected common rights, paid down part of the crown's arrears, and accepted that some collectors appointed by her own supporters should be removed. House Sorne survived as several lesser families. Highmead's crown continued under a new household, rather than requiring one dynasty to govern unchanged through every century.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1174-the-road-of-bitter-leaves-account.1",
+      "name": "The Road of Bitter Leaves — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Caravans from Serevan's eastern neighbour, the Principality of Selvar, began attending the markets at Istravel in greater numbers. They brought a dried leaf brewed into a bitter, fragrant drink, alongside dyestuffs, woven mats, and pottery well suited to long transport. The drink's popularity spread first among affluent households and people working late in counting rooms. Most Chalklands villages still preferred familiar herbs or ordinary ale. An expensive imported taste did not immediately become a universal custom. Rima Dast, a Selvari carrier who owned three mules with two relatives, kept a route book describing wells, guesthouses, and the difference between advertised shelter and a dry place to sleep. She made good money for several years, then lost much of it when buyers favoured a fashionable rival district's leaves.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.1148-the-island-of-the-wrong-stars-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1161-the-queen-of-the-second-table-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1174-the-road-of-bitter-leaves-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1087-the-silver-that-would-not-travel-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1099-the-orchard-behind-the-wall-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1109-the-night-of-a-hundred-names-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1122-the-companions-of-the-late-blossom-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1135-the-meeting-of-three-widows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1061-the-seven-month-war-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1074-the-bridge-of-untied-ribbons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1135-the-meeting-of-three-widows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1148-the-island-of-the-wrong-stars-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1161-the-queen-of-the-second-table-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1174-the-road-of-bitter-leaves-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1061-the-seven-month-war-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1074-the-bridge-of-untied-ribbons-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1087-the-silver-that-would-not-travel-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1099-the-orchard-behind-the-wall-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1109-the-night-of-a-hundred-names-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1122-the-companions-of-the-late-blossom-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

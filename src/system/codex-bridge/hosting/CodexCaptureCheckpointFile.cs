@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using DantesRoleplay.CodexBridge;
 
@@ -51,7 +52,7 @@ public static class CodexCaptureCheckpointFile
         if (info.Length > MaximumBytes) throw Failure("The capture checkpoint exceeds its byte bound.");
         try
         {
-            await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+            await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete,
                 bufferSize: 16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
             return await JsonSerializer.DeserializeAsync<CodexCaptureSpoolCheckpoint>(stream, JsonOptions,
                        cancellationToken)
@@ -78,7 +79,24 @@ public static class CodexCaptureCheckpointFile
         try
         {
             await File.WriteAllBytesAsync(temporary, bytes, cancellationToken);
-            File.Move(temporary, fullPath, overwrite: true);
+            var replacementWait = Stopwatch.StartNew();
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    File.Move(temporary, fullPath, overwrite: true);
+                    break;
+                }
+                catch (Exception error) when (OperatingSystem.IsWindows()
+                    && (error is IOException or UnauthorizedAccessException))
+                {
+                    if (replacementWait.Elapsed >= TimeSpan.FromSeconds(2))
+                        throw new CodexBridgeException("CODEX_CAPTURE_CHECKPOINT_BUSY",
+                            "The capture checkpoint could not be atomically replaced because it remains in use or inaccessible.");
+                    await Task.Delay(25, cancellationToken);
+                }
+            }
         }
         finally
         {

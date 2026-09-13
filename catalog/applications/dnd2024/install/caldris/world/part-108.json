@@ -1,0 +1,328 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.place-seln.1",
+      "name": "Seln — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A woodland community producing instrument timber and music in partnership with the acoustics of a particular grove and its small Listener spirit. Present-day form: Workshops stand among managed woodland. The original hollow trunks have died or changed; younger trees and carefully maintained structures preserve parts of the soundscape. The Listener's presence is intermittent and tied to the place, not guaranteed at every performance. A person to meet: Instrument maker Anra Rill is testing how new timber responds to a changing windbreak. She wants listeners to hear the living grove instead of demanding a perfect repetition of a centuries-old description. Adventure: Removing a diseased tree will alter the grove's tones. A repair plan can protect people, preserve useful timber, and help the community adapt its music without pretending the dead tree can remain forever.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-seven-scripts-court.1",
+      "name": "Seven Scripts Court — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A shared interpretation and translation court within Namar Vale, preserving explanations of trade terms and later records relevant to Aveline's parcel. Present-day form: Small workrooms around a courtyard, occupied by translators, copyists, and several unrelated businesses. The old name survives despite changes in its languages and organisation. Its oldest records are mostly later copies with identifiable chains of transmission. A person to meet: Translator Sera Mir knows the local trade vocabulary and is tracing how one workshop term changed meaning. She charges for her labour while offering fair access to material held for public use. Adventure: A supposed magical instruction is mistranslated because an ordinary workshop term resembles a sacred title. Comparing the preparation notes with actual glassworking can resolve the error and identify a copied fragment of Aveline's corrections.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-tallow-ford.1",
+      "name": "Tallow Ford — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: The northern crossing where a stranded caravan created a lasting market for fodder, repairs, and storage. Present-day form: A working caravan yard beside a newer bridge, with remnants of older crossings visible at low water. Local farms depend on visitors but must retain enough fodder for their own animals. Its largest stable incorporates tether stones from several building phases. A person to meet: Yard steward Bera Dorn posts fodder reserves openly so merchants understand why purchases are limited. Some interpret the limits as a scheme to raise prices. Adventure: A stranded party needs winter supplies while a missing delivery leaves the village short. Finding the shipment can involve a damaged route, a competing buyer, and a driver sheltering sick animals rather than a straightforward theft.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-chalk-stag-chamber.1",
+      "name": "The Chalk Stag Chamber — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A restricted archaeological chamber beneath the Rusk Hollow storehouse complex. A safe upper approach permits examination of the carving; deeper passages need a separate assessment after each significant collapse. A person to meet: Surveyor Oren Vell wants to record the older burial niche without disturbing unstable walls. Adventure: Identify the niche's household through tally marks and later records. The reward can be a restored name and a safer site, with any deeper mystery arising from evidence actually found.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-listening-house.1",
+      "name": "The Listening House — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A house near Seln where Ysra organised her records, taught selected skills, and continued correspondence after reducing long-distance travel. Present-day form: A much-repaired house used for visiting researchers and musicians. Some notebooks belong to other collections; the local inventory records where known copies went. Its garden contains descendants of propagated plants, subject to documented losses and replacements. Ysra is not assumed to live here in the present. A person to meet: House keeper Mira Vell can arrange access to local copies and dislikes confident claims based on a single unattributed quotation. She is searching for a missing inventory page rather than a hidden immortal resident. Adventure: Comparing a damaged notebook with local nursery practice identifies a correction omitted from later editions. The result can help restore a modest charm or avert a harmful collecting expedition.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-mile-of-little-bridges.1",
+      "name": "The Mile of Little Bridges — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: A series of short crossings and firm road sections built to replace repeated washout repairs near Goat's Ledger. Present-day form: The route has a different count of spans after centuries of channel movement, rebuilding, and diversion. Some ancient abutments stand beside active crossings; others lie in grass away from the modern road. Its maintenance remains local and visible. A person to meet: Crossing inspector Rovan Tal keeps sketches of how water moves during different seasons. He wants one fashionable restoration proposal changed before it blocks a relief channel. Adventure: Survey the route during a narrow weather window and identify which opening must remain clear. Historical plans and present observations each supply part of the answer.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-pear-walk.1",
+      "name": "The Pear Walk — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ancient role: Aveline's burial place above the lake and the site of a pear graft connected to Derren's remembered tree. Present-day form: A quiet path through a younger orchard beside the library grounds. Aveline's stone was reset after later bank damage; records of that work preserve the connection to the original burial. The pear lineage has survived through grafting, replacement, and at least one disputed identification. A person to meet: Groundskeeper Mina Wren cares for the orchard and dislikes visitors taking cuttings without asking. She is trying to identify which trees share the oldest documented graft lineage. Adventure: A collector offers to fund repairs in exchange for an exclusive cutting. The library must weigh needed money against keeping the lineage available. A separate bequest clue can lead outward from the grave without disturbing the burial.",
+            "provenance": "history-1600-1200-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-quiet-archive.1",
+      "name": "The Quiet Archive — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small archive and copying business in Leth Sarai, occupying repaired rooms above an ordinary shop. Its collections have moved within the district several times; custody lists explain the surviving material. A person to meet: Copyist Hadi Amat is comparing workshop records and refuses to infer ancestry from a shared surname alone. Adventure: Corroborate whether Leris Amat received Aveline's apology by connecting preparation notes, a later letter, and an employee list held elsewhere.",
+            "provenance": "history-600-500-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-seventh-hearth.1",
+      "name": "The Seventh Hearth — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "During this century: A shepherd's house on an inconvenient bend of the supper road. Its threshold spirit can tend the fire, shift small objects within the dwelling, and recognise an invitation freely accepted. It cannot produce food, compel guests to stay, or command the countryside. Its hospitality depends on travellers bringing provisions and helping with repairs. Present-day form: Repeated repairs have replaced nearly every timber, while the original hearthstone and threshold remain. The road bypassed it long ago. Brambles obscure the approach; inside, ordinary dust lies beside a carefully swept place at the table. Whether its spirit has remained awake continuously is left for later history to establish. A person to meet: Pell, an itinerant roofer, discovered the house during a storm and returns when work brings him nearby. He considers its resident a demanding elderly landlord and has never thought to ask how old it is.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.place-the-seventh-hearth.2",
+      "name": "The Seventh Hearth — history and story material (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A story here: The threshold stone must be moved before a bank collapse destroys the house. The spirit fears that a new doorway will make it a different person. Finding precedents in old repairs offers a solution grounded in its own history.",
+            "provenance": "history-2000-1900-years-ago.md",
+            "visibility": "gm"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-tallow-ford.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-pear-walk.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seln.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seven-scripts-court.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-listening-house.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-mile-of-little-bridges.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-chalk-stag-chamber.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-quiet-archive.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

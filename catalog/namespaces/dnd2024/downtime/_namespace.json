@@ -1,8 +1,8 @@
 {
   "id": "dnd2024.downtime",
   "owner": "dnd2024",
-  "description": "Namespace for typed D&D 2024 bounded downtime lifecycle events.",
-  "allowedKinds": ["event-type"],
+  "description": "Namespace for typed D&D 2024 bounded downtime state, definitions, and lifecycle events.",
+  "allowedKinds": ["component-definition", "component-type", "event-type"],
   "aliases": [],
   "enabled": true,
   "reviewStatus": "reviewed",

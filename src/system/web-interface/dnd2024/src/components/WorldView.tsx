@@ -25,6 +25,7 @@ const ScopedMapWorkspace = lazy(() => import("./ScopedMapWorkspace")
 export function WorldView({
   deferredNotice,
   directoriesDeferred,
+  loreLoading,
   section,
   activeMapId,
   selectedMapFeatureId,
@@ -63,6 +64,7 @@ export function WorldView({
 }: {
   deferredNotice?: ReactNode;
   directoriesDeferred?: boolean;
+  loreLoading?: boolean;
   section: WorldSectionId;
   activeMapId: string;
   selectedMapFeatureId: string;
@@ -127,8 +129,8 @@ export function WorldView({
             onMapChange={onMapChange}
             onNavigateToFeature={onMapNavigateToFeature}
             onOpenLocation={(locationId) => {
-              onLocationSelect(locationId);
               onSectionChange("locations");
+              onLocationSelect(locationId);
             }}
             onRetryScope={onRetryMapScope}
             selectedFeatureId={selectedMapFeatureId}
@@ -138,8 +140,8 @@ export function WorldView({
       ) : section === "history" ? (
         <WorldHistory
           onOpenLocation={(locationId) => {
-            onLocationSelect(locationId);
             onSectionChange("locations");
+            onLocationSelect(locationId);
           }}
           world={world}
         />
@@ -147,9 +149,9 @@ export function WorldView({
         <WorldPeopleDirectory
           onPersonSelect={onPersonSelect}
           onOpenLocation={(locationId) => {
+            onSectionChange("locations");
             onLocationSelect(locationId);
             onLocationSectionChange("people");
-            onSectionChange("locations");
           }}
           selectedPersonId={selectedPersonId}
           world={world}
@@ -160,22 +162,23 @@ export function WorldView({
           busy={factionDirectoryBusy}
           onLoadMore={onLoadMoreFactions}
           onOpenLocation={(locationId) => {
-            onLocationSelect(locationId);
             onSectionChange("locations");
+            onLocationSelect(locationId);
           }}
           selectedFactionId={selectedFactionId}
           world={world}
         />
       ) : section === "lore" ? (
         <WorldLore
+          loading={loreLoading}
           onOpenFaction={(factionId) => {
             onFactionSelect(factionId);
             onSectionChange("factions");
           }}
           onOpenHistory={() => onSectionChange("history")}
           onOpenLocation={(locationId) => {
-            onLocationSelect(locationId);
             onSectionChange("locations");
+            onLocationSelect(locationId);
           }}
           world={world}
         />

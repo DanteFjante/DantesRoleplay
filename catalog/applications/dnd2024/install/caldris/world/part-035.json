@@ -1,0 +1,672 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.landmark.rain-crown-of-orovant.lore",
+      "name": "Rain Crown of Orovant — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The crown's oldest builders are unknown. Its first surviving water-rights settlement belongs to the period of the Market of Borrowed Tongues, when carrying communities needed the same promise to mean the same thing in several languages. The settlement allocated measured jars, not rainfall or magical favour. Keeper Saida Vell speaks three trade languages and keeps an uncoded water tally so that a visitor need not hire a translator merely to ask for a drink. Historical threads: The Market of Borrowed Tongues.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "name": "Skyharp of Roven — Approach from Hearthscar Shelter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "Skyharp of Roven — Hearthscar Shelter: Footpath. A maintained ledge spur ends at the grounded harp platform. There is no crossing to Juniper Gate, Crowstep, or the Unfinished Stair from the monument.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.approach.8106e482f5",
+      "name": "Skyharp of Roven — Approach from Hearthscar Shelter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Skyharp of Roven — Hearthscar Shelter: Footpath. A maintained ledge spur ends at the grounded harp platform. There is no crossing to Juniper Gate, Crowstep, or the Unfinished Stair from the monument.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.custom",
+      "name": "Skyharp of Roven — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Porters tie a ribbon for a safe return and remove an older ribbon when they come back. A novice is taught to distinguish a warning bell from a musical cable before being trusted with the platform. Silence can mean still air or broken equipment; nobody is charged a toll for hearing the harp.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.gmtruth",
+      "name": "Skyharp of Roven — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A repair using a different bronze alloy has shifted one resonator's note. That explains the false warning, but not a newly uncovered winch mark belonging to an unrecorded salvage crew. The crew's cache is on the near side of the gorge. Neither it nor the harp creates a bypass around the Unfinished Stair.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.hooks",
+      "name": "Skyharp of Roven — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The harp sounds a retired warning while the official forecast promises clear passage. A collector offers enough money for winter supplies in exchange for the oldest resonator. A griffin is scouting the old slope again, and both convoy owners and shepherds want the keeper to call it somebody else's problem.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.skyharp-of-roven.lore",
+      "name": "Skyharp of Roven — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Skyharp grew from changes to quarry transport after the griffin crisis above Juniper Gate. Early keepers lifted supplies along the rock face to reduce disturbance near nesting slopes. When the freight machinery was retired, later porters tuned its surviving cables into audible weather signals. Different air currents can make the same note mean different things; the songs supplement observation rather than predict the future. Keeper Marra Venn knows which familiar tones are produced by worn fittings. Historical threads: The Griffin Above Juniper Gate; The Winter of Returned Keys; The Winter Latch.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.access.ca44c4571a",
+      "name": "The Upward Fall — Approach from Redbank Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Upward Fall — Redbank Reach: Footpath. The north-bank inspection path reaches the public viewing platform and the ordinary sluice works.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.access.ea1b6e6e8c",
+      "name": "The Upward Fall — Approach from Willowrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "archived",
+            "summary": "The Upward Fall — Willowrace: Footpath. A mill-workers' embankment path follows maintained ground. It never passes through the rising water or the old aqueduct gallery.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.approach.ca44c4571a",
+      "name": "The Upward Fall — Approach from Redbank Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Upward Fall — Redbank Reach: Footpath. The north-bank inspection path reaches the public viewing platform and the ordinary sluice works.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.approach.ea1b6e6e8c",
+      "name": "The Upward Fall — Approach from Willowrace",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Upward Fall — Willowrace: Footpath. A mill-workers' embankment path follows maintained ground. It never passes through the rising water or the old aqueduct gallery.",
+            "provenance": "Nine Wonders of Caldris; named present-day access.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "relationship",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.custom",
+      "name": "The Upward Fall — Customs",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Apprentices drink from an ordinary kettle before studying the fall, to remember that useful water matters more than spectacle. The public gauge is read aloud at the morning inspection. A family may sponsor one length of repaired channel, but cannot claim the downstream water solely because its plaque stands nearest the arch.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.gmtruth",
+      "name": "The Upward Fall — Keeper truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A recently altered garden drain, approved under an obsolete property name, accounts for most of the missing water. Nobody involved understood the whole plan. A small remaining discrepancy points to a sealed inspection pocket containing the original rejected channel proposal. The fall cannot lift travellers or provide unlimited power; attempts to enlarge the flow damage its carefully prepared bed.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.hooks",
+      "name": "The Upward Fall — Story seeds",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Water continues to rise while the downstream gauge falls: a hidden leak or diversion is robbing someone of a promised share. A theatrical mage claims to have invented the ancient lift. The replacement mineral bed is trapped in an ownership dispute, and shutting the fall for repair will cost one village its early vegetable crop.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.landmark.upward-fall.lore",
+      "name": "The Upward Fall — Lore",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The fall is a surviving later experiment inspired by the Open Sluices Agreement. Its builders wanted a modest irrigation lift, not a wall against every flood. The first spell depended on a prepared mineral bed that still needs renewal. During heavy flooding the keepers close the diversion because the arch and receiving channel cannot safely handle the additional water. Halda Penn's name appears in later arguments about the work, but she did not approve every project subsequently built in her memory. Historical threads: The Agreement of the Open Sluices; The Spring of Floating Doors.",
+            "provenance": "Nine Wonders of Caldris; reconciled with the existing chronology before campaign play.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lantern-roads",
+      "name": "The Lantern Roads",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Old Lantern Roads remain the best overland routes in much of Eredane, though neglected portions have become hedgerows, village greens, private boundaries, and unusually straight duck ponds.",
+            "provenance": "Caldris world bible — Eredane",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.1",
+      "name": "Caldris at the Threshold — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "It is 643 AS, eighty-three years after the Three Banner War ended. Trade continues and harvests remain broadly adequate, although burdens and local shortages are uneven. Temporary tolls persist, counterfeit seven-sided seals support questionable claims, and physical dragon evidence is appearing in different regions for different reasons. The Lantern Sea Accord congress is due next year at Aster Quay, whose presiding chair is missing. Carrowmere shipwrights have justified concerns about the autumn grain fleet. Political households consider uncertain inheritances; village keepers consider roofs, fuel, and whether the next delivery will arrive before rain. Children still learn adapted versions of old tunes. Letters wait for carriers, gardens preserve fragile varieties, and repaired objects pass into new hands. At Bramblebridge, roads and households already have histories before any adventurer enters them.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.2",
+      "name": "Caldris at the Threshold — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The campaign's opening remains unplayed.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0003-two-funerals-and-many-new-claims-account.1",
+      "name": "Two Funerals and Many New Claims — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Two unrelated royal heirs died within eighteen months of one another in separate accidents. The deaths altered calculations about marriages, succession, and lesser claims. Households far from either court encountered the consequences through postponed agreements, new envoys, and requests to locate old papers. Public grief and political opportunity occupied the same rooms. Some participants sincerely feared instability; others promoted claims that had attracted little attention when succession seemed settled. Rumour joined the deaths into a single pattern even where the available evidence did not. These events did not resolve Alderwick's concerns over its childless queen or the Veyr Marches' separate questions about the dying High Warden. They added pressure to an already complicated political landscape rather than collapsing every disputed future into one inheritance.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0009-the-summer-without-swallows-account.1",
+      "name": "The Summer Without Swallows — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The event remembered as the Summer Without Swallows disrupted familiar seasonal expectations. In affected districts, growers reported altered insect activity and reduced bird arrivals. Some places experienced the absence sharply; reports from other places were incomplete or contradictory. Swallowwatch's older notebooks became valuable comparison material. Observer Enna Brin requested accounts of ordinary years as well as dramatic failures. Prophets and sellers of expensive remedies preferred simpler explanations, and several public claims travelled farther than the evidence supporting them. The loss affected work, food, and the feeling of a season arriving correctly. People who seldom agreed about politics noticed the quiet beneath familiar eaves. Returning birds in some places brought relief without proving that every disrupted pattern had recovered.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lantern-roads",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0003-two-funerals-and-many-new-claims-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0003-two-funerals-and-many-new-claims-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0009-the-summer-without-swallows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0009-the-summer-without-swallows-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0000-caldris-at-the-threshold-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.access.ca44c4571a",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.access.ea1b6e6e8c",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.custom",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.gmtruth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.hooks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.lore",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.approach.8106e482f5",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.approach.ca44c4571a",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.approach.ea1b6e6e8c",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import type { MapChildScope } from "../data/hub-types";
+import type { MapChildScope, WorldLocation } from "../data/hub-types";
 import { Icon } from "./Icon";
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -18,14 +18,18 @@ const SCOPE_ICONS: Record<string, string> = {
 export function MapScopeLinks({
   childScopes,
   onOpenScope,
+  unplacedLocations = [],
+  onOpenLocation,
 }: {
   childScopes: MapChildScope[];
   onOpenScope: (mapId: string) => void;
+  unplacedLocations?: WorldLocation[];
+  onOpenLocation?: (locationId: string) => void;
 }) {
   return (
     <section className="panel map-scope-links" aria-label="Closer areas">
       <span className="eyebrow">Closer areas</span>
-      {childScopes.length === 0 ? (
+      {childScopes.length === 0 && unplacedLocations.length === 0 ? (
         <p className="map-scope-links__empty">
           No closer area is loaded from this scope.
         </p>
@@ -45,6 +49,13 @@ export function MapScopeLinks({
               </button>
             </li>
           ))}
+          {unplacedLocations.map((location) => <li key={`location:${location.id}`}>
+            <button onClick={() => onOpenLocation?.(location.id)} type="button" aria-label={`View details for ${location.name}`}>
+              <span aria-hidden="true"><Icon name="MapPin" size={16} /></span>
+              <span><strong>{location.name}</strong><small>Location details · no map position</small></span>
+              <Icon name="ArrowRight" size={16} />
+            </button>
+          </li>)}
         </ul>
       )}
     </section>

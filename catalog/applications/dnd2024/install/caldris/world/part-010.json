@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.1483-the-river-without-a-king",
+      "name": "The River Without a King",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The River Without a King",
+            "summary": "Low Vey's last widely acknowledged sovereign died without the money or alliances needed to enforce a succession. Three generations of local arrangements had already shifted power toward towns, landholders, and crossing districts. The kingdom's dissolution was spread across negotiations, small armed confrontations, and years in which different officials collected competing dues. Veymouth acquired a free-port charter from its own coalition of harbour interests. Reedminster's surrounding communities formed the Reedbank Association, a federation responsible for flood channels, ferries, and mutual defence. The southern estates accepted the Margravate of South Vey, ruled by House Halren in exchange for recognisable limits on service. Members of House Keld survived in all three territories. Some served new institutions; some emigrated. A kingdom ended without its population disappearing.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -775260000,
+            "precision": "era",
+            "dateLabel": "1,483–1,467 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
+      "name": "The Meadows That Moved Uphill",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Meadows That Moved Uphill",
+            "summary": "A run of relatively favourable growing seasons encouraged settlements above the older fields. People later called this part of the period the Long Summer, though it contained ordinary winters, failed crops, and years remembered locally for rain. The new village of Hazelstairs grew along terraced slopes below a northern pass. Its households included younger children of established farmers, displaced tenants, two Whitewindow families, and Rovenfell herders. Their cooperation was practical and often contentious. Terrace walls, water turns, and grazing limits mattered more than proclamations of shared destiny. Danna Vey, a millwright, built a small mill using a channel supplied by several springs. She reserved a maintenance share of every milling payment. The arrangement worked while users could see the repairs their grain paid for.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -783932400,
+            "precision": "era",
+            "dateLabel": "1,499–1,484 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1515-the-year-of-the-empty-throne",
+      "name": "The Year of the Empty Throne",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Year of the Empty Throne",
+            "summary": "The last reigning Aster sovereign died after a long illness, leaving disputed claimants and an exhausted treasury. Highmead's councils funded essential guards and bridge repairs while neighbouring estates withheld contributions. The interregnum lasted several years despite its name. The eventual sovereign, Queen Ilyen Sorne, came from an upland household whose acceptance depended on written limits and renewed estate agreements. The Crown of Highmead continued, but House Aster's rule ended. Its relatives remained landholders, merchants, religious patrons, and sometimes disappointed conspirators. Ilyen's first progress through the countryside was modest. At Wetherfold she sat beneath a patched awning to hear grazing disputes. Later paintings supplied a pavilion large enough to hide the common she had come to inspect.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -792342000,
+            "precision": "era",
+            "dateLabel": "1,515–1,500 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1532-the-quiet-fire-at-sallowmere",
+      "name": "The Quiet Fire at Sallowmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Quiet Fire at Sallowmere",
+            "summary": "A chimney fire spread into Sallowmere's copying rooms during a windy night. Residents saved people first, then whichever books they could reach. Pera Nall, an apprentice preparing ink, carried out a basket of account books because she had been told they were nearest the door and easiest to lift. Several celebrated spell collections burned. The accounts survived, along with lists of borrowers, repair instructions, and letters used as bookmarks. Those humble records later made it possible to locate copies scattered across dozens of households. Rebuilding produced a smaller library with detached cooking rooms and cupboards assigned to different kinds of material. The teachers also began placing copies with distant friends. This preserved knowledge but loosened their control over how it was taught and attributed.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -801014400,
+            "precision": "era",
+            "dateLabel": "1,532–1,516 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
+      "name": "The Ford of Sleeping Carts",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Ford of Sleeping Carts",
+            "summary": "A safer northern approach opened through Rovenfell, an upland kingdom of steep valleys and scattered fortified halls. Its rulers controlled several passes but depended on village associations to keep them usable. The new route connected Whitewindow's western trade to grain country beyond the Chalklands. At Tallow Ford, floodwater stranded an autumn caravan for twenty-six days. Merchants hired local households to stable animals and bought food on credit. One dispute over fodder nearly turned violent before Essel Dorn, a Rovenfell road judge, made both sides account for what the animals actually needed. The settlement left a permanent seasonal caravan yard. Local people called it the Ford of Sleeping Carts, though the merchants remembered very little sleep. The road diversified winter supplies and reduced the power of anyone controlling a single southern crossing.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -809949600,
+            "precision": "era",
+            "dateLabel": "1,549–1,533 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1566-the-apricot-marriage",
+      "name": "The Apricot Marriage",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Apricot Marriage",
+            "summary": "Princess Samin of Serevan married Lord Edric Aster, a younger relative of Highmead's reigning household. Their agreement concerned harbour access and guaranteed purchases of upland wool. Its public celebrations promised friendship between peoples whose negotiators had spent most of the winter arguing over freight losses. Samin arrived with attendants, cooks, a physician, two gardeners, and trunks of ordinary belongings. Some returned home within a year. Others settled, married locally, or founded businesses. The exchange made a lasting impression through courtyard gardening, preserved fruit, lending customs within migrant households, and new words for familiar kitchen tools. An apricot grown against a sheltered Highmead wall became a symbol of the marriage. It bore little fruit in cold years.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -818884800,
+            "precision": "era",
+            "dateLabel": "1,566–1,550 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1583-the-blackglass-garden",
+      "name": "The Blackglass Garden",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Blackglass Garden",
+            "summary": "Istravel's glassworkers had once used a Night Garden, an open courtyard with dark pools, observation marks, and shallow channels for cooling prepared glass. Their navigation disks combined an unusual mineral, painstaking alignment under particular stars, and a small enchantment maintained during manufacture. Aveline and the current workshop keeper, Rashan Emet, recovered enough instructions to identify Samir's disk as one of a limited family of instruments. Its makers had lived and worked in ordinary houses. Their workshop was exceptional; it was not evidence that every household in the ancient town possessed effortless magic. The sea had taken an older workshop quarter during a distant coastal subsidence, explaining the story of a drowned city without establishing a lost world empire. Reproducing the disks proved costly. Two usable examples took years, and trained pilots still needed to interpret them.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -827820000,
+            "precision": "era",
+            "dateLabel": "1,583–1,567 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
+      "name": "The Address Beneath the Blue Paint",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Address Beneath the Blue Paint",
+            "summary": "Aveline reached Leth Sarai, a Serevan port whose old harbour houses had narrow courtyards filled with washing lines, potted herbs, and arguments audible from the street. The address she carried belonged to a glassworker's shop converted into a communal bakery three generations earlier. Its name survived beneath layers of blue limewash. The baker Hadi Sef helped her trace the former occupants through marriage records and kiln-rental accounts. He accompanied her inland during the bakery's annual repair closure, partly out of curiosity and partly because he had wanted to see the hills since childhood. Aveline assumed he could extend his journey whenever necessary. Hadi pointed out that his sisters were already covering his work. They reached Istravel, a terraced town above an inland basin, with three days remaining before Hadi needed to turn home.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -836492400,
+            "precision": "era",
+            "dateLabel": "1,599–1,584 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1609-the-last-copy-and-the-eastern-road",
+      "name": "The Last Copy and the Eastern Road",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Last Copy and the Eastern Road",
+            "summary": "At Sallowmere, Aveline completed a personal copy of the Book of Gentle Arts. She retained practical advice, failed attempts, the limits of enchantments, and Derren's marginal notes. Beside his observation that rain came through a supposedly waterproof hood, she wrote, \"He was right.\" Mira had died long before. Belda, now elderly, arranged the shelves while complaining about Aveline's habit of putting papers wherever a cat was not sitting. Their work had outlived most of its first readers without ever becoming a great academy. At the Seventh Hearth, Aveline left a plain travel cup and took one of Iven's uneven replacements. She then departed east with a caravan carrying dyes, surgical needles, and letters for the farther shore. Her destination was a Serevan town named in a fragmentary address, where someone reportedly knew the origin of Samir's blackglass.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -843325200,
+            "precision": "era",
+            "dateLabel": "1,609–1,600 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1622-the-orchards-long-sleep",
+      "name": "The Orchard's Long Sleep",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Orchard's Long Sleep",
+            "summary": "The Guest Beneath the Boughs appeared less often at Harth. Its speech became slow and its spring shelter unreliable. Keepers worried that the compact had been broken. Boughmeet's records showed that the Guest's periods of wakefulness had shortened before, though never within the memory of the current households. At the autumn meal it asked for a long sleep beneath the oldest root ground. Growers negotiated an end to the expectation of annual frost protection while retaining the unpicked strip and nesting habitat as practices valuable in themselves. A small watch of volunteers maintained the resting place without promising when the Guest would return. The orchards endured through ordinary grafting, careful planting, shared reserves, and occasional hardship. In later generations, people disagreed about whether the sleeper was a spirit, a saint, or a story invented to explain an inconvenient boundary.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -849369600,
+            "precision": "era",
+            "dateLabel": "1,622–1,610 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1635-the-war-of-the-two-bridges",
+      "name": "The War of the Two Bridges",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The War of the Two Bridges",
+            "summary": "Highmead's crown sponsored a new river crossing to reduce reliance on Low Vey's tolls. Rival authorities seized construction materials, detained engineers, and eventually sent armed forces. Fighting spread around the two competing crossings, far downstream from Merecross; neither bridge is the modern Bramblebridge structure. The Redbank Bridge was burned while incomplete. The older King's Span survived after its keeper, Dama Noll, admitted a mixed delegation of townspeople and refused both armies exclusive access to the gatehouse stores. Her position held because neither side could provision a long siege without damaging its own trade. The peace created a shared crossing district and compensated some displaced households. It also abandoned the half-built bridge, leaving its piers to divide the river long after the immediate rivalry faded.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -856202400,
+            "precision": "era",
+            "dateLabel": "1,635–1,623 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1648-the-winter-teeth",
+      "name": "The Winter Teeth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter Teeth",
+            "summary": "Heavy upland snow drove a solitary rime drake toward the Whitewindow road. It killed pack animals, occupied a sheltered quarry, and made a vital winter route unusable. Villagers called it the Winter King, although it possessed neither subjects nor a human conception of kingship. The hunt brought together Whitewindow engineers, the crown's soldiers, drovers, and two practitioners able to oppose its freezing breath. Sivra Coalhand, a dwarven quarry surveyor, designed a trap using abandoned workings. Aveline helped keep a retreat passage clear; the decisive risk fell to workers who had to set the supports within reach of the creature. They killed the drake. Three hunters died, several were permanently injured, and the reopening feast included places for those who would not return. Later paintings gave all the participants excellent armour and omitted the mules.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -863035200,
+            "precision": "era",
+            "dateLabel": "1,648–1,636 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1661-the-thistlewood-bride",
+      "name": "The Thistlewood Bride",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Thistlewood Bride",
+            "summary": "A shepherd named Oren Bell disappeared into Thistlewood after attending a wedding feast beneath flowering branches. He returned eleven years later, believing that three evenings had passed. His betrothed had married someone else, his mother had died, and the disputed pasture he remembered had become a young wood. Oren's account described a fey household celebrating its own marriage, not a human bride carried away. The popular title arose from a ballad that replaced the difficult aftermath with a rescue. Oren spent his remaining years repairing instruments and refusing invitations from strangers after sunset. The entrance appeared only during a rare flowering around an old boundary arch. Villagers dismantled the visible arch, but its buried foundations remained. This was an exceptional crossing into a place where time passed differently, not ordinary behaviour in every Caldris wood.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -869868000,
+            "precision": "era",
+            "dateLabel": "1,661–1,649 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1674-the-broken-counter",
+      "name": "The Broken Counter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Broken Counter",
+            "summary": "Two poor trading seasons and a lost cargo exposed the Lantern League's dependence on a small number of guarantors. A counter at Alderwake failed to honour its promises. Other counters restricted payment, and people who had sold real wool discovered that their carefully sealed papers would not buy bread. The crisis ended the first league in its original form. Some counters paid slowly over years; others disappeared. Teren Iss, an itinerant clerk, recorded claims for households too small to command a hearing. His lists preserved both the scale of the loss and the unequal recovery. A narrower association eventually required visible reserves and limited shared guarantees. It inherited the lamp emblem, creating later confusion over which league had promised what.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -876700800,
+            "precision": "era",
+            "dateLabel": "1,674–1,662 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1687-the-crown-above-the-market",
+      "name": "The Crown Above the Market",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Crown Above the Market",
+            "summary": "As Low Vey's rival branches disputed authority, the upland estates and Highmead's growing councils recognised Marwen of House Aster as sovereign of the Crown of Highmead. The new arrangement joined several existing obligations rather than conquering the whole Chalklands. Marwen promised protection of the road, confirmation of certain commons, and regular audiences for market grievances. In return, the councils funded a standing household guard and helped maintain a hill residence. Smaller villages feared becoming revenue sources for a prosperous town. Her coronation used a locally made circlet of silver and dark iron. The ceremony included the old public weighing stones, borrowing the reputation of Sella's reforms. It did not make the new crown heir to every earlier upland ruler.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -883533600,
+            "precision": "era",
+            "dateLabel": "1,687–1,675 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1699-the-fever-at-the-lower-gate",
+      "name": "The Fever at the Lower Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Fever at the Lower Gate",
+            "summary": "A severe fever struck the crowded lodging streets below Highmead. Traders avoided the lower quarter; residents who could afford to leave carried their fear into neighbouring towns. Ordinary illness, poor living conditions, and delayed care caused the crisis. Contemporary accusations of a foreign curse had no foundation. Leth Arven, a washerwoman who organised food and clean bedding, became one of the quarter's remembered protectors. A few magical healers helped individuals, but their limited numbers could not reach everyone. Civic records later celebrated donated silver more thoroughly than the daily work of carers and gravediggers. The aftermath brought a second water source, less crowded lodging rules, and a burial garden beyond the lower gate. Implementation took years and repeatedly stalled over who should pay.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -890103600,
+            "precision": "era",
+            "dateLabel": "1,699–1,688 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1709-the-first-lantern-league",
+      "name": "The First Lantern League",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Lantern League",
+            "summary": "Highmead's markets, Alderwake, several road houses, and river towns agreed to recognise a limited set of sealed promises of payment. The arrangement reduced the amount of silver carried over the roads, but worked only between participating counters with known guarantors. This Lantern League grew from the older settlement's practices without replacing every local government. Its couriers carried ordinary letters as well as accounts. Some routes became reliable enough for separated households to exchange news several times a year. The league's first public feast served dishes from all its participating towns. Arguments over precedence continued until the cooks began serving before the seating was settled. Aveline attended as a witness to the old hospitality marks and was dismayed to find her portrait on commemorative cups.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -895885200,
+            "precision": "era",
+            "dateLabel": "1,709–1,700 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1722-the-listening-stones-of-cairn-moss",
+      "name": "The Listening Stones of Cairn Moss",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Listening Stones of Cairn Moss",
+            "summary": "Peat cutters found a ring of low stones at Cairn Moss, west of Whitewindow's surface road. At dusk, a person seated within the ring sometimes heard a few words spoken there long before. The sounds repeated imperfectly and could not answer questions. Belda travelled to record them. Among formal phrases in an unfamiliar language she heard a child protesting cold feet and someone laughing with their mouth full. Later patrons wanted royal secrets. Belda's notes gave equal space to the laughter. Excavation revealed several rebuilding phases older than the present chapter. The stones were left in place after lifting one silenced its side of the ring. The local cutters received payment to preserve the site and quickly disagreed over how it should be divided.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -901929600,
+            "precision": "era",
+            "dateLabel": "1,722–1,710 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1735-the-night-harbour",
+      "name": "The Night Harbour",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Night Harbour",
+            "summary": "A winter storm uncovered a sheltered inlet south of Veymouth. Nacre Quay grew there around boat sheds and a natural channel deep enough for the visiting Serevan ships. Its new landing cut unloading time, and trade shifted faster than Veymouth's councils believed possible. Nacre's first harbourmaster, Dovren Sal, accepted merchants excluded from the older port's guilds. That openness brought skills and money, but also operators eager to evade debts and unsafe cargo inspections. Both ports accused the other of ruining honest trade. The rivalry produced competing lights along the coast. A joint night-signal code eventually prevented more wrecks than either port's independent defences against piracy.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -908762400,
+            "precision": "era",
+            "dateLabel": "1,735–1,723 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.1748-the-house-of-unfinished-spells",
+      "name": "The House of Unfinished Spells",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The House of Unfinished Spells",
+            "summary": "Aveline lodged for several years at Sallowmere, a quiet lakeside teaching house. With the human scholar Mira Tern and dwarven copyist Belda Venn, she compared surviving versions of the Book of Gentle Arts. Belda's surname establishes no relation to Sella. They found missing limits, substitutions, errors, and charming nonsense copied as instruction. Mira established a practice of recording failed attempts beside successful ones. Their workshop acquired the affectionate name House of Unfinished Spells because its most useful shelves were labelled \"Perhaps\" and \"Do Not Heat Again.\" Only a handful of residents could work magic. Others prepared materials, translated, tested ordinary alternatives, cooked, or kept records. Their best-known achievement was a reliable treatment for a library mould that required no spell at all.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -915595200,
+            "precision": "era",
+            "dateLabel": "1,748–1,736 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.1735-the-night-harbour",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1748-the-house-of-unfinished-spells",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1674-the-broken-counter",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1687-the-crown-above-the-market",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1699-the-fever-at-the-lower-gate",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1709-the-first-lantern-league",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1722-the-listening-stones-of-cairn-moss",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1609-the-last-copy-and-the-eastern-road",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1622-the-orchards-long-sleep",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1635-the-war-of-the-two-bridges",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1648-the-winter-teeth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1661-the-thistlewood-bride",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1532-the-quiet-fire-at-sallowmere",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1566-the-apricot-marriage",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1583-the-blackglass-garden",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1483-the-river-without-a-king",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1515-the-year-of-the-empty-throne",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

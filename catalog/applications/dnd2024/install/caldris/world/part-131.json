@@ -1,0 +1,864 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.atlas.bramble-country",
+      "name": "Bramble Country",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Bramble Country terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 400
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramble Country terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Bramble Country terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.chalklands",
+      "name": "Chalklands",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Chalklands fantasy atlas map",
+                "caption": "Chalklands",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/chalklands.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Chalklands fantasy atlas map",
+                "caption": "Chalklands",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/chalklands.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The chalk uplands around Highmead and the Button Hills. Sheep tracks descend to the Lantern Road; older storehouses and commons survive beside working farms.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.orchard-march",
+      "name": "Orchard March",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Orchard March fantasy atlas map",
+                "caption": "Orchard March",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/orchard-march.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Orchard March fantasy atlas map",
+                "caption": "Orchard March",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/orchard-march.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The southern orchard country of Harth, Boughmeet and Sallowmere. Grafting nurseries, lake fisheries and old hospitality houses connect by local cart roads.",
+            "visibility": "public",
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.atlas.roven-approaches",
+      "name": "Roven Approaches",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Roven Approaches fantasy atlas map",
+                "caption": "Roven Approaches",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Roven Approaches fantasy atlas map",
+                "caption": "Roven Approaches",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Northern foothills where the Reth road divides between maintained shelters, Juniper Gate and the unfinished giant stair. The lower winter descent does not make the upper stair a through-road.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 480,
+            "y": 150
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.bellafont",
+      "name": "Bellafont",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "The capital terraces down orchard hills toward a palace, cathedral gardens, cloth halls, fountains, and a river lined with laundry platforms. Manners are polished; civic debates are not.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 540,
+            "y": 400
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.blue-apron-fair",
+      "name": "Blue Apron Fair",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Seasonal cloth-and-food market held in roofed lanes; stallholders wear indigo aprons to show neutral trading status. Present pressure: A ceremonial apron has been stolen before treaty negotiations.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 470,
+            "y": 570
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.cresset",
+      "name": "Cresset",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Cresset is a textile and dye city where canals turn fulling mills and entire streets change colour with the day's work.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 740,
+            "y": 600
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.greywife-orchard",
+      "name": "Greywife Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "diseased orchard in Bellafont. Pale-canker centre and disputed pre-Crownmaking water right.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 240,
+            "y": 525
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.mothglass-house",
+      "name": "Mothglass House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Rural workshop producing fine window glass and maintaining mulberry hedges for silk moths. Present pressure: Night moths gather in impossible numbers around one furnace.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 820,
+            "y": 410
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.quince-ladder",
+      "name": "Quince Ladder",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Terraced orchard village reached by a stair-road wide enough for one mule and two strongly held opinions. Present pressure: Fruit trees flower twice and exhaust themselves before harvest.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 680,
+            "y": 200
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.the-honey-parliament",
+      "name": "The Honey Parliament",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "monastery apiary in Bellafont. Beekeepers arbitrate land disputes with alarming success.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 195,
+            "y": 725
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.the-rain-parlour",
+      "name": "The Rain Parlour",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A roadside pavilion where orchard workers wait out storms, exchange songs, and leave jars of preserved fruit. Present pressure: Someone replaces friendly messages with threatening prophecies.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 320,
+            "y": 300
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bellafont.vintners-reach",
+      "name": "Vintner's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Vintner's Reach controls southern wine roads, barrel making, river barges, and hillside reservoirs. Its guild feasts are legendary and its hangovers legally irrelevant.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 370,
+            "y": 790
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.bellafont.bellafont",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.bellafont",
+      "toEntityId": "location.caldris.bellafont.quince-ladder",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.bellafont",
+      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.cresset",
+      "toEntityId": "location.caldris.bellafont.mothglass-house",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.greywife-orchard",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.merecross",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.02154ba4f25dc7594732",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0abab72b10a3502d19ae",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3c4efd0eda8264a1d6ea",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4bf48ef01212f9f8dd96",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.7703462447672ade3087",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8c3484c525b7d76922bd",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a1ce7b5268c32fc75181",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.ec78e018c1fd0d7a3633",
+      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fff27e61d091e9e4f311",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.79fc2665ec3751e76c49",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.02154ba4f25dc7594732",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.02154ba4f25dc7594732",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0c5a42268d9df9d0844e",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0c5a42268d9df9d0844e",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4bf48ef01212f9f8dd96",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4bf48ef01212f9f8dd96",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.685860a4cd9326a34556",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.685860a4cd9326a34556",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7703462447672ade3087",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7703462447672ade3087",
+      "toEntityId": "location.caldris.bellafont.quince-ladder",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8c3484c525b7d76922bd",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8c3484c525b7d76922bd",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9eec41455d1b4a035f6a",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9eec41455d1b4a035f6a",
+      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cf7ca54baced2cc7c0e9",
+      "toEntityId": "location.caldris.bellafont.quince-ladder",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cf7ca54baced2cc7c0e9",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
+      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f74be90c144d1ef62c75",
+      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f74be90c144d1ef62c75",
+      "toEntityId": "location.caldris.bellafont.bellafont",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0abab72b10a3502d19ae",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0abab72b10a3502d19ae",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3c4efd0eda8264a1d6ea",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3c4efd0eda8264a1d6ea",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a1ce7b5268c32fc75181",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a1ce7b5268c32fc75181",
+      "toEntityId": "location.caldris.bellafont.mothglass-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.af4820ac9951a6375da2",
+      "toEntityId": "location.caldris.bellafont.mothglass-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.af4820ac9951a6375da2",
+      "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
+      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
+      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "location.caldris.atlas.orchard-march",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "location.caldris.atlas.orchard-march",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "location.caldris.atlas.orchard-march",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
+      "toEntityId": "location.caldris.atlas.chalklands",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
+      "toEntityId": "location.caldris.atlas.chalklands",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
+      "toEntityId": "location.caldris.atlas.chalklands",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.atlas.roven-approaches",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.atlas.roven-approaches",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.atlas.roven-approaches",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { isVisualMedia, validTacticalBoard } from "../state.js";
+import { entityMediaContentUrl } from "./media-content-url.js";
 
 const RECORDED_KINDS = new Set(["out-of-character", "conversation", "combat", "exploration",
   "investigation", "travel", "rest", "downtime", "other"]);
@@ -31,7 +32,7 @@ function availability(source) {
 function media(value, partial, field) {
   const candidate = object(value);
   if (candidate && ["imageUrl", "alt", "width", "height"].every((key) => Object.hasOwn(candidate, key)) &&
-      isVisualMedia(candidate) && candidate.imageUrl.startsWith("/api/applications/") && candidate.imageUrl.endsWith("/content")) {
+      isVisualMedia(candidate) && entityMediaContentUrl(candidate.imageUrl)) {
     return { imageUrl: candidate.imageUrl, alt: candidate.alt, width: candidate.width, height: candidate.height };
   }
   if (value !== undefined) partial.withhold(field);

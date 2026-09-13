@@ -6,6 +6,7 @@ import React, { act, type ReactNode } from "react";
 
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { ScopedMapWorkspace } from "../../src/components/ScopedMapWorkspace";
+import { MapAtlasSearch } from "../../src/components/MapAtlasSearch";
 import { LocationBrowser } from "../../src/components/LocationBrowser";
 import { hubRouteHash } from "../../src/data/hub-route";
 import type {
@@ -161,6 +162,82 @@ function locationUpdate(source: ReadyHubEnvelope, locations: WorldLocation[], sc
     campaign: { mapOverlays: source.campaign.mapOverlays },
   };
 }
+
+test("Map distinguishes reviewed markers from unplaced children and keeps their details reachable", async () => {
+  const initial = initialEnvelope();
+  const atlas = initial.world.locations[0]!;
+  const eredane = { ...location(atlas, "region.eredane", "Eredane", "Caldris", "region"), parentId: atlas.id };
+  const lantern = { ...location(atlas, "region.lantern", "Lantern Sea", "Caldris", "region"), parentId: atlas.id, mapAnchor: null };
+  const solasca = { ...location(atlas, "region.solasca", "Solasca", "Caldris", "region"), parentId: atlas.id, mapAnchor: null };
+  const deeper = { ...location(atlas, "site.keep", "Deeper Keep", "Eredane", "site"), parentId: eredane.id };
+  const map: MapDocument = { ...initial.world.maps[0]!, id: "map.atlas", parentMapId: null,
+    subject: { kind: "region", id: atlas.id, name: atlas.name }, baseState: "ready",
+    base: { imageUrl: "/reviewed-atlas.png", alt: "Reviewed atlas" },
+    layers: [{ id: "places", label: "Places", kind: "markers", order: 1 },
+      { id: "base", label: "Base", kind: "base", order: 0 }],
+    features: [{ id: "feature.eredane", kind: "point", layerId: "places", coordinateSpaceId: initial.world.maps[0]!.coordinateSpace.id,
+      geometry: { x: 25, y: 50 }, locationId: eredane.id, name: eredane.name, detail: eredane.summary }],
+    scopeLinks: [{ id: "scope.lantern", childMapId: "map.lantern", childScope: "region", childName: lantern.name, viaFeatureId: null }],
+  };
+  const lanternMap: MapDocument = { ...map, id: "map.lantern", parentMapId: map.id,
+    subject: { kind: "region", id: lantern.id, name: lantern.name }, features: [], scopeLinks: [] };
+  const opened: string[] = [];
+  const mounted = await mount("", <ScopedMapWorkspace
+    world={{ ...initial.world, maps: [map, lanternMap], locations: [atlas, eredane, lantern, solasca, deeper],
+      locationScopes: [scope(atlas.id, atlas.name, initial.world.id, [eredane.id, lantern.id, solasca.id])] }}
+    activeMapId={map.id} selectedFeatureId="" currentLocationId="" campaignTitle="Test" overlays={[]}
+    scopeState="ready" scopeError="" onMapChange={(id) => opened.push(id)} onNavigateToFeature={() => {}}
+    onFeatureSelect={() => {}} onOpenLocation={(id) => opened.push(id)} onRetryScope={() => {}} />);
+  try {
+    assert.match(mounted.container.querySelector(".world-map-heading")!.textContent!, /1 of 1 map marker shown · 2 known places without map positions/);
+    assert.deepEqual([...mounted.container.querySelectorAll(".world-map-marker")].map((entry) => entry.getAttribute("data-feature-id")), ["feature.eredane"]);
+    const closer = mounted.container.querySelector('[aria-label="Closer areas"]')!;
+    assert.match(closer.textContent!, /Lantern Sea/);
+    await click(byLabel(closer, "View details for Solasca"));
+    assert.equal(opened.at(-1), solasca.id);
+    await click([...mounted.container.querySelectorAll<HTMLButtonElement>(".map-view-mode button")].find((entry) => entry.textContent?.includes("List"))!);
+    const list = mounted.container.querySelector(".map-feature-list")!;
+    assert.match(list.textContent!, /Eredane/);
+    assert.match(list.textContent!, /Lantern Sea/);
+    assert.match(list.textContent!, /Solasca/);
+    assert.doesNotMatch(list.textContent!, /Deeper Keep/);
+    await click(byLabel(list, "View details for Lantern Sea"));
+    assert.equal(opened.at(-1), lantern.id);
+    await click([...mounted.container.querySelectorAll<HTMLButtonElement>(".map-layer-controls button")].find((entry) => entry.textContent?.startsWith("Places"))!);
+    assert.match(mounted.container.querySelector(".world-map-heading")!.textContent!, /0 of 1 map marker shown · 2 known places/);
+    assert.match(list.textContent!, /Lantern Sea/);
+    assert.match(list.textContent!, /Solasca/);
+    assert.doesNotMatch(list.textContent!, /Eredane/);
+    assert.deepEqual(map.features[0]!.geometry, { x: 25, y: 50 });
+  } finally { await mounted.cleanup(); }
+});
+
+test("map search includes loaded unplaced locations and states its loaded coverage", async () => {
+  const initial = initialEnvelope();
+  const place = { ...location(initial.world.locations[0]!, "location.bramblebridge", "Bramblebridge", "Eredane", "settlement"), mapAnchor: null };
+  const opened: string[] = [];
+  const mounted = await mount("", <MapAtlasSearch world={{ ...initial.world, locations: [place], maps: [] }}
+    activeMapId="" onNavigate={() => assert.fail("Unplaced places must not invent a map target")}
+    onOpenLocation={(id) => opened.push(id)} />);
+  try {
+    assert.match(mounted.container.textContent!, /Search loaded places/);
+    assert.match(mounted.container.textContent!, /maps and locations opened so far/);
+    assert.doesNotMatch(mounted.container.textContent!, /every known map/);
+    const input = mounted.container.querySelector<HTMLInputElement>('input[type="search"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(input, "Bramblebridge");
+      input.dispatchEvent(new window.Event("input", { bubbles: true }));
+      await tick();
+    });
+    const result = mounted.container.querySelector<HTMLButtonElement>('[role="listitem"]');
+    assert.ok(result);
+    assert.match(result.textContent!, /Bramblebridge/);
+    assert.match(result.textContent!, /location details/);
+    await click(result);
+    assert.deepEqual(opened, [place.id]);
+    assert.equal(input.value, "");
+  } finally { await mounted.cleanup(); }
+});
 
 test("Map waits for its declared atlas scope, renders exact markers, and returns from a child map", async () => {
   const initial = initialEnvelope();
@@ -370,6 +447,46 @@ test("Locations reaches atlas, both regions, and a deeper no-media place with pa
       .find((button) => button.textContent?.includes("Parent location"))!);
     assert.match(mounted.container.textContent!, /Solasca/);
     assert.match(window.location.hash, /scope=atlas\.renamed/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a People location link walks unopened parents before reading Bramblebridge and its 15 children", async () => {
+  const initial = initialEnvelope();
+  const atlas = initial.world.locations[0]!;
+  atlas.parentId = initial.world.id;
+  const eredane = { ...location(atlas, "region.eredane", "Eredane", "Caldris", "region"), parentId: atlas.id };
+  const country = { ...location(atlas, "region.bramble-country", "Bramble Country", "Eredane", "region"), parentId: eredane.id };
+  const town = { ...location(atlas, "location.bramblebridge", "Bramblebridge", "Bramble Country", "settlement"), parentId: country.id };
+  const children = Array.from({ length: 15 }, (_, index) => ({
+    ...location(atlas, `site.bramblebridge.${index}`, `Bramblebridge Place ${index}`, "Bramblebridge", "site"), parentId: town.id,
+  }));
+  initial.world = { ...initial.world, locations: [atlas, eredane, country, town],
+    people: [{ id: "person.tibb", name: "Tibb", initials: "T", role: "Constable", kind: "NPC",
+      disposition: "Helpful", summary: "Keeps the watch.", background: "A local constable.",
+      location: { id: town.id, name: town.name, region: town.region } }],
+  };
+  const expected = [atlas, eredane, country, town];
+  const calls: string[] = [];
+  const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "people" }),
+    <DndInformationHub initialEnvelope={initial} loadWorldScope={async (source, scopeId) => {
+      assert.equal(scopeId, expected[calls.length]?.id, "each parent must admit its child before that child is read");
+      const owner = expected[calls.length]!;
+      calls.push(scopeId);
+      const direct = scopeId === town.id ? children : [expected[calls.length]!];
+      return locationUpdate(source, [...source.world.locations.filter((entry) => !direct.some((child) => child.id === entry.id)), ...direct],
+        [...source.world.locationScopes.filter((entry) => entry.id !== scopeId),
+          scope(scopeId, owner.name, owner.parentId ?? null, direct.map((entry) => entry.id))]);
+    }} />);
+  try {
+    const locationLink = mounted.container.querySelector<HTMLButtonElement>(".world-person-detail .directory-link-button");
+    assert.ok(locationLink);
+    await click(locationLink);
+    await act(async () => { for (let index = 0; index < 6; index++) await tick(); });
+    assert.deepEqual(calls, expected.map((entry) => entry.id));
+    assert.equal(mounted.container.querySelector(".location-browser__error"), null);
+    assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /Bramblebridge15 of 15/);
+    assert.match(mounted.container.textContent!, /Bramblebridge Place 14/);
+    for (const entry of expected) assert.ok(window.location.hash.includes(encodeURIComponent(entry.id)));
   } finally { await mounted.cleanup(); }
 });
 

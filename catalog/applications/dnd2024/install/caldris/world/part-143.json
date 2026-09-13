@@ -1,0 +1,82 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.veyr-marches.redgate",
+      "name": "Redgate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Redgate surrounds the rust-red stone arch where nine march roads meet. The High Warden's moot, escort market, banner court, and sprawling inns make it a capital only when everyone agrees.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 480,
+            "y": 450
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.greyharrow",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.moorwatch",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.5bcbba549022350e4489",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.385e776073a462ce21a3",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5bcbba549022350e4489",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9dac03f01d99b5f49150",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e02ba92e84bc2047ac0e",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    }
+  ]
+}

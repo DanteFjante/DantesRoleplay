@@ -1,0 +1,628 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.carrowmere.brinewifes-steps",
+      "name": "Brinewife's Steps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Salt terraces descending to tidal pans, worked by extended households in mirrored light. Present pressure: An unusual tide spoils the season's first harvest.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 425,
+            "y": 560
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.gannet-mercy",
+      "name": "Gannet Mercy",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Cliff hospice and signal station caring for wreck survivors regardless of flag. Present pressure: A rescued stranger refuses to identify a ship no lookout saw sink.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 160,
+            "y": 490
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.gullstrand",
+      "name": "Gullstrand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Gullstrand fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/gullstrand.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Gullstrand fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/gullstrand.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Gullstrand's vast yards build and repair deep-water ships. The city smells of oak, tar, hot metal, salt, and communal kitchens run by craft fraternities.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 180,
+            "y": 760
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.mackerel-crown",
+      "name": "Mackerel Crown",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A crowded fishing island whose houses wear blue roof tiles salvaged from wrecks. Present pressure: Two elected harbour speakers both possess apparently valid seals.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 630,
+            "y": 650
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.penross",
+      "name": "Penross",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Penross clings to western cliffs around a natural harbour and a renowned school of navigation, weather, law, and rescue medicine.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 165,
+            "y": 335
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.saltmere",
+      "name": "Saltmere",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Saltmere stands on tidal islands joined by stone causeways and movable timber bridges. Royal offices share space with fish markets, salt warehouses, rescue houses, and legal chambers specialising in things that floated away.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 165,
+            "y": 630
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.the-dry-admiral",
+      "name": "The Dry Admiral",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Inland ship-timber yard and tavern where retired captains command imaginary fleets over bowls of stew. Present pressure: Carefully seasoned masts disappear without wagon tracks.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 570,
+            "y": 360
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.carrowmere.the-walking-dunes",
+      "name": "The Walking Dunes",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "coastal sands in Carrowmere. Buried road stones migrate into view after gales.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 150,
+            "y": 770
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "toEntityId": "location.caldris.carrowmere.penross",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gullstrand",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "toEntityId": "location.caldris.carrowmere.the-dry-admiral",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.saltmere",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.vintners-reach",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.penross",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.473a127fa0b8481ec755",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4da6efce893e792cd329",
+      "toEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.545b8c403216267345f5",
+      "toEntityId": "location.caldris.carrowmere.penross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fe87bb8bf837cf3661d2",
+      "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1585c82c72d447d66083",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.33f4fd986c20d54ee636",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c44744838abbe0b56675",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e7105bb922b88793493e",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0c49c617083a922067fe",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f862a36d8bf4eafad551",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a8f014b7f398d50b37b0",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b8fd89d585603724f46b",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.88c20ebf9120ad209324",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.07c06351bc8171ff826e",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.07c06351bc8171ff826e",
+      "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.473a127fa0b8481ec755",
+      "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.473a127fa0b8481ec755",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4da6efce893e792cd329",
+      "toEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4da6efce893e792cd329",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.545b8c403216267345f5",
+      "toEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.545b8c403216267345f5",
+      "toEntityId": "location.caldris.carrowmere.penross",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8ba6338887b8fdcca2b1",
+      "toEntityId": "location.caldris.carrowmere.penross",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8ba6338887b8fdcca2b1",
+      "toEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e0d7bcf40571ec143e1a",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e0d7bcf40571ec143e1a",
+      "toEntityId": "location.caldris.carrowmere.gannet-mercy",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.13dc23bd8d187db35055",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.13dc23bd8d187db35055",
+      "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1585c82c72d447d66083",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1585c82c72d447d66083",
+      "toEntityId": "location.caldris.carrowmere.the-dry-admiral",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.27e50929c84891846a76",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.27e50929c84891846a76",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.30477244bdf4d04ff64c",
+      "toEntityId": "location.caldris.carrowmere.the-dry-admiral",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.30477244bdf4d04ff64c",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.33f4fd986c20d54ee636",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.33f4fd986c20d54ee636",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c0211b39750cdaea655b",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c44744838abbe0b56675",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c44744838abbe0b56675",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e7105bb922b88793493e",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f084e93a5a7ce300ddb2",
+      "toEntityId": "location.caldris.carrowmere.mackerel-crown",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f084e93a5a7ce300ddb2",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fe87bb8bf837cf3661d2",
+      "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fe87bb8bf837cf3661d2",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.1ea62b52ca",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.4f18aae983",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.carrowmere.saltmere",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3ca6027dd49a55591f8d",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.41506da5b3e4c1e42039",
+      "toEntityId": "location.caldris.carrowmere.gullstrand",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    }
+  ]
+}

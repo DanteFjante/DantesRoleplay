@@ -1,0 +1,588 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "chronology.caldris.lore.0311-the-convoy-that-waited-for-rain",
+      "name": "The Convoy That Waited for Rain",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Convoy That Waited for Rain",
+            "summary": "A convoy leaving the Serevan coast faced pressure to sail before an approaching seasonal change. A recently repaired harbour charm promised clear guidance between submerged shoals, and investors treated that promise as a substitute for local pilots. Pilot Sera Noll refused the departure, arguing that the charm's reference marks had shifted with the rebuilt quay. The captains delayed while crews compared soundings and inspected the old marks at low water. Rain then revealed a runoff channel that the new plans had mistaken for stable ground. The convoy departed later by a safer approach, missing a profitable fair but avoiding the route that would have endangered its deepest vessels. The dispute established a regional practice of paying pilots for refused departures when their reasons survived review. Its opponents called it wages for staying ashore. Sailors called it the right to come home late.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -160570800,
+            "precision": "era",
+            "dateLabel": "311–300 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0319-nivren-learns-the-new-road",
+      "name": "Nivren Learns the New Road",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Nivren Learns the New Road",
+            "summary": "Nivren Sael returned to the Copper Kettle and found a hearth mosaic where he remembered a blue cup. The orchard approach had shifted after changes to a stream. He became lost following a path that was now a boundary hedge and was guided back by apprentice carrier Pella Morn, who assumed he was simply unfamiliar with the district. Nivren bought a current route book. He spent part of the winter teaching Pella the boot-drying charm, then travelled with her to a neighbouring market as her paying passenger. His older memories proved useful at one abandoned crossing and misleading at another. Their later correspondence survives in fragments. Pella described journeys with people Nivren never met. He replied to what she actually wrote rather than repeatedly telling her how the roads had been when he was young.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -165826800,
+            "precision": "era",
+            "dateLabel": "319–312 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0327-the-winter-of-false-harbour-seals",
+      "name": "The Winter of False Harbour Seals",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Winter of False Harbour Seals",
+            "summary": "Merchants in several Lantern Sea ports presented payment orders bearing convincing Brinefold exchange seals. Some were legitimate promises copied onto the wrong forms; others concerned ships that had never sailed. Refusals spread until honest carriers struggled to obtain supplies. Ship's accountant Daro Venn traced the fraud through repeated cargo descriptions and a seal-maker's purchase of an unusual wax mixture. Port clerks agreed to exchange dated counterfoils by trusted carriers. The procedure slowed transactions but restored confidence without requiring every merchant to carry a chest of silver. Arrests did not recover all the money. Several villages had already supplied goods in good faith, and the final settlement distributed losses among creditors, suppliers, and a limited guarantee fund.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -170031600,
+            "precision": "era",
+            "dateLabel": "327–320 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0335-orven-s-last-public-performance",
+      "name": "Orven's Last Public Performance",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Orven's Last Public Performance",
+            "summary": "At Three-Reed Bridge, the elderly dwarven arranger Orven Dast played one of his own transitions incorrectly and stopped the ensemble with an irritated laugh. He had begun losing dexterity and could no longer manage passages he had written decades earlier. A younger musician suggested replacing the concert with speeches honouring him. Orven chose to arrange simpler parts and teach them. The fair heard a new version suited to the people actually playing that year. He retired from public performance afterward, remaining involved in instrument repairs and arguments about tempo. His death belongs to later history, rather than being implied by his departure from the stage. One teaching copy contains the instruction: leave enough silence for the other player to breathe. It became a saying among bridge musicians who seldom knew its first context.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -174236400,
+            "precision": "era",
+            "dateLabel": "335–328 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0343-the-pension-chest-with-two-locks",
+      "name": "The Pension Chest with Two Locks",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Pension Chest with Two Locks",
+            "summary": "After a period of intermittent escort fighting, Highmead's regional court promised payments to wounded guards and households that had lost wage earners. Clerk Eren Vask found that household allowances and court patronage were being paid from the same poorly distinguished fund. Representatives of claimants negotiated a chest requiring two custodians and a public payment day. The reform made it harder to divert money quietly but did not create enough revenue to meet every promise. Widows serving as household heads received payments more readily than unmarried dependants, and several families petitioned for recognition over successive years. The chest's two locks became a familiar emblem of shared custody. Later authorities copied the arrangement, sometimes without copying the requirement that claimants could inspect the accounts.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -178441200,
+            "precision": "era",
+            "dateLabel": "343–336 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0351-the-first-rain-at-rainbell-orchard",
+      "name": "The First Rain at Rainbell Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The First Rain at Rainbell Orchard",
+            "summary": "At Boughmeet, grafts taken from an old pear tree produced fruit with a curious property: the dried seed cases rang faintly when struck by the first drops of rain. Most cuttings lost the effect. Nursery keeper Mara Elven, a human despite her surname, preserved it in a sheltered plot later called Rainbell Orchard. The orchard attracted musicians, growers, and visitors who expected predictions of storms. Mara demonstrated that the cases sounded only after water touched them. Their tones varied, and an entire dry harvest could fail to ring. A local maker nevertheless built a modest rain instrument, played under an open gutter during festivals. The nursery sold ordinary fruit and propagation stock alongside its unreliable wonder. Its accounts show that practical pear varieties paid for keeping the enchanted line alive.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -182646000,
+            "precision": "era",
+            "dateLabel": "351–344 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0359-the-name-beside-the-second-hand",
+      "name": "The Name Beside the Second Hand",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Name Beside the Second Hand",
+            "summary": "Records brought from an Istravel workshop identified Nen Tal as the second assistant mentioned in Leris Amat's reply to Aveline. Nen prepared abrasive mixtures and helped develop a repeatable finishing method. A later household account showed that part of the disputed payment eventually arrived, years after Nen had left that employment. Archivist Kessa Amat published the matched records alongside examples of Nen's later pottery work. A craftspeople's teaching house in Istravel adopted the name the House of Two Hands, commissioning a sign that showed a maker and an assistant working together. Its founders endowed paid teaching places, hoping recognition would become useful to living workers. The discovery completed the central chain of names surrounding Aveline's apology. Arguments continued over how exhibitions should describe the work and whether every later copy needed a lengthy account of the dispute.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -186850800,
+            "precision": "era",
+            "dateLabel": "359–352 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0367-the-war-of-the-shorter-road",
+      "name": "The War of the Shorter Road",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The War of the Shorter Road",
+            "summary": "A newly improved branch diverted traffic from a toll crossing between the Chalklands and the Vey Lowlands. The crossing's lord claimed that an earlier grant entitled his household to payments from all traffic in the district. Carriers argued that the grant applied to the maintained crossing alone. Escorts seized carts, toll guards dismantled part of the branch, and retaliatory raids burned fodder stores. Later chronicles called the conflict a war, although its main weapons were detention, hunger, threats, and the destruction of small livelihoods. Mediator Orra Senn secured a settlement that reduced the old toll and assigned maintenance duties to both routes. The shorter road remained open, but a drainage ditch cut during its construction damaged downstream grazing. Compensation for that harm continued after the political dispute was supposedly settled.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -191055600,
+            "precision": "era",
+            "dateLabel": "367–360 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0375-the-kitchens-of-saffron-court",
+      "name": "The Kitchens of Saffron Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Kitchens of Saffron Court",
+            "summary": "At Namar Vale, an association of established traders tried to exclude travelling cooks from the principal market. The cooks depended on caravan arrivals and could not afford permanent stalls. Cook Hadi Nemm and lodging keeper Vessa Tal rented a disused dye yard and opened Saffron Court, with shared ovens and stalls paid for by the day. Its name promised luxury; most meals used onions, pulses, coarse grain, and inexpensive local herbs. Cooks introduced travellers to unfamiliar dishes and learned what would keep during a journey. Translators found work explaining both prices and ingredients. The court became a useful place to hire guides or compare news carried by caravans. Within a generation, successful stallholders tried to restrict newcomers themselves. A revised lease reserved several daily places, enforced through later renewals rather than through the founders' reputation alone.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -195260400,
+            "precision": "era",
+            "dateLabel": "375–368 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0383-the-stair-the-giant-would-not-finish",
+      "name": "The Stair the Giant Would Not Finish",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Stair the Giant Would Not Finish",
+            "summary": "Carriers exploring a Veyr upland route encountered Aurr, a solitary stone giant, repairing part of an ancient stair above a ravine. Aurr accepted food, iron tools, and assistance moving smaller stones. Road surveyor Dema Pell proposed completing the passage for pack trains, which could avoid a longer route closed by winter slips. Aurr stopped work where the proposed stair crossed a sheltered shelf. Attempts to buy permission failed. Eventually Dema understood that the shelf held the graves of two members of Aurr's household. The survey was redrawn, but the alternative required a costly timber gallery. The sponsors withdrew before it was completed. Local people continued using the lower steps. The Unfinished Stair became a warning in merchants' stories about stubborn giants; several valley families remembered the surveyor who had refused to force a road through a burial place.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -199465200,
+            "precision": "era",
+            "dateLabel": "383–376 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0391-the-night-of-the-unlocked-doors",
+      "name": "The Night of the Unlocked Doors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Night of the Unlocked Doors",
+            "summary": "A sealed vessel from the glass-moth summer appeared in a Leth Sarai collection. Its owner mistook an old warning for a maker's boast and commissioned the glaze to be opened for examination. Moths escaped into a district containing several workshops protected by the mineral-based bindings they preferred. Doors opened, a lifting charm failed, and falling glass injured workers. Potter Seli Varr and ward repairer Taman Rel adapted the earlier containment method. They gathered the swarm around disposable bindings and fired the vessels in a kiln whose ordinary brickwork required no enchantment. Neighbours carried water, braced damaged structures, and guarded shops while their magical locks were useless. The surviving kiln became Mothwatch Kiln, supported partly by fees for examining inherited enchanted objects. The collection's proprietor paid compensation after a public hearing, then sold most of the remaining collection.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -203670000,
+            "precision": "era",
+            "dateLabel": "391–384 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0399-the-dry-exchange-of-brinefold",
+      "name": "The Dry Exchange of Brinefold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Dry Exchange of Brinefold",
+            "summary": "Brinefold's subscription chest began accepting certain claims as security for supplies. Warehouse keeper Nera Oss established the Dry Exchange, a covered hall where clerks compared voyage declarations, boat shares, and payment promises. Buyers could obtain salt or timber before their own cargo arrived, provided someone would accept the risk. Two vessels then returned late together. The exchange suspended several payments, and a boat owner discovered that the same expected cargo had supported advances from three lenders. Negotiations kept the storehouses operating, but some creditors accepted grain and repair work instead of silver. Smaller claimants sold their rights cheaply to households able to wait. The settlement introduced a public register of pledged cargo. Market songs mocked the hall as the place where a fish could be sold three times before it was caught.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -207874800,
+            "precision": "era",
+            "dateLabel": "399–392 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0411-the-second-bell-of-brinefold",
+      "name": "The Second Bell of Brinefold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Second Bell of Brinefold",
+            "summary": "Brinefold's rebuilt harbour developed a subscription chest to support damaged boats and bereaved households. Salt factor Yara Senn supplied starting capital; crews supplied regular shares and appointed readers to examine payouts. The first bell announced departures. A second bell called a hearing when losses exceeded what the chest could cover. The arrangement survived an early failure by reducing payments, postponing some claims, and recording debts openly. Unregistered shore workers initially received nothing. Their protests won a separate contribution and benefit scheme, smaller than the crews' but capable of expansion. By four hundred years ago, merchants carried copies of Brinefold's terms to other ports. Some copied its safeguards; others copied only its fees. The Second Bell became a hopeful emblem whose sound meant that a community had difficult accounts to hear together.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -213130800,
+            "precision": "era",
+            "dateLabel": "411–400 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0419-the-letter-delivered-after-the-funeral",
+      "name": "The Letter Delivered After the Funeral",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Letter Delivered After the Funeral",
+            "summary": "The carrier Jori Pell brought an elderly gardener's invitation from Istravel to a former apprentice at Windowmere. Storm delays and illness lengthened the journey. The apprentice had died eleven days before Jori arrived. The apprentice's widower asked Jori to stay for the first harvest from a tree the two gardeners had once disputed how to graft. He sent back fruit preserves, a practical account of the successful method, and a letter of his own. Jori carried that reply on a paid return journey; kindness did not make boats or meals free. Later retellings invented a race against death and a miraculous final meeting. The surviving exchange describes a missed chance, grief, gratitude, and someone choosing to write back even though the intended conversation could no longer happen.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -218386800,
+            "precision": "era",
+            "dateLabel": "419–412 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0427-the-agreement-on-the-violet-steps",
+      "name": "The Agreement on the Violet Steps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Agreement on the Violet Steps",
+            "summary": "Changes to the Penn's Reach channels prompted fishers and sluice keepers to consult old records of the Siltwife. Several cautious observers again saw a pale creature at a stone landing stained purple by mineral seepage. Water keeper Adra Uld tested small changes to obstructions while recording the creature's responses. The resulting Violet Steps Agreement bound the human households to keep one passage clear, limit certain traps, and share maintenance. The creature accepted space and occasionally cleared silt, but never signed, spoke an oath, or appeared at a hearing. Adra insisted that the agreement describe human promises without pretending to own another being's future behaviour. For several decades the landing became a place to settle practical water disputes. Children left smooth stones there. Keepers removed elaborate offerings when they obstructed the channel.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -222591600,
+            "precision": "era",
+            "dateLabel": "427–420 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0435-the-summer-the-wards-went-thin",
+      "name": "The Summer the Wards Went Thin",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Summer the Wards Went Thin",
+            "summary": "Unusually warm weather coincided with failures in old enchantments along the Veyr approaches. A shelter's weather charm faded; a locked storehouse opened at night; a preserved wooden sluice began to soften. Tiny translucent moths gathered near the affected structures, visible most clearly against lamplight. Ward keeper Pell Arven and travelling mage Sorrel Dain identified a swarm feeding on certain slowly decaying enchantments. At Crowstep they lured much of it into a sacrificial charm fixed to a clay vessel, then vitrified the vessel in a potter's kiln. Workers meanwhile braced the failing buildings by ordinary means. The glass-moth summer changed how local keepers documented inherited magic. They recorded mundane alternatives alongside renewal instructions. Sorrel lost a treasured self-mending cloak while drawing moths away from a refuge full of travellers.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -226796400,
+            "precision": "era",
+            "dateLabel": "435–428 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0443-the-succession-of-black-ribbons",
+      "name": "The Succession of Black Ribbons",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Succession of Black Ribbons",
+            "summary": "Queen Elsent Merrow's death exposed incompatible promises about road revenues. One claimant had pledged reductions to carriers; another offered to preserve income owed to shelters and bridge trusts. Town delegates tied black ribbons to their account chests and refused new advances until an interim settlement existed. After months of pressure, Maera Merrow, a collateral heir, accepted a negotiated crown with a published separation between household spending and specified road funds. A rival retained estates and a place at court. Several outlying communities received no delegate and did not regard the bargain as their consent. There were arrests, a warehouse fire, and one fatal confrontation at a toll gate. Later chronicles described a bloodless succession because no field army fought a battle. The gatekeeper's family kept a different account.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -231001200,
+            "precision": "era",
+            "dateLabel": "443–436 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger",
+      "name": "The Reply Kept in the Wrong Ledger",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Reply Kept in the Wrong Ledger",
+            "summary": "At the Quiet Archive in Leth Sarai, copyist Samin Rel compared an employee list with glass preparation notes previously indexed by Mara Sef. A folded reply, kept among accounts for polishing sand, supplied the missing corroboration: Leris Amat had received Aveline's apology. The reply acknowledged the apology and described the practical harm caused when Leris's work went uncredited. It contained no assurance that the matter was entirely forgiven. Samin published a careful transcription with the relevant dates and workshop roles, resolving the addressee's identity while leaving some damaged phrases uncertain. Aveline's admirers did not agree on what to do with the discovery. Some amended display labels. Others preferred a sentimental paraphrase. The archive kept both the transcription and the original folds visible in its catalogue.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -235206000,
+            "precision": "era",
+            "dateLabel": "451–444 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0459-the-bridge-of-three-versions",
+      "name": "The Bridge of Three Versions",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Bridge of Three Versions",
+            "summary": "A new timber crossing near Willowrace connected workshops to grazing and reed beds previously reached by a seasonal ford. Three work parties raised funds with different versions of a tune associated with Ysra. At the opening, their musicians discovered that the verses no longer fitted together. The dwarven instrument maker Orven Dast, then aged 163, arranged an alternating performance. He retained each version and wrote transitions instead of declaring a single authentic melody. The crossing became Three-Reed Bridge, after three reed pipes played at the dedication. Its maintenance chest received a share of the annual music fair's takings. Later singers called the arrangement Ysra's last composition, although she had been dead for more than a century when the bridge opened. Orven's surviving score identifies his own work clearly.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -239410800,
+            "precision": "era",
+            "dateLabel": "459–452 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.lore.0467-the-breach-at-brinefold",
+      "name": "The Breach at Brinefold",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Breach at Brinefold",
+            "summary": "Brinefold, a salt-working harbour in the Vey Lowlands, expanded across an old tidal channel. During a severe storm, seawater entered behind the new embankment and trapped households between the quay and the inland road. Pilot Oda Fen guided shallow boats through lanes normally used by carts. Witnesses reported a vast, pale-backed animal lying across the harbour mouth while the boats escaped. It broke part of the outer quay and withdrew before morning. Brinefold rebuilt farther inland, abandoning the lowest streets. Salt production resumed at a smaller scale, and families argued for decades over who should bear the loss of leased pans beneath the water. Oda refused a statue until the rescue crews were named. The eventual monument lists boat owners, rowers, rope handlers, and three people identified only by their work.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -243615600,
+            "precision": "era",
+            "dateLabel": "467–460 years ago",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.lore.0451-the-reply-kept-in-the-wrong-ledger",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0459-the-bridge-of-three-versions",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0467-the-breach-at-brinefold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0411-the-second-bell-of-brinefold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0419-the-letter-delivered-after-the-funeral",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0427-the-agreement-on-the-violet-steps",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0435-the-summer-the-wards-went-thin",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0443-the-succession-of-black-ribbons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0391-the-night-of-the-unlocked-doors",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0399-the-dry-exchange-of-brinefold",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0351-the-first-rain-at-rainbell-orchard",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0359-the-name-beside-the-second-hand",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0367-the-war-of-the-shorter-road",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0375-the-kitchens-of-saffron-court",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0383-the-stair-the-giant-would-not-finish",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0311-the-convoy-that-waited-for-rain",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0319-nivren-learns-the-new-road",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0327-the-winter-of-false-harbour-seals",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0335-orven-s-last-public-performance",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0343-the-pension-chest-with-two-locks",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    }
+  ]
+}

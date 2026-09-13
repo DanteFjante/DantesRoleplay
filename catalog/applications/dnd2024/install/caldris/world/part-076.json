@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "route.caldris.landmark.d343c660f076af484452",
+      "name": "Amberstile to Crownroot Cathedral",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Amberstile to Crownroot Cathedral. A signed graft-carriers' lane reaches the root court. Crownroot is a destination, with no registered onward road through the tree or its orchard boundary.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 85
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
+      "name": "Red Cup Spring to Rain Crown of Orovant",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.route",
+          "value": {
+            "status": "active",
+            "summary": "Red Cup Spring to Rain Crown of Orovant. A marked water-carriers' path reaches the cistern and ends there. No bridge, flight route, or climb to the floating crown is registered.",
+            "visibility": "public",
+            "mode": "on-foot",
+            "durationMinutes": 140
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.route.availability",
+          "value": {
+            "status": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "route"
+      }
+    },
+    {
+      "entityId": "secret.caldris.ganji-parentage",
+      "name": "What Made Ganji",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "identity",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Ganji's catlike traits have no confirmed cause -- mutation, old curse, or something dormant in the buried past of the region. Several pages about his family were deliberately removed from the Tensor Sect's own records, and even the Sect doesn't fully understand why. Ganji himself assumes his birth parents abandoned him simply because of how he looked, and isn't especially curious to learn otherwise -- but the truth (if the GM chooses to reveal one) has never been told to him.",
+            "provenance": "GM worldbuilding note",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0000-caldris-at-the-threshold-gm-truth.1",
+      "name": "Caldris at the Threshold — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "These are world conditions, not newly triggered campaign incidents. The existing Measure-related material and independent local mysteries retain their own explanations. Dragon evidence, bird disruption, succession politics, and counterfeit documents must not automatically be treated as one cause merely because they coexist.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0000-caldris-at-the-threshold-traces-and-stories.1",
+      "name": "Caldris at the Threshold — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A posting for a delivery, a disputed repair, a missing correspondent, an old seal needing comparison, or a request to assess a route can each begin a story. The scale may grow through what the party discovers and chooses; these beginnings do not prescribe a single chain of quests.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-gm-truth.1",
+      "name": "Two Funerals and Many New Claims — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The two deaths remain unrelated accidents, as the established world history states. People can exploit their coincidence without having caused them. A forged claim, manipulated report, or opportunistic marriage negotiation can provide a substantial mystery without retrospectively turning both funerals into assassinations.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-traces-and-stories.1",
+      "name": "Two Funerals and Many New Claims — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Cancelled arrangements, revised genealogies, envoy expenses, and records distinguishing acknowledged kinship from exaggerated claims. A present commission might authenticate a document or trace a witness without requiring the party to decide an entire kingdom's succession.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0009-the-summer-without-swallows-gm-truth.1",
+      "name": "The Summer Without Swallows — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The regional pattern is not established as one supernatural event with a single hidden culprit. Local causes and incomplete evidence must be investigated on their merits. Existing prophecy and fraud plots remain available, but the absence itself does not verify them.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0009-the-summer-without-swallows-traces-and-stories.1",
+      "name": "The Summer Without Swallows — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nest counts, growing records, remedy purchases, and contrasting village accounts. A present investigation can test a specific local explanation, expose a fraudulent remedy, or identify habitat and route changes worth addressing.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-gm-truth.1",
+      "name": "The Porch at the Last Mile — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Dessa once suppressed an accurate complaint about a supplier on whom her business depended. She later restored it with a written correction. Her descendants have inherited a useful information place, not a guarantee that every keeper always preferred truth to convenience.",
+            "provenance": "history-50-0-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0003-two-funerals-and-many-new-claims-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0009-the-summer-without-swallows-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0009-the-summer-without-swallows-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0009-the-summer-without-swallows-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0009-the-summer-without-swallows-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0000-caldris-at-the-threshold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0000-caldris-at-the-threshold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0000-caldris-at-the-threshold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0000-caldris-at-the-threshold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.d343c660f076af484452",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.route.in-world",
+      "value": {}
+    }
+  ]
+}

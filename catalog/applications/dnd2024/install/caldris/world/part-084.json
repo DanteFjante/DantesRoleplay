@@ -1,0 +1,358 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0300-0200-place-cinder-meadow.1",
+      "name": "Cinder Meadow — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A recovering meadow and nursery margin in Boughmeet's growing country. Later fires and planting changes have altered the ground. A few protected impressions are documented as surviving evidence of the ember herons; visitors can also see casts that are clearly labelled as copies. A person to meet: Nursery keeper Tavi Elven wants to establish whether reports of unusual birds concern ember herons or ordinary birds seen in poor light. He needs help protecting new grafts from enthusiastic visitors. Adventure: Follow credible sightings, recover a threatened nursery variety, or investigate a trader selling supposed magical feathers. Finding the real birds need not lead to capture, and their nesting needs may conflict with a landowner's plans.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0300-0200-place-the-evening-market.1",
+      "name": "The Evening Market — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A modest market yard in Brinefold where sailors, craftspeople, and households sell used equipment and small consignments after the working day. Inspection rules and fees reflect later amendments. Repaired awnings cover stalls carrying practical goods alongside occasional objects with unusual histories. A person to meet: Market keeper Oren Fen needs a disputed object kept available while its ownership is investigated. He is also trying to stop a wealthy buyer reserving all the affordable stalls through intermediaries. Adventure: Buy, identify, repair, or return an unfamiliar object. Follow its marks through a shipping agent, a workshop, and an older household account. An apparently trivial purchase can provide the reason for a journey with several possible endings.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0300-0200-place-the-house-of-salt-letters.1",
+      "name": "The House of Salt Letters — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A copying and forwarding house in Leth Sarai, with dry storage for letters awaiting reliable carriers. Its procedures distinguish delivery, copying, and private storage. Some historical packets remain sealed because later custodians have found no legitimate recipient or permission to open them. A person to meet: Letter keeper Dena Vell wants a delivery completed to a household whose descendants have moved inland. She can pay a modest fee and provide careful forwarding evidence, but not a guaranteed welcome. Adventure: Trace a recipient, reunite separated letters, or recover a carrier's missing packet. Decide who may properly receive the material before treating a private archive as a source of entertaining secrets. The correspondence can introduce a distant friendship, an old dispute, or a present obligation.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0300-0200-place-the-last-measure-workshop.1",
+      "name": "The Last Measure Workshop — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: An instrument workshop in Willowrace whose later owners preserve copies of Orven's deposit lists and teaching arrangements. The benches and tools have changed repeatedly. A few documented components survive in protected storage, while working instruments continue to be altered for living players. A person to meet: Repairer Bela Kett wants to complete a disputed restoration without pretending that a replacement part is ancient. A patron prefers a more flattering certificate. Adventure: Trace the ownership of a fiddle listed as borrowed, authenticate an old component, or recover a teaching arrangement held in another collection. The most satisfying outcome may be an instrument played again rather than sealed away.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0300-0200-place-the-winter-latch.1",
+      "name": "The Winter Latch — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small maintained refuge near the lower approach to the Unfinished Stair in the Veyr uplands. Its walls incorporate stones placed during the old rescue. It serves a limited seasonal route and keeps an ordinary store of fuel, fodder, and food when local deliveries succeed. A person to meet: Keeper Nessa Renn needs reliable observations of the sheltered descent after recent erosion. She is tired of maps that turn a difficult footpath into an inviting broad line. Adventure: Deliver stores, locate a missing route marker, and assess whether pack animals can pass safely. The giant's former shelter may contain evidence of later visitors, but Aurr's presence must be established through current signs rather than assumed.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-gm-truth.1",
+      "name": "The Convoy That Waited for Rain — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The charm was working according to its original placement. Its failure was the mismatch between that placement and the altered harbour, not secret sabotage. One captain understood Sera's concern but concealed support until other investors accepted the delay. His private letter can complicate a later reputation for reckless courage.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-traces-and-stories.1",
+      "name": "The Convoy That Waited for Rain — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Sounding books, refused-departure payments, and two incompatible harbour plans. A present contract can place a party between a deadline and a pilot's defensible caution. Surveying the old approach may recover useful knowledge without proving the abandoned route safe for every vessel.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-gm-truth.1",
+      "name": "Nivren Learns the New Road — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Nivren still carries guilt over returning too late to the inn in the earlier century. Pella does not cure that grief. She gives him a new friendship with its own beginning, disagreements, and eventual ending. His survival and whereabouts in the campaign present remain available setting choices.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-traces-and-stories.1",
+      "name": "Nivren Learns the New Road — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A corrected route book, lesson notes, and letters naming now-vanished stopping places. An expedition can compare old and newer routes while deciding which memories remain useful. Nivren's possible present-day appearance should respect the lives he missed as well as those he remembers.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-gm-truth.1",
+      "name": "The Winter of False Harbour Seals — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The forgers included a dismissed exchange clerk and a respected intermediary who continued helping investigators. Their relationship can be established through paid storage, not merely through a villain's confession. A few surviving false orders were deliberately kept as training examples and should not be mistaken for active claims.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0311-the-convoy-that-waited-for-rain-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0319-nivren-learns-the-new-road-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0327-the-winter-of-false-harbour-seals-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-cinder-meadow.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-evening-market.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-house-of-salt-letters.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-last-measure-workshop.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-winter-latch.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

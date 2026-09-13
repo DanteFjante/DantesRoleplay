@@ -1,0 +1,212 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.celandine-house",
+      "name": "Celandine House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A modest local institution with rebuilt accommodation, gardens, and a small archive. It has changed governance and function more than once. Some early records survive as copied extracts in other collections, with private details separated from public registers.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 885,
+            "y": 435
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.crowstep-shelter",
+      "name": "Crowstep Shelter",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A maintained refuge on a local northern branch near the Roven approaches. It serves fewer carriers than Hearthscar and depends on seasonal deliveries. The winter descent has changed after later rockfalls.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 705,
+            "y": 395
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.darnel-field",
+      "name": "Darnel Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A working orchard beside a protected burial area. The memorial has been repaired and partially recopied; original fragments are stored locally. Later ownership changes explain why some graves lie beyond the oldest recorded boundary.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 700,
+            "y": 635
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-celandine-house.1",
+      "toEntityId": "location.caldris.lore.celandine-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-darnel-field.1",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-crowstep-shelter.1",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1022-the-children-of-the-guest-rooms",
+      "toEntityId": "location.caldris.lore.celandine-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1061-the-seven-month-war",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
+      "toEntityId": "location.caldris.lore.celandine-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0567-the-winter-at-crowstep",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0511-the-feast-of-names-added-later",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.ash-salt",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.reth-road-fork",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.5a2113d51ddfb4148ea2",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.887c41f3674887aad3c4",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2b633bd8c87b36318310",
+      "toEntityId": "location.caldris.lore.celandine-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a272a2ec930bdc9f33c0",
+      "toEntityId": "location.caldris.lore.celandine-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5a2113d51ddfb4148ea2",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.719b5648bc3011f68877",
+      "toEntityId": "location.caldris.lore.darnel-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86dccd5cca0b297c999e",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.887c41f3674887aad3c4",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b63038162af22fb208ef",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c5f08209c76df14da66a",
+      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    }
+  ]
+}

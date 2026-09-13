@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0822-the-goat-path-and-the-painted-road-account.1",
+      "name": "The Goat Path and the Painted Road — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aunholt and the Roven Marches negotiated a southern carrier route. The patron financing its map wanted a line suitable for wagon traffic. Local hauliers warned that one section could support pack animals but not carts without extensive work. The published ceremonial map showed a grand continuous road. The working copy, prepared by surveyor Nerin Oss, marked unloading points, narrow turns, and shelter limits. Early travellers who bought the wrong edition arrived angry, delayed, and unexpectedly dependent on local carriers. The resulting arrangement kept the difficult section as a managed pack route. A small transfer settlement, Goat's Ledger, grew where goods moved between carts and animal trains. Its first warehouse was smaller than the road depicted on the patron's wall map.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.1",
+      "name": "The Parcel That Had Arrived Somewhere Else — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A record copied at Seven Scripts Court attracted the attention of archivist Fenn Arul. It described a small consignment whose workshop mark matched the inventory later found beneath the Seventh Hearth. Further comparisons connected it to Aveline's supposedly undelivered parcel. The new evidence showed that the parcel had reached a successor to its intended Istravel workshop and had been opened 1,338 years before the campaign present, seventy-two years after Aveline's death. The original recipient had already died. The acknowledgement was addressed through an obsolete carrier and never reached the records used by her executors. The opening account listed a personal letter, corrected preparation notes, and a small glass reference piece wrapped for protection. The recipients incorporated the useful material into their workshop collection instead of preserving a sealed curiosity.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.2",
+      "name": "The Parcel That Had Arrived Somewhere Else — full account (2)",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Copies of Fenn's findings reached Sallowmere by different routes.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0848-the-market-of-borrowed-tongues-account.1",
+      "name": "The Market of Borrowed Tongues — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Trade between Selvar, Serevan, and the farther inland road brought more languages into Namar Vale. Interpreters had long worked privately, but a dispute over a bulk cloth order led to a market practice of naming the interpreter and retaining a short summary in both parties' languages. Interpreter Saha Mir organised a shared workroom at Seven Scripts Court, where translators could compare difficult terms and consult specialist traders. The court never contained exactly seven languages at every period; the name came from its first commissioned sign. Some mistakes were innocent. Others involved an interpreter pressured by a wealthy client, or a buyer pretending a familiar trade term was incomprehensible. Publicly recording who had explained what helped, while creating new disputes over liability when circumstances changed.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0861-the-crown-carried-in-a-bread-cart-account.1",
+      "name": "The Crown Carried in a Bread Cart — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Highmead's Queen Deryn Merrow travelled through the northern estates during a period of poor roads and unsettled loyalties. A damaged ceremonial wagon forced her household to move several chests into an ordinary baker's cart. One held the travelling crown used at public audiences. At Tallow Ford, a crowd saw household guards anxiously protecting a wagon that smelled of bread. The story became a favourite court comedy. Its more consequential aftermath was Deryn's discovery that her appointed escort had been commandeering provisions without receipts. She ordered compensation from the royal travelling budget and dismissed two officers. The affected households received different amounts and waited different lengths of time. Her progress helped renew practical agreements without ending every dispute between the crown and the northern districts.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0874-the-singing-wood-of-seln-account.1",
+      "name": "The Singing Wood of Seln — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Farther along Aunholt's western trade route stood Seln, a woodland community known for instrument timber and a stand of hollow-trunked trees that sounded in particular winds. Local musicians tuned pipes against those tones before cutting or drying new wood. Ysra visited with Edan Rill, an Aunholt carrier learning to make instruments. They heard a melody the residents called the Trees' Welcome. Its changing notes belonged partly to wind and wood, partly to the musicians answering them from a sheltered platform. A small place-spirit, the Listener in the Fork, could hold a recently heard note for a little while after a performer stopped. It neither composed on command nor preserved centuries of music. When visiting patrons demanded performances in unsuitable weather, the sound was unimpressive and the Listener withdrew.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0887-the-orchard-of-winter-apples-account.1",
+      "name": "The Orchard of Winter Apples — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Aunholt's best-known export was a small, sharp apple that stored well in cool conditions. Carriers called it the winter lantern for its yellow skin. Buyers in the lower valleys paid unusually high prices after discovering that a sound harvest could survive much of the winter journey. Grower Hella Vorr travelled south with grafting stock, expecting to establish a profitable nursery. Some grafts flourished; others failed in warmer, wetter ground. She stayed several years to compare soils and rootstocks with Boughmeet's growers, while her siblings maintained the original orchards. The exchange produced useful varieties and extravagant claims. A Highmead merchant advertised apples that never spoiled. His customers received ordinary fruit and an instructive disappointment. Songs later connected the winter lantern to Harth's sleeping Guest, although its cultivation belonged to a different history.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0899-the-valley-already-named-account.1",
+      "name": "The Valley Already Named — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ysra's expedition crossed beyond the northern routes described in its copies of the Book of Roads Left Open. Its members expected difficult travel and unknown plants. They found Aunholt, a high valley with stone-lined irrigation channels, scattered hamlets, and a seasonal assembly held beneath an enormous timber roof. Their guide, Rovan Pell, prepared a formal declaration naming the valley after the expedition's patron. Speaker Meret Ulan politely supplied its existing name and asked which household would pay for the expedition's fodder. Ysra entered both conversations in her notebook. The visitors spent a season exchanging knowledge with local growers. Some plants they considered rare were ordinary garden crops; others were protected because collecting them damaged grazing or water sources. The expedition's most useful achievement was arranging future visits on terms the valley's residents understood and accepted.",
+            "provenance": "history-900-600-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0909-the-fair-of-three-roads-account.1",
+      "name": "The Fair of Three Roads — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At the close of the period, Alderwake hosted a fair bringing together carriers from the coast, the northern passes, and the orchard country. Participants renewed selected arrangements for lodging, public measures, disputed claims, and escort contributions. They did not resurrect the first Lantern League as if its failures had never happened. The agreements recognised different local practices while specifying what visiting traders could expect at participating places. Fairwarden Delia Ross insisted on publicly readable summaries as well as formal copies. Tavern versions were immediately shorter, funnier, and less accurate. Ysra attended at roughly 410 years of age, carrying Jalen's repaired fiddle. She then accepted a place with a northern botanical expedition beyond the familiar Roven routes. Her later life remains for subsequent centuries; this chapter does not establish her survival into the campaign present.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0922-the-rain-at-darnel-field-account.1",
+      "name": "The Rain at Darnel Field — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Unusually heavy rain exposed graves along the edge of Darnel Field, more than a century after the Seven-Month War. Orchard workers found personal objects with the remains. Some families wanted a grand military memorial; others wanted individual names recovered before any ceremony was planned. Schoolteacher Mara Pellin compared muster rolls, local burial notices, and Celandine House's placement records. The work identified several people who had disappeared from family accounts under inaccurate names. Many remained unknown. The resulting memorial left spaces for later identifications and recorded occupations where military allegiance was uncertain. An annual orchard meal helped fund its care. The place remained a working landscape as well as a burial ground.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth-account.1",
+      "name": "The Cellar Beneath the Seventh Hearth — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Repairs at the Seventh Hearth revealed a sealed shallow cellar beneath a later kitchen floor. It contained fragments of Iven's pottery, household accounts from several periods, and a wooden box whose contents had been moved there long after his lifetime. The box held a copy of an inventory associated with Aveline's undelivered parcel. It listed a folded letter, a small wrapped object, and pages identified only by a workshop mark. The record placed the parcel with a coastal carrier after her death but did not establish where it finally went. Carpenter Oren Vask and copyist Sella Rinn recorded the find. They returned the house's ordinary utensils to storage rather than stripping it into a museum. Copies of the inventory travelled to Sallowmere and Saint Meret's Rest, each acquiring later annotations.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps-account.1",
+      "name": "The Pilgrimage of the Unlit Lamps — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A severe storm damaged shrines and guesthouses along a coastal road. During the rebuilding, several religious communities organised a shared walk carrying unlit lamps, collecting oil and repair materials for places unable to provide shelter. At Morrowstep Sanctuary, Sister Arel Venn proposed that the walk end with a meal open to people who had contributed labour as well as money. Some participants treated it as worship; others regarded it as solidarity with hosts and travellers. The organisers agreed on conduct without settling every belief. The pilgrimage became an occasional event in difficult years. It did not remain a single uninterrupted annual tradition. Different later communities adopted its image for purposes ranging from relief to political protest.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0961-the-scent-of-a-house-that-was-gone-account.1",
+      "name": "The Scent of a House That Was Gone — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Ysra returned to Bluecup Hollow and found the damp limestone pocket partly buried beneath road spoil. The flower survived in a few sheltered cracks. She worked with local households to remove unstable debris and propagate a small number of plants without stripping the wild site. A prepared linen square among her belongings still held a faint scent recorded during her first journeys with Jalen: resin, warm wood, and the herbs hanging in his workshop. She gave it to his great-granddaughter Tera Fen, who had inherited the family tools but knew the room only from stories. The gift prompted Tera to copy repair notes that were beginning to deteriorate. A small sensory wonder led to ordinary preservation work whose usefulness outlasted the charm.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0974-the-empty-chair-at-whitewindow-account.1",
+      "name": "The Empty Chair at Whitewindow — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Whitewindow's guest hall received an elaborate chair from a neighbouring ruler who expected it to become a seat of honour for his representative. The hold accepted the craftsmanship and declined the implied political arrangement. For several years the chair stood unused beside a wall while negotiations continued. Guestmaster Dorra Vel eventually placed it in a quiet room for visitors waiting on difficult news. The donor's household protested, then discovered that the new use had become locally respected. People brought cushions, blankets, and small repaired toys for those waiting there. The episode helped clarify a guest agreement: accepting gifts or shelter did not itself establish obedience, religious allegiance, or an inherited service obligation. The principle had precedents in the Open Door Houses, but Whitewindow expressed it through its own law and customs.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0987-the-dowry-of-maps-account.1",
+      "name": "The Dowry of Maps — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Lady Orienne Merrow, a cousin of Highmead's sovereign, married Councillor Vasil Dast, a member of a prominent Selvari merchant household. Their marriage connected court and commercial interests without creating a union of kingdoms. Orienne brought copied route books, estate surveys, and an interest in gardens. Vasil brought access to carriers and an alarming habit of discussing prices during ceremonial meals. Together they funded lodging repairs along a route between Istravel and the Selvari town of Namar Vale. Their most useful gift was permission for participating hosts to keep corrected working copies of the maps. Courtiers admired illuminated originals; carriers valued pages on which someone had marked a well gone brackish or a bridge replaced downstream.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0999-the-stonecutters-spring-account.1",
+      "name": "The Stonecutters' Spring — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Several former repair crews stayed together after the northern emergency and accepted work across jurisdictions. Their Company of the Common Plumb began as a small association sharing specialist tools, injury support, and responsibility for inspecting one another's work. Its best-known early project was a replacement arch near Tallow Ford. Mason Idda Coal insisted that the opening ceremony wait until the mortar and temporary supports were ready. A patron complained that the best guests would have departed. The bridge opened later, with fewer banners and no collapse. The company trained local apprentices and recorded unusual foundations for whoever maintained them next. Its reputation spread farther than its actual workforce. Unaffiliated builders soon copied its mark, some because they admired it and others because it helped win contracts.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1009-the-winter-of-the-pale-roofs-account.1",
+      "name": "The Winter of the Pale Roofs — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Several hard winters culminated in snow damage along the northern approaches. The Roven Marches closed one high route and concentrated effort on a lower alternative through Tallow Ford. Hazelstairs remained a seasonal resource; abandoned terraces could not simply be returned to profitable farming by decree. Roadwarden Nella Dorn organised shared repair crews and public tallies of available fodder. Whitewindow sent fittings, tools, and workers, while lower valleys supplied food. The arrangement helped but did not reach every isolated household before its stores failed. At Hearthscar Shelter, a half-collapsed old hall became a refuge large enough to accommodate stranded carriers and their animals separately. Its occupants argued about smoke, space, and whose turn it was to fetch water. Those arguments were remembered fondly by people who survived to tell them.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1022-the-children-of-the-guest-rooms-account.1",
+      "name": "The Children of the Guest Rooms — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Displacement had left children living with distant relatives, foster households, and sanctuaries. Some knew their origins clearly; others possessed contradictory names and dates. In Celandine House, near the old corridor, Matron Verra Kell began keeping records of placements, continued family contact, and children old enough to express where they wished to remain. The practice spread unevenly through Open Door Houses. It helped some families reconnect and exposed cases in which useful labour had been described as charitable care. Local authorities disagreed about their responsibility to people from outside their jurisdiction. An annual gathering combined record review with ordinary games, meals, and repair of donated clothes. Later commemorations often omitted the practical work and showed only a benevolent patron distributing gifts.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1035-the-hound-of-empty-houses-account.1",
+      "name": "The Hound of Empty Houses — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "People resettling the war-damaged corridor reported a huge dark hound appearing at abandoned thresholds. It entered houses where an invitation had been spoken aloud, copied familiar voices from within, and attacked people who followed those voices away from company. The creature had travelled with an old carved lintel salvaged into a roadside refuge. Ward-maker Halen Sore, drover Bren Uld, and Ysra identified a recurring invitation phrase in the accounts of survivors. They worked with local hosts to change how empty buildings were opened and trapped the creature within the lintel's threshold before destroying its bodily manifestation and breaking the binding object. The hunt lasted several weeks. Its success allowed shelters to reopen, but did not instantly make frightened households comfortable sleeping alone.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.1048-the-mill-that-ground-for-both-banks-account.1",
+      "name": "The Mill That Ground for Both Banks — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Peace left damaged infrastructure and families unable to buy new animals. At Willowrace, a mill on a river branch serving the former war corridor, millkeeper Osa Trent reopened the surviving mechanism with parts salvaged from two ruined mills on opposite sides of the conflict. Her users included widows, former soldiers, displaced tenants, and landholders who had supported the fighting. She published a temporary reduced charge and accepted labour where households could not pay in grain. The work strained her family's reserves and depended on contributions she was sometimes too proud to request. The rebuilt mill became a meeting place where practical cooperation preceded forgiveness. Memorial names were added to its yard wall without sorting them by allegiance. Some households refused to attend the dedication but still brought grain the following week.",
+            "provenance": "history-1200-900-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.1022-the-children-of-the-guest-rooms-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1035-the-hound-of-empty-houses-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1048-the-mill-that-ground-for-both-banks-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0961-the-scent-of-a-house-that-was-gone-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0974-the-empty-chair-at-whitewindow-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0987-the-dowry-of-maps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0999-the-stonecutters-spring-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1009-the-winter-of-the-pale-roofs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0899-the-valley-already-named-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0909-the-fair-of-three-roads-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0922-the-rain-at-darnel-field-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0848-the-market-of-borrowed-tongues-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0861-the-crown-carried-in-a-bread-cart-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0874-the-singing-wood-of-seln-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0887-the-orchard-of-winter-apples-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0822-the-goat-path-and-the-painted-road-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1035-the-hound-of-empty-houses-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1048-the-mill-that-ground-for-both-banks-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0961-the-scent-of-a-house-that-was-gone-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0974-the-empty-chair-at-whitewindow-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0987-the-dowry-of-maps-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0999-the-stonecutters-spring-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1009-the-winter-of-the-pale-roofs-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.1022-the-children-of-the-guest-rooms-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else-account.2",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0848-the-market-of-borrowed-tongues-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0861-the-crown-carried-in-a-bread-cart-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0874-the-singing-wood-of-seln-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0887-the-orchard-of-winter-apples-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0899-the-valley-already-named-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0909-the-fair-of-three-roads-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0922-the-rain-at-darnel-field-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0822-the-goat-path-and-the-painted-road-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    }
+  ]
+}

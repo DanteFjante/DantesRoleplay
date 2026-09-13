@@ -1,0 +1,346 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-rainbell-orchard.1",
+      "name": "Rainbell Orchard — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A small nursery plot within Boughmeet's growing district. Ordinary fruit trees support the maintenance of a few carefully propagated rainbell pears. A sheltered festival instrument sounds only when rainwater reaches its dried seed cases; replacement parts are recorded by harvest year. A person to meet: Grower Samin Elven wants compatible rootstock and reliable labour for the next grafting season. He likes the orchard's visitors but refuses to sell cuttings that would endanger its remaining healthy trees. Adventure: Find a surviving graft in a neglected garden, establish who owns it, and bring back propagation material in good condition. A musician's urgent commission and the orchard's slower biological needs need not have the same timetable.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-saffron-court.1",
+      "name": "Saffron Court — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A busy courtyard market in Namar Vale with shared ovens, washing places, and a mixture of permanent and daily stalls. Its name remains grander than most of its meals. The reserved newcomer places survive through later lease renewals that vendors must occasionally defend. A person to meet: Oven keeper Miri Nemm knows caravan departures by the food people order. She wants accurate news of an absent supplier and dislikes visitors treating every foreign recipe as a secret remedy. Adventure: Follow a missing spice or grain consignment, negotiate substitute supplies, or recover a lease renewal before a lender closes the daily stalls. Shared meals can introduce future companions, rivals, and guides naturally.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-the-dry-exchange.1",
+      "name": "The Dry Exchange — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A covered trading hall in Brinefold with raised document rooms and a public counter for inspecting registered cargo pledges. Its rules have been revised under successive authorities. Carved fish on the older beam ends commemorate the early dispute over promises made against the same catch. A person to meet: Registry keeper Jessa Oss wants to separate valid inherited claims from commemorative papers and fraudulent copies. She is competent at accounts and poor at refusing people who have travelled a long way for disappointing news. Adventure: Recover a missing counterfoil from a dispersed collection before a shipowner loses access to supplies. An apparently worthless rent receipt may identify who profited from buying distressed claims.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-the-house-of-two-hands.1",
+      "name": "The House of Two Hands — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A craftspeople's teaching house in Istravel, with pottery benches, finishing tables, and copies of Nen Tal's documented work. Original objects rotate between collections; labels distinguish originals, teaching copies, and later reconstructions. Some teaching places are supported by renewed endowments. A person to meet: Instructor Kera Tal is preparing an exhibition of assistants' work. She has no proven kinship with Nen and objects when donors advertise her as a rediscovered descendant. Adventure: Authenticate a workshop object or find the later renewal that protects a paid teaching place. A collector may offer valuable evidence on condition that the exhibition repeat a flattering but unsupported family story.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0400-0300-place-the-unfinished-stair.1",
+      "name": "The Unfinished Stair — history and story material",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Present-day form: A partly maintained ascent in the Veyr uplands, ending at abandoned gallery sockets above a ravine. The lower steps serve shepherds and surveyors. A sheltered burial shelf lies beyond the intended road alignment, and later walkers have marked a respectful route around its approach. A person to meet: Surveyor Hessa Pell is assessing a small seasonal footpath, not promising a caravan highway. She needs observations of rock, snow, and water before accepting a sponsor's timetable. Adventure: Reach the old survey stations, retrieve a lost instrument, and determine what route the terrain can support. The graves and any living giant household have interests of their own. A useful answer may be a limited path and a clear explanation of its limits.",
+            "provenance": "history-400-300-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-gm-truth.1",
+      "name": "The Second Bell of Brinefold — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Yara's initial donation came partly from profits on leases abandoned after the old flood. She supported a useful institution while refusing to reopen every claim against her family's earlier conduct. Her descendants can inherit assets and responsibilities without inheriting personal guilt.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-traces-and-stories.1",
+      "name": "The Second Bell of Brinefold — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Contribution books, claim hearings, bell founders' marks, and competing later copies of the scheme. An adventuring group might investigate whether a lost vessel was insured, retrieve evidence of its cargo, or discover that an apparently generous fund excludes the very workers who need it.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-gm-truth.1",
+      "name": "The Letter Delivered After the Funeral — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The first letter sat for twelve days in an intermediate counting house because its postage account was disputed. The clerk responsible later paid part of the return fare anonymously. Revealing that delay can change a family's understanding without making anyone capable of undoing the death.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-traces-and-stories.1",
+      "name": "The Letter Delivered After the Funeral — Traces and stories",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A route ledger, jars bearing reused labels, and two letters kept in separate garden collections. A present delivery can reunite their histories. Choosing what to say to a recipient who has inherited a stranger's unfinished friendship may be the heart of the quest.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-gm-truth.1",
+      "name": "The Agreement on the Violet Steps — GM truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "This is the same Siltwife encountered in the previous century. Its continued presence is plausible because of its long life, not because every pale river animal is one spirit. It recognises particular water conditions and repeated conduct more readily than human surnames.",
+            "provenance": "history-500-400-years-ago.md",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0411-the-second-bell-of-brinefold-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0419-the-letter-delivered-after-the-funeral-traces-and-stories.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0427-the-agreement-on-the-violet-steps-gm-truth.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-rainbell-orchard.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-saffron-court.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-dry-exchange.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-house-of-two-hands.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-unfinished-stair.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

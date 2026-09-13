@@ -1,0 +1,768 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "secret.caldris.quest.q24.the-river-returns",
+      "name": "Q24 — The River Returns",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: The Aur exposes Old Aur Island foundations and three valid courts claim land, water, treasure, and burial authority. Layers: treasure dispute → pre-Concord community and diverted river evidence → current estates depend on historic flooding others never consented to. Objectives: 1. Stabilize the site and protect burials, navigation, and nearby households. 2. establish layers of use, alteration, and claim through material and living evidence. 3. reach a provisional arrangement before the next flood changes the site again. Routes: archaeology, river engineering, legal hearing, community assembly, controlled salvage, oral history, magical sensing, or reburial agreement. Clues: water wear, River Throne script, Concord survey cuts, family stories, fish traps, and an estate wall aligned to the redirected channel. Failure forward: flood removes some evidence but reveals another area and forces shared emergency work. Aftermath: a recovered pre-Concord tablet contrad…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q25.the-reed-graves",
+      "name": "Q25 — The Reed Graves",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Black-scale tokens and preserved archive debris lead into Sable Annek's brackish domain. Layers: monster lair → dragon archive of erased names → Annek protects some people and exploits others by controlling legal absence. Objectives: 1. Reach the basin and establish safe terms or viable escape routes. 2. identify which names, records, and living communities Annek controls. 3. recover, copy, bargain for, destroy, or redistribute evidence without exposing everyone blindly. Routes: stealth, parley, legal exchange, archive expertise, environmental diversion, community representatives, dragon leverage, or combat if supported and chosen. Clues: purchased names; preserved purge orders; brokers' contracts; genuine asylum records; Annek's hatred of the Seventh Ledger's standardized ownership. Failure forward: Annek retains records or expels the party but reveals enough to challenge the Council and may pursue later bargains. Aftermath: one recovered name belongs to a…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q26.the-council-of-margins",
+      "name": "Q26 — The Council of Margins",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Evidence identifies a Council meeting distributed across several synchronized archive rooms rather than one fortress. Layers: secret ruling cabal → divided custodians, restorationists, and reformers → no member has complete control, and several believe they prevent worse state capture. Objectives: 1. Map Council membership, communication, factions, and current restoration actions. 2. interrupt coercive operations without destroying all cross-border coordination blindly. 3. expose, fracture, negotiate, replace, or reform the Council through allies earned across Caldris. Routes: infiltration, public evidence, cell defections, simultaneous hearings, courier network, archive occupation, political congress, or targeted confrontation. Clues: differing margin marks; Ansel's letters; Celyn's policies; Dry Sock accounts; community archives; authentic Ilyr mark used without current consent. Failure forward: restorationists seize more control while reformers scatter,…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q27.the-archive-that-answers-back",
+      "name": "Q27 — The Archive That Answers Back",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Ilyr's Listening Caves echo visitors' words with contradictory historical testimony. Layers: dragon treasure vault → archive designed to resist single narratives → Ilyr's selective custody is itself a form of power. Objectives: 1. navigate the caves while preserving group memory, safety, and consent. 2. obtain corroborated testimony about the Concord, Council, and dragon's role. 3. persuade, compel, bargain with, expose, rob, or oppose Ilyr regarding archive custody. Routes: riddles, testimony comparison, respectful parley, stealth, public delegation, copy teams, legal/moral argument, dragon combat only if supported and unavoidable. Clues: echoes disagree consistently by witness position; missing testimonies leave salt patterns; Ilyr's early advice; letters proving withdrawal; communities requesting records and receiving jokes. Riddle: “What belongs to you, is spoken by others, changes when written, and dies when only one keeper remains?” Acceptable answers…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q28.the-queens-empty-chair",
+      "name": "Q28 — The Queen's Empty Chair",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Queen Adela falls seriously ill or voluntarily withdraws during succession talks, leaving an empty chair that every faction interprets differently. Layers: hidden rightful heir → law permits several legitimate structures → Vane's emergency system could decide the outcome by controlling roads and messages. Objectives: 1. keep communication, essential government, and public safety functioning without silent seizure. 2. surface legitimate claims, stakeholder rights, and manipulated procedures. 3. support a peaceful provisional settlement that remains revisable through lawful consent. Routes: council facilitation, message security, public assembly, heir investigation, Veyr and Ordelain precedents, direct protection, exposing forged proclamations, or convincing Vane to limit her own office. Clues: Highmead footnote; Queen's private letters; Vane's contingency; local charters; foreign offers; one proclamation distributed before the Queen's withdrawal. Failure for…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q29.the-accord-congress",
+      "name": "Q29 — The Accord Congress",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Twelve polities and many nonstate institutions meet at Aster Quay to address counterfeit seals, archive custody, succession risk, grain routes, and dragon evidence. Layers: diplomatic summit → each delegation brings a valid local fear → actors try to package unrelated crises into one enforceable settlement. Objectives: 1. keep delegates, witnesses, couriers, and public access functioning through pressure and sabotage. 2. prevent one bloc from controlling evidence, procedure, or emergency powers. 3. help produce, reject, split, or replace an accord whose consequences are intelligible. Routes: diplomacy, security, public testimony, procedural challenge, side agreements, strikes, street theatre, archive evidence, magical verification where lawful, or walking away with coalition partners. Clues: every prior region supplies evidence; sabotage attempts have different sponsors; one delegate is framed with an authentic but obsolete seal; Ilyr's testimony contradict…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q30.the-measure-of-mercy",
+      "name": "Q30 — The Measure of Mercy",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: With conspirators exposed and archives opened, ordinary disputes still require records, standards, routes, and enforcement. Destroying the old system is easier than replacing its useful functions. Layers: final boss victory → institutional vacuum → the campaign's true conclusion is how power, memory, and correction are distributed. Objectives: 1. identify essential services, vulnerable people, dangerous powers, and trustworthy local owners. 2. establish a bounded transition for records, standards, roads, debts, privacy, and correction. 3. return to affected communities and accept the visible costs and benefits of the chosen settlement. Routes: distributed archives, independent standards guild, reformed Council, public copies with privacy rules, royal compact, community custody, dragon testimony, deliberate plural systems, or another evidence-backed design. Clues: every prior consequence matters; no document supplies a perfect answer; NPC trust and instituti…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q31.the-ford-that-grew-too-deep",
+      "name": "Q31 — The Ford That Grew Too Deep",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Hearth with an optional Deep-history door. Hook: Sourapple Ford's autumn cattle drove arrives to find the crossing chest-deep, while the upstream mill insists its repaired weir changed nothing. Layers: blocked livestock road → competing water needs and an inaccurate repair survey → face-down Concord stones beneath the old ford reveal someone redirected the channel decades ago. Objectives: 1. Keep the herd, travelers, and downstream gardens safe while the crossing is unusable. 2. Establish what changed the water and which users have legitimate immediate needs. 3. Secure a workable crossing or water agreement before weather traps the drove. Approaches and clues: Hesta reads reeds and anxious cattle; Nessa can compare ferry depth; mill timbers show several generations of alteration; diving, temporary rope lanes, an upstream bypass, court mediation, or coordinated gate timing can all work. Three stones align only when viewed from the old riverbank. Failure fo…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q32.the-hills-keep-their-buttons",
+      "name": "Q32 — The Hills Keep Their Buttons",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Deep history; independent of the Measure conspiracy. Hook: A sinkhole swallows a shepherd's hut during steady rain, revealing shelves, sealed jars, and hundreds of sorted buttons beneath a supposedly ancient tomb. Layers: rescue in unstable chalk → pre-kingdom famine storehouse → a modern land claimant has been removing seals to support an exclusive ancestral story. Objectives: 1. Rescue anyone trapped and prevent a wider collapse around the opened chamber. 2. Determine the site's practical purpose without destroying its fragile evidence. 3. Decide how access, recovered supplies, and public interpretation should be shared. Approaches and clues: Linnet's survey diagrams, children's button collections, airflow through adjacent chambers, jar residue, nonhuman chew marks, and several burial traditions provide distinct routes. The old inventory puzzle sorts objects by “what closes, what carries, what remembers”; a button, jar lid, and marked tally belong toget…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "name": "Q33 — Water Owed to the Dead",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent labour-and-memory story. Hook: Latchwater's upper gate opens for a fourth night, draining the reservoir as an underground peat fire approaches remote homes. Layers: apparent sabotage → water exposes a sealed mine shaft → Marta's late colleague arranged the releases so forgotten workers could finally be recovered and named. Objectives: 1. Preserve enough water for fire control, households, and mill power. 2. Identify the gate operator and assess the sealed shaft before another release. 3. Find a lawful and physically safe way to address the buried workers. Approaches and clues: Gate-handle wear, silt levels, old shift songs, union rolls, mine maps, controlled pumping, a public vigil, or confronting the mine company all help. The night operator will surrender if offered a credible recovery plan. Failure forward: The reservoir drops below milling level, causing food and wage pressure, but the exposed shaft becomes undeniable and emergency funds c…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q34.one-blow-owed",
+      "name": "Q34 — One Blow Owed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road story with a possible Concord-material clue. Hook: A quarry chisel shatters during a public demonstration; moments later the rooks above Rook Anvil repeat a hammer rhythm from an empty workshop. Layers: flawed workmanship accusation → contaminated scrap supply → a broker deliberately filed marks from salvaged Concord metal to avoid ownership restrictions. Objectives: 1. Prevent further use of brittle tools without destroying innocent smiths' livelihoods. 2. Trace the metal from fracture patterns, accounts, transport, or witness memory. 3. Recover or contain the remaining scrap and decide how responsibility is assigned. Approaches and clues: Ylsa can compare grain and break lines; Pella recognizes a repair mark; rooks repeat the broker's loading rhythm; charcoal ash differs by valley. Public recall, discreet replacement, buyer coalition, or trapping the broker with marked scrap are all viable. Failure forward: Some stock leaves the district, but warni…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "name": "Q35 — Forty Oars, Forty Names",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road and shared history. Hook: Storm damage at Brinewife's Steps exposes an inscribed rescue compact just as Selucian sailors request shelter under the rights it appears to grant. Layers: emergency salt-pan repair → disputed translation and nationalist embarrassment → the compact names ordinary crews omitted from both kingdoms' monuments. Objectives: 1. Protect workers, sailors, and the salt terraces from the next tide. 2. Document enough of the compact to test the immediate harbour claim. 3. Negotiate shelter and future study without letting either crown seize the stone. Approaches and clues: Tide knowledge, salt-worker oral history, Selucian bell patterns, charcoal rubbings, photography-like magic only if accepted later, or a temporary co-custody agreement can help. Missing name fragments repeat on blue roof tiles at Mackerel Crown. Failure forward: The inscription suffers damage, but independent tile records and survivor songs preserve its essential sh…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "name": "Q36 — The Dry Admiral's Fleet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent comic caper with real labour stakes. Hook: Three enormous seasoned masts disappear from an inland yard without wheel tracks, and six retired captains each claim to have predicted exactly this crime. Layers: impossible theft → hidden flood channel and night flotation → the thieves are unpaid yard workers selling one mast to cover injuries while a professional crew steals the other two. Objectives: 1. Determine how the masts left and where the channel can carry them. 2. Separate the workers' grievance from the organized theft before blame becomes collective. 3. Recover the timber or its value while securing immediate safety for injured households. Approaches and clues: Damp bark, reed cuts, moon tides, Tomas's excellent accounts, absurdly embroidered captain stories, decoy timber, river pursuit, or bargaining with buyers all work. One retiree's “imaginary” voyage accurately maps the flood channel. Failure forward: One mast reaches the coast, but…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "name": "Q37 — The Orchard Flowers Twice",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent ecology and old infrastructure. Hook: Quince Ladder blossoms a second time in late summer, beautiful enough to draw crowds and dangerous enough to leave the trees too exhausted for winter. Layers: suspected enchantment → soil warming along one terrace → a River Thrones conduit reopened after an upstream excavation diverted mineral water. Objectives: 1. Protect the orchard from trampling, fire risk, and panicked cutting. 2. Locate the heat source and determine whether the trees can recover. 3. Redirect or close the conduit while settling water claims created by its discovery. Approaches and clues: Sabine's mule routes, root temperatures, moth behavior, old irrigation verse, controlled trenching, grafting, water-court petition, or a temporary shared nursery can all contribute. The verse's “winter river” means warm underground water, not a magical season. Failure forward: Part of the orchard is lost, but cuttings preserve its strain and the new w…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "name": "Q38 — The Echo That Stayed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Deep history with a contained supernatural ambiguity. Hook: Seven Echo Quarry loses one familiar echo; then a worker's whispered warning returns hours later from inside solid stone. Layers: unstable quarry acoustics → sound-absorbing copper chamber → old curtains stored and released voices under particular wind and tension rather than housing a speaking ghost. Objectives: 1. Find two missing workers and mark safe routes without relying on normal call-and-response. 2. Establish what the chamber does and whether blasting can continue. 3. Resolve sacred, scholarly, and livelihood claims before anyone removes the copper curtains. Approaches and clues: Iven's cord system, touch signals, dust flow, warm breath, vibration, written quarry records, or a negotiated quiet day all matter. A three-tone riddle—“first made, second carried, third returned”—asks for blow, air, and echo. Failure forward: The chamber is damaged, releasing a confusing chorus, but the missing…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q39.the-tenth-post",
+      "name": "Q39 — The Tenth Post",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Crown and regional politics, not the Measure hierarchy. Hook: A tenth carved post appears at Ninepost Field on the morning of a major moot, weathered as if it has stood there for centuries. Layers: provocative forgery → genuinely old post stored in a barn for two generations → heirs of an erased march timed its return because the High Warden is dying. Objectives: 1. Prevent the moot from destroying or seizing the post before examination. 2. Test its age, legal context, and the claimants' connection through multiple sources. 3. Secure a temporary voice, hearing, or settlement that does not prejudge every land claim. Approaches and clues: Edrin reads punctuation; tool marks match the Courteous Ruin; Tenth-Plate custom identifies scattered households; soil on the base proves recent placement but not forgery. Formal injunction, public storytelling, guarded evidence, or bargaining among marches can work. Failure forward: The post is split, exposing an internal…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "name": "Q40 — The Court That Would Not Stay Put",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Road and institutional comedy with serious land consequences. Hook: Reed Judge's Rest detaches during a hearing and drifts downstream with the judge, parties, records, lunch, and one increasingly pleased courtroom cat. Layers: river emergency → ancient detachable platform working as designed → rival banks attempt to manipulate where the court lands so jurisdiction favours them. Objectives: 1. Keep passengers and archives safe while controlling or accompanying the drifting court. 2. Determine why it detached and which landing choices are physically possible. 3. Preserve a fair hearing despite competing jurisdiction claims. Approaches and clues: Boats, tow ropes, upstream anchors, old platform diagrams, Judge Miren's precedent, negotiated neutral mooring, or continuing testimony afloat all work. The cat repeatedly returns to the only dry compartment containing emergency steering poles. Failure forward: Some records get wet and the platform grounds in disput…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "name": "Q41 — A Decree in Vanishing Ink",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Crown mystery with a higher sponsor, separate from Celyn Marr. Hook: Testimony, debts, and a navigation decree fade from fresh official copies while private duplicates remain clear. Layers: defective ink → deliberate reactive lampblack substitution → a respected river-law advocate commissioned it to erase evidence against a patron, who serves a coalition resisting boundary reform. Objectives: 1. Preserve or reconstruct the endangered texts before deadlines pass. 2. Trace the altered material through makers, couriers, and purchasing authority. 3. Stop the erasure scheme and protect witnesses without treating every ink worker as complicit. Approaches and clues: Impressions, sand residue, readers' memory, Basto's pigment tests, cats' black paws, account weights, decoy documents, public recitation, or legal stays offer redundant paths. Failure forward: One decisive page vanishes, but contradictions in surviving delivery weights shift the case from document pr…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "name": "Q42 — Three Spoons Before the Flood",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Hearth at a distant home; independent disaster and governance story. Hook: Flood markers rise faster than forecast, but one neighbourhood refuses Kavi's evacuation because its assigned refuge has been converted into a locked warehouse. Layers: stubborn residents → illegal sale of refuge rights → the warehouse contains relief grain quietly reserved for politically recognized villages only. Objectives: 1. Move vulnerable people, animals, food, and records above the projected waterline. 2. Establish who controls the refuge and what safe alternatives exist now. 3. Decide how the stored grain and shelter are used during and after the flood. Approaches and clues: Communal kitchens, serving spoons as boat poles and signals, roof routes, canal captains, breaking or lawfully opening the warehouse, public inventory, and improvised rafts all matter. Failure forward: Water reaches the lower homes, but pre-positioned kitchens prevent isolation and floating paper boats…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
+      "entityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "name": "Q43 — The Ox Chooses a Corpse",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent social mystery. Hook: At the Saffron Ox market, a valuable breeding animal kneels before three bidders in turn; each receives an anonymous note predicting death before sunset. Layers: animal prophecy → scent-triggered trained response → poisoned account tablets share the same resin and would harm whoever moistens a stylus to calculate bids. Objectives: 1. Keep the named bidders and crowded market safe without causing a stampede. 2. Determine what controls the ox's behavior and how the poison would be delivered. 3. Identify the intended victim and motive before contracts make the scheme irreversible. Approaches and clues: Animal handling, scent comparison, market accounts, tablet makers, false bidding, protective isolation, public announcement, or following the note carrier can work. The ox also kneels at a resin-painted gate, proving behavior rather than foresight. Failure forward: A bidder falls ill but survives with rapid mundane care; their…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.quest.q24.the-river-returns",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q24.the-river-returns",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q25.the-reed-graves",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q25.the-reed-graves",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q26.the-council-of-margins",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q26.the-council-of-margins",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q27.the-archive-that-answers-back",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q27.the-archive-that-answers-back",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q28.the-queens-empty-chair",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q28.the-queens-empty-chair",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q29.the-accord-congress",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q29.the-accord-congress",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q30.the-measure-of-mercy",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q30.the-measure-of-mercy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q31.the-ford-that-grew-too-deep",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q31.the-ford-that-grew-too-deep",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q32.the-hills-keep-their-buttons",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q32.the-hills-keep-their-buttons",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q33.water-owed-to-the-dead",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q34.one-blow-owed",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q34.one-blow-owed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q35.forty-oars-forty-names",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q36.the-dry-admirals-fleet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q37.the-orchard-flowers-twice",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q38.the-echo-that-stayed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q39.the-tenth-post",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q39.the-tenth-post",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q40.the-court-that-would-not-stay-put",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q41.a-decree-in-vanishing-ink",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}

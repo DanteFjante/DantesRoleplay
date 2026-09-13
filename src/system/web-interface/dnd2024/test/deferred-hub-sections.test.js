@@ -287,10 +287,11 @@ for (const mediaCase of [
   assert.deepEqual(result.currentSituation.affordances, [
     { key: "look-around", label: "Look around", summary: "Survey the area." },
   ]);
-  assert.equal(calls.length, 2 + (mediaCase.preview ? 0 : 1) + (mediaCase.perspective === "dm" ? 1 : 0));
+  assert.equal(calls.length, 2 + (mediaCase.preview ? 0 : 1) + (mediaCase.perspective === "dm" ? 2 : 0));
   assert.equal(result.locationDirectory[0].media?.setting?.imageUrl, mediaCase.visible ? imageUrl : undefined);
   assert.equal(calls.filter((target) => target.pathname.endsWith("/media-batch")).length, mediaCase.preview ? 0 : 1);
-  assert.equal(calls.filter((target) => target.pathname.includes("/read-models/")).length, 2);
+  assert.equal(calls.filter((target) => target.pathname.includes("/read-models/")).length,
+    mediaCase.perspective === "dm" ? 3 : 2);
   assert.ok(calls.filter((target) => target.pathname.includes("/read-models/"))
     .every((target) => target.searchParams.get("perspective") === mediaCase.perspective));
   const routeLookup = calls.find((target) => target.pathname.endsWith("/relationships"));
@@ -393,20 +394,52 @@ test("Current keeps its bound scene when optional route relationships fail", asy
   assert.equal(calls.filter((target) => target.pathname.endsWith("/relationships")).length, 1);
 });
 
-test("Current renders its bound scene before unavailable party knowledge and never requests the deferred union", async () => {
+for (const perspective of ["dm", "player"]) test(`Current reads authorized routes independently of unavailable party knowledge (${perspective})`, async () => {
   const calls = [];
   const imageUrl = "/api/applications/dnd2024/state-spaces/state.fixture/entities/location.caldris.one/media/setting/content";
   const result = await readDeferredHubSection({
     origin, section: "current",
-    source: { ...source, audience: { seat: "dm", perspective: "dm" },
+    source: { ...source, audience: { seat: "dm", perspective },
       locationDirectory: [{ id: "location.caldris.one", name: "Place" }],
       knowledge: { status: "unavailable", entries: [], locations: [] } },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
       if (target.pathname.endsWith("/read-models/dnd2024.query.party-knowledge"))
         throw new Error("party knowledge is intentionally unavailable");
-      if (target.pathname.endsWith("/relationships"))
-        throw new Error("route discovery must wait for the deferred knowledge owner");
+      if (target.pathname.endsWith(`/read-models/${worldPeopleHoldingsPageContract.id}`)) {
+        assert.equal(perspective, "dm", "Player Current never requests the DM people directory");
+        return response({ applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+          qualifiedQueryId: worldPeopleHoldingsPageContract.id,
+          stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+          outputSchemaHash: worldPeopleHoldingsPageContract.outputSchemaHash,
+          resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+          data: { version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
+            locations: [{ id: "location.caldris.one", name: "Place", parentId: "world.caldris", kind: "site" }],
+            people: [{ id: "actor.nettle", name: "Nettle", locationId: "location.caldris.one", kind: "NPC", motive: null }],
+            holdings: [], totalCount: 1, complete: true, nextCursor: null,
+            limits: { contentsDepth: 16, recordCount: 2000, pageSize: 50, hierarchyComplete: true },
+          },
+        });
+      }
+      if (target.pathname.endsWith("/relationships")) {
+        assert.equal(perspective, "dm", "Player route discovery still requires admitted knowledge");
+        const qualifiedKind = target.searchParams.get("qualifiedKind");
+        return response({ items: [{ fromEntityId: "route.fixture.open", qualifiedKind,
+          toEntityId: qualifiedKind === "game.core.world.route.from" ? "location.caldris.one" :
+            qualifiedKind === "game.core.world.route.in-world" ? "world.caldris" : "location.caldris.destination",
+        }], nextCursor: null });
+      }
+      if (target.pathname.includes("/components/")) {
+        const [entityPath, qualifiedTypeId] = target.pathname.split("/components/");
+        const entityId = entityPath.split("/entities/")[1];
+        const value = qualifiedTypeId === "game.core.world.route.availability" ? { status: "open" } :
+          qualifiedTypeId === "game.core.world.route" ? { status: "active", visibility: "gm",
+            mode: "on-foot", durationMinutes: 180, summary: "The abbey road is open." } :
+            { status: "active", visibility: "gm", kind: "site" };
+        return response({ entityId, qualifiedTypeId, valueJson: JSON.stringify(value) });
+      }
+      if (target.pathname.endsWith("/entities/location.caldris.destination"))
+        return response({ entityId: "location.caldris.destination", name: "Mallow Abbey" });
       if (target.pathname.endsWith("/media-batch")) {
         return response({ applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
           items: [{ entityId: "location.caldris.one", attachments: [{ mediaId: "setting", role: "setting",
@@ -440,11 +473,16 @@ test("Current renders its bound scene before unavailable party knowledge and nev
   assert.equal(result.currentSituation.status, "ready");
   assert.equal(result.currentSituation.kind, "exploration");
   assert.equal(result.currentSituation.locationId, "location.caldris.one");
-  assert.equal(result.currentSituation.routesCoverage, "unavailable");
-  assert.equal(result.locationDirectory[0].media.setting.imageUrl, imageUrl);
-  assert.deepEqual(result.knownRoutes, []);
+  assert.equal(result.currentSituation.routesCoverage, perspective === "dm" ? "complete" : "unavailable");
+  assert.deepEqual(result.worldDirectory?.people.map((person) => ({ id: person.id, locationId: person.locationId })),
+    perspective === "dm" ? [{ id: "actor.nettle", locationId: "location.caldris.one" }] : undefined);
+  assert.equal(result.locationDirectory[0].media?.setting.imageUrl, perspective === "dm" ? imageUrl : undefined);
+  assert.deepEqual(result.knownRoutes, perspective === "dm" ? [{
+    id: "route.fixture.open", originId: "location.caldris.one", destinationId: "location.caldris.destination",
+    destinationName: "Mallow Abbey", detail: "The abbey road is open.", mode: "on-foot", durationMinutes: 180,
+  }] : []);
   assert.equal(calls.filter((target) => target.pathname.endsWith("/read-models/dnd2024.query.party-knowledge")).length, 0);
-  assert.equal(calls.filter((target) => target.pathname.endsWith("/relationships")).length, 0);
+  assert.equal(calls.filter((target) => target.pathname.endsWith("/relationships")).length, perspective === "dm" ? 3 : 0);
   assert.equal(JSON.stringify(result).includes("party knowledge is intentionally unavailable"), false);
 });
 

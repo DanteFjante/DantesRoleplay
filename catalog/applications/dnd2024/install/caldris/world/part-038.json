@@ -1,0 +1,370 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "fact.caldris.lore.0175-the-orchard-of-departures-account.1",
+      "name": "The Orchard of Departures — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At Boughmeet, households leaving for new work gave grafts to a nursery plot kept by gardener Ilva Penn. The trees were labelled with destinations as well as names. Some families sent letters reporting success; others returned, moved again, or ceased writing. The plot became the Orchard of Departures. It preserved useful varieties and offered a place to remember people whose graves, if any, lay far away. Ilva refused to remove the tree of a family that had returned in debt. Departure had been part of their lives even though the journey had not produced the story their neighbours expected. One annual gathering paired fruit from the orchard with dishes described in travellers' letters. The food was often adapted to local ingredients, producing traditions that belonged fully to neither place of origin.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0183-the-narrow-bells-of-highmead-account.1",
+      "name": "The Narrow Bells of Highmead — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Bell founder Jessa Varr developed a compact bell suitable for roadside houses and small civic towers. The Narrow Bell Foundry obtained several contracts after demonstrating that communities could hear distinct signals without paying for a monumental casting. Different customers assigned different meanings to the same number of strokes. Travellers mistook a fire signal for a market announcement, and one carrier group approached a closed crossing after hearing what it understood as permission to proceed. Several road districts agreed on a limited shared signal for immediate danger while preserving local customs for ordinary business. Foundry marks spread farther than Jessa's actual production. Later bells copied the shape, some competently and some with concealed cracks. A recognizable silhouette became useful evidence, but never complete proof of origin.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-account.1",
+      "name": "The Voices Beneath Glasswinter Tarn — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Surveyors in the Lornesse uplands reported faint speech and music beneath the first clear ice of Glasswinter Tarn. Surveyor Bren Tallow returned with a local guide and found that certain sounds made beside the water reappeared after freezing. A shouted name might return broken into syllables; a tune might lose every pause. Visitors treated the phenomenon as an oracle. Two people died crossing ice whose apparent clarity disguised dangerous thin patches. The nearest households established a viewing place on firm ground and refused to guide paying visitors onto the tarn merely because they believed the voices were calling them. Careful notebooks distinguished echoes of recent visitors from unexplained older fragments. The tarn became a place of curiosity, mourning, and occasional music, with winters when it produced no discernible voices at all.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0199-the-ferry-village-at-rookwater-account.1",
+      "name": "The Ferry Village at Rookwater — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A shifting channel in the Vey Lowlands made a minor ferry unexpectedly useful. Ferry keeper Sella Rusk added a covered waiting place, and a wheelwright and two trading households settled nearby. The cluster acquired the name Rookwater, after birds nesting above the landing. Traffic brought work and disputes. Older grazing households objected when temporary cart yards became permanent enclosures. A local agreement reserved access to the water and required the ferry business to contribute to maintenance of the muddy approach. It was revised after the first serious flood demonstrated how little the new settlement controlled the river. Rookwater became a modest stopping place rather than a great port. Its first school occupied a room rented above a harness shop, and its market depended on travellers choosing this particular crossing.",
+            "provenance": "history-200-100-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0211-the-tables-kept-for-strangers-account.1",
+      "name": "The Tables Kept for Strangers — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Hosts along several northern and coastal routes adopted a modest agreement to keep a few places available for delayed carriers during difficult weather. Host Sera Kell coordinated the first surviving set of reciprocal promises, accepting that some houses would provide more shelter than they received in return. The arrangement required communication, stored food, and occasional payments between households. It broke down in places where sponsors treated the promise as free labour from innkeepers. Elsewhere it endured through revised contributions and limits clearly explained to travellers. At two hundred years ago, a marked table could mean a chance to wait out rain among strangers with different destinations. The custom carried stories, recipes, warnings, and songs as effectively as the freight travelling beside them.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0219-nivren-s-unremarkable-journey-account.1",
+      "name": "Nivren's Unremarkable Journey — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Nivren Sael joined a small carrier group crossing from the Boughmeet country toward Willowrace. He carried no urgent royal message and sought no lost fortress. A damaged bow case needed repair, and he wanted to hear how the bridge musicians were arranging Orven's work after his death. Carrier Lessa Morn charged the usual fare and asked him to share the cooking. Along the way, Nivren taught a child the first part of the boot-drying charm and learned a local bean dish from a driver who disliked travelling meals that tasted identical every night. At Willowrace, he found that one of Orven's simplified teaching versions had become more widely played than the difficult arrangement he remembered. He bought a copy. The journey survives because Lessa kept a detailed household travel book, not because contemporaries thought it especially important.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0227-the-day-little-lastlight-went-dark-account.1",
+      "name": "The Day Little Lastlight Went Dark — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Little Lastlight failed to appear at the repaired pier in Leth Sarai. The household tending the lamp had changed, and the replacement keeper faithfully performed a ceremony learned from a popular printed account. Fishers installed ordinary lamps while neighbours investigated. Lamp keeper Hadi Renn compared older maintenance notes with accounts from people who had known previous keepers. The bracket had been turned toward a handsome new approach that the local fishing boats did not use. After several evenings of patient work at the working landing, the light returned. The episode weakened a fashionable story that the spirit's aid depended on an elaborate ancient rite. It also reminded the district that accommodating a local wonder required noticing the place where it actually lived.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0235-the-hearing-beneath-the-old-banner-account.1",
+      "name": "The Hearing Beneath the Old Banner — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An ageing road grant was invoked to collect payments from settlements now served by several different routes. Highmead's regional court heard claims from landholders, carriers, maintenance houses, and towns whose practical obligations had diverged over generations. Judge Tessa Dorn refused to treat the earliest document as the complete answer. The court compared later renewals, actual repair work, and agreements made by successor authorities. The resulting settlement preserved some payments, ended others, and required fresh negotiation where the evidence was contradictory. Petitioners lodged in the city for months. Bakers, hosts, and money changers benefited from the gathering, while families at home absorbed the cost of absent workers. The hearing became a political landmark and a collection of private disappointments.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0243-the-letters-that-wintered-abroad-account.1",
+      "name": "The Letters That Wintered Abroad — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Bad weather and disrupted sailings stranded a collection of private correspondence in Leth Sarai. Host and copyist Mira Vell rented a dry room where carriers could deposit letters awaiting a reliable route. Senders paid small fees; local households sponsored deliveries for people without ready money. The arrangement grew into the House of Salt Letters, named for the journeys its contents had yet to cross. Mira kept letters sealed unless a sender had explicitly commissioned a copy. When a recipient died, she sought instructions from the sender or a recognised household representative rather than treating grief as permission to publish private words. Some letters finally arrived after their urgent business had passed. Others established new friendships between people who wrote replies explaining why the intended recipient could no longer answer.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.lore.0251-the-evening-market-of-brinefold-account.1",
+      "name": "The Evening Market of Brinefold — full account",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Brinefold set aside a quay-side yard for the sale of used equipment, small return cargoes, and household goods. Its Evening Market opened when workers finished their daily labour. A carpenter could sell spare fittings, a sailor trade an unfamiliar cooking pot, and a widow dispose of business stock without renting a permanent warehouse stall. Market keeper Jori Fen required disputed goods to remain available for inspection instead of vanishing into immediate resale. The rule inconvenienced honest sellers as well as thieves. Regular traders developed a habit of asking an object's journey before asking its price. The market became a place where foreign fashions arrived piecemeal. A damaged warming cup from Solasca might sit beside an ordinary northern blanket, both carrying more history than their sellers knew.",
+            "provenance": "history-300-200-years-ago.md",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.caldris",
+        "slot": "lore"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "fact.caldris.lore.0251-the-evening-market-of-brinefold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0251-the-evening-market-of-brinefold-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0211-the-tables-kept-for-strangers-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0211-the-tables-kept-for-strangers-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0219-nivren-s-unremarkable-journey-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0219-nivren-s-unremarkable-journey-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0227-the-day-little-lastlight-went-dark-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0227-the-day-little-lastlight-went-dark-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0235-the-hearing-beneath-the-old-banner-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0235-the-hearing-beneath-the-old-banner-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0243-the-letters-that-wintered-abroad-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0243-the-letters-that-wintered-abroad-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0199-the-ferry-village-at-rookwater-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0175-the-orchard-of-departures-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0175-the-orchard-of-departures-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0183-the-narrow-bells-of-highmead-account.1",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    }
+  ]
+}
