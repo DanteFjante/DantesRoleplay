@@ -123,7 +123,42 @@ activation/page before selection. Do not self-certify a failed response or reuse
 policy fingerprint for a public request. Explicit `-Replace` retains the previous profile;
 ordinary startup never rewrites its selection. Copy only deployable host files (including shared
 BrowserComponents), not an output directory's incidental `data/` tree. No catalog import, state
-migration, page publication, or database restoration is performed by the launcher.
+migration, page publication, or database restoration is performed by ordinary startup.
+
+## Update a saved installation
+
+After downloading repository updates, keep the existing runtime data directory and run
+`update-mcp-server.cmd`, or `run-mcp-server.ps1 -Update`. The same .NET/Node prerequisites as first-run
+setup are required. This command uses the downloaded checkout; it does not fetch Git changes.
+`-Profile <absolute-path>` can select an installation when the new checkout is in another directory.
+An update requires an existing valid saved profile. `-Update -Check` is rejected without making changes.
+
+The updater builds a frozen host, catalog, and browser package while the existing server remains
+available. It then stops only the process proven by the launcher's exact receipt, takes a consistent
+SQLite snapshot, and copies the matching blobs into a separate candidate directory. Kernel migrations,
+catalog synchronization, compatible state-space rebinding, and page publication run only on that copy.
+The original database, blobs, release, and profile are retained. The starter world is never reapplied.
+
+Catalog synchronization uses the previous installation's manifest as the common ancestor for a
+three-way comparison. Repository changes can update authored definitions; runtime entity and
+relationship imports are excluded. Database-only additions and live edits remain. Conflicting edits,
+missing version history, and incompatible contracts fail rather than guessing a winner or rewriting
+game state. Existing application selections, extension sources, settings, and page identities are
+preserved. The candidate receives newly calculated readiness and audience evidence for each saved origin.
+
+Before selection, the new host runs privately in `Runtime:VerificationOnly` mode. This internal mode
+disables background work and startup recovery writes, blocks MCP and gameplay requests, and allows the
+loopback readiness, audience, and static-page checks needed to verify the candidate. This setting is
+temporary and is not saved in the resulting runtime profile.
+
+After verification, the launcher atomically replaces the selected profile and starts the new release
+with the existing listener and configuration. The normal launcher verifies its configured origins.
+A failure before selection resumes the old server if it was running. After selection, a startup or
+public-origin failure retains the new database: restoring the old database automatically could discard
+gameplay already accepted by the new server. Correct the reported startup issue and run the normal
+launcher again. The command reports the failure reason and the location of retained update files;
+successful selection also reports the exact recovery-profile path. Private host probes save their logs
+in that update directory.
 
 Keep the preceding release directory and its matching database backup until the new release passes
 readiness and browser verification. Registrations retain the stable `repository` allowed-root ID

@@ -52,7 +52,7 @@ internal sealed record FreshInstallationRequest(string ManifestPath, string Inst
 internal static class FreshInstallation
 {
     private const string Format = "dantesroleplay.installation/1";
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = false,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
@@ -425,7 +425,7 @@ internal static class FreshInstallation
         provider.GetRequiredService<IHttpContextAccessor>().HttpContext = context;
     }
 
-    private static ServiceCollection Services(
+    internal static ServiceCollection Services(
         FreshInstallationManifest manifest, FreshInstallationRequest request,
         string databasePath, string installationRoot, IConfiguration configuration)
     {
@@ -442,7 +442,7 @@ internal static class FreshInstallation
         return services;
     }
 
-    private static async Task<ApplicationReadinessReport> ReadReadinessAsync(
+    internal static async Task<ApplicationReadinessReport> ReadReadinessAsync(
         ServiceProvider provider, string applicationId, CancellationToken cancellationToken)
     {
         await using var scope = provider.CreateAsyncScope();
@@ -458,7 +458,7 @@ internal static class FreshInstallation
         return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
     }
 
-    private static Dictionary<string, string?> EffectiveEnvironment(
+    internal static Dictionary<string, string?> EffectiveEnvironment(
         FreshInstallationManifest manifest, FreshInstallationRequest request,
         string databasePath, string installationRoot)
     {
@@ -530,7 +530,7 @@ internal static class FreshInstallation
         RequireNoLinks(packageRoot);
     }
 
-    private static void ValidateManifest(
+    internal static void ValidateManifest(
         FreshInstallationManifest manifest, FreshInstallationRequest request, byte[] bytes)
     {
         if (manifest.Format != Format) throw Invalid("INSTALLATION_FORMAT_INVALID", $"format must be '{Format}'.");
@@ -557,7 +557,7 @@ internal static class FreshInstallation
             throw Invalid("INSTALLATION_MANIFEST_INVALID", "State-space and component-type identities must be unique.");
     }
 
-    private static async Task<byte[]> ReadPinnedAsync(
+    internal static async Task<byte[]> ReadPinnedAsync(
         string root, string relativePath, string sha256, CancellationToken cancellationToken)
     {
         if (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit))
@@ -569,7 +569,7 @@ internal static class FreshInstallation
         return bytes;
     }
 
-    private static string SafePath(string root, string relativePath)
+    internal static string SafePath(string root, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(relativePath) || Path.IsPathFullyQualified(relativePath)
             || relativePath.Contains(':', StringComparison.Ordinal)
@@ -599,7 +599,7 @@ internal static class FreshInstallation
             || second.StartsWith(first, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void RequireNoLinks(string path)
+    internal static void RequireNoLinks(string path)
     {
         for (var current = new FileInfo(path) as FileSystemInfo; current is not null; current = current switch
              {
@@ -646,7 +646,7 @@ internal static class FreshInstallation
 
     private static string Token(string seed, string phase) =>
         Fingerprint(Encoding.UTF8.GetBytes(seed + "\n" + phase))[..32].ToLowerInvariant();
-    private static string Fingerprint(ReadOnlySpan<byte> bytes) => Convert.ToHexString(SHA256.HashData(bytes));
+    internal static string Fingerprint(ReadOnlySpan<byte> bytes) => Convert.ToHexString(SHA256.HashData(bytes));
     private static FreshInstallationException Invalid(string code, string message) => new(code, message);
 }
 

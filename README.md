@@ -25,6 +25,23 @@ Open `http://127.0.0.1:6217/` for the local website or connect an MCP client to
 `http://127.0.0.1:6217/mcp`. See [Operations](docs/current/OPERATIONS.md) for profile checks,
 restarts, explicit recovery profiles, and public access.
 
+## Updating an installation
+
+Download or pull the new repository files into the existing checkout, keeping its
+`DantesRoleplay.MCPServer/data` directory. Then run:
+
+```powershell
+.\update-mcp-server.cmd
+# Equivalent:
+.\run-mcp-server.ps1 -Update
+```
+
+The update builds the new release, briefly stops the selected server, and upgrades a copy of its
+database and files. It preserves the existing game, messages, settings, and locally authored content;
+it does not reinstall the starter world. Conflicting catalog edits or incompatible contracts stop the
+update before selection. The previous installation remains available for recovery. Ordinary launches
+continue to use the selected release; they do not rebuild or update it automatically.
+
 ## Repository map
 
 - `DantesRoleplay/` — generic domain and ECS kernel

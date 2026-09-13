@@ -26,6 +26,9 @@ builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, relo
 if (FreshInstallationRequest.TryRead(builder.Configuration, out var installation))
     return await FreshInstallation.RunAsync(installation, Console.Out, Console.Error);
 
+if (RuntimeUpdateRequest.TryRead(builder.Configuration, out var runtimeUpdate))
+    return await RuntimeUpdate.RunAsync(runtimeUpdate, Console.Out, Console.Error);
+
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
     ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
     ?? "local.*";
@@ -179,6 +182,7 @@ builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddDantesRoleplayWeb(databasePath, builder.Configuration);
 builder.Services.AddScoped<ApplicationReadinessService>();
+var runtimeVerification = RuntimeVerification.PrepareServices(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
@@ -190,8 +194,9 @@ app.Logger.LogInformation(
 
 // Migrate, then seed the bootstrap contracts from the embedded markdown files. Seeding is
 // idempotent by content hash, so a restart with no edits writes nothing.
-await InitialiseStepAsync("Kernel database and bootstrap contracts", () =>
-    app.Services.InitialiseDantesRoleplayAsync());
+if (!runtimeVerification.Enabled)
+    await InitialiseStepAsync("Kernel database and bootstrap contracts", () =>
+        app.Services.InitialiseDantesRoleplayAsync());
 var settingsStarted = Stopwatch.GetTimestamp();
 await using (var settingsScope = app.Services.CreateAsyncScope())
 {
@@ -209,19 +214,21 @@ await using (var settingsScope = app.Services.CreateAsyncScope())
         values.Add(head.Key, document.RootElement.Clone());
     }
     hostSettings.ApplyStartupOverrides(values);
-    await overrides.MarkPendingAppliedAsync();
+    if (!runtimeVerification.Enabled) await overrides.MarkPendingAppliedAsync();
 }
 hostSettings.MarkProviderRegistered();
 app.Logger.LogInformation("Startup: host settings ready in {ElapsedMs:F0} ms.",
     Stopwatch.GetElapsedTime(settingsStarted).TotalMilliseconds);
-await InitialiseStepAsync("Website database", () => app.Services.InitialiseDantesRoleplayWebAsync());
-await using (var assistantScope = app.Services.CreateAsyncScope())
+if (!runtimeVerification.Enabled)
 {
+    await InitialiseStepAsync("Website database", () => app.Services.InitialiseDantesRoleplayWebAsync());
+    await using var assistantScope = app.Services.CreateAsyncScope();
     await InitialiseStepAsync("Interrupted conversation recovery", async () =>
         await assistantScope.ServiceProvider.GetRequiredService<IAssistantConversationService>()
             .RecoverInterruptedAsync());
 }
 
+app.UseRuntimeVerification(runtimeVerification);
 app.UseDantesRoleplayRemoteWebBoundary();
 app.UseRateLimiter();
 app.MapMcp(ServerConfiguration.McpEndpoint);

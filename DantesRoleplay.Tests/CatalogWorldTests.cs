@@ -131,6 +131,49 @@ public sealed class CatalogWorldTests : IDisposable
     }
 
     [Fact]
+    public async Task Authored_definition_import_preserves_entities_and_relationships()
+    {
+        await using var db = await PopulatedAsync(_source);
+        await new CatalogExporter(db).ExportAsync(_root);
+        await RewriteEntityAsync("orban", file => file with
+        {
+            Components = [new EntityComponent("stats", """{"vigour":18,"resolve":4}""")]
+        });
+        await new WorldStore(db).SetComponentAsync("orban", "stats", """{"vigour":3,"resolve":3}""");
+        await File.WriteAllTextAsync(
+            Path.Combine(_root, CatalogLayout.RelationshipsFileName.Replace('/', Path.DirectorySeparatorChar)),
+            new RelationshipsFile([]).ToJson());
+
+        var result = await Importer(db).ApplyAsync(_root,
+            new CatalogImportOptions(Scope: CatalogImportScope.AuthoredDefinitions));
+
+        Assert.False(result.Aborted);
+        Assert.Equal(CatalogChange.Conflict, ChangeFor(result.Plan, "orban"));
+        var orban = await new WorldStore(db).GetEntityAsync("orban");
+        Assert.Equal("""{"vigour":3,"resolve":3}""",
+            orban!.Components.Single(component => component.DefinitionId == "stats").Data);
+        Assert.Single(await new WorldStore(db).GetRelationshipsAsync("orban"));
+    }
+
+    [Fact]
+    public async Task Authored_definition_conflict_still_aborts_update_safe_import()
+    {
+        await using var db = await PopulatedAsync(_source);
+        await new CatalogExporter(db).ExportAsync(_root);
+        var path = Path.Combine(_root, CatalogLayout.ComponentsRoot, "stats.json");
+        var file = ComponentDefinitionFile.Parse(await File.ReadAllTextAsync(path), path);
+        await File.WriteAllTextAsync(path, (file with { Description = "Changed in files." }).ToJson());
+        await new WorldStore(db).DefineComponentAsync("stats", "Stats", "Changed in the database.");
+
+        var result = await Importer(db).ApplyAsync(_root,
+            new CatalogImportOptions(Scope: CatalogImportScope.AuthoredDefinitions));
+
+        Assert.True(result.Aborted);
+        Assert.Contains(result.Plan.Conflicts,
+            entry => entry.Kind == CatalogRecordKind.ComponentDefinition && entry.Id == "stats");
+    }
+
+    [Fact]
     public async Task An_entity_changed_live_is_left_alone()
     {
         await using var db = await PopulatedAsync(_source);

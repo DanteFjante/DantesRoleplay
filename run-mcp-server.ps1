@@ -1,26 +1,33 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Sets up a fresh checkout, then starts or checks the saved runtime release.
+    Sets up a fresh checkout, then starts, checks, or explicitly updates the saved runtime release.
 .DESCRIPTION
     Ordinary use needs no database, source-root, or role arguments. Local administration
     settings select the compatible host, frozen catalog, live database/blobs, and probe origins.
     -Restart replaces only the instance started by this launcher, never every server.
     -Profile selects a reviewed alternative for development or recovery.
     -Check verifies saved files without starting, stopping, or changing anything.
+    -Update builds the downloaded release and upgrades a preserved copy before selection.
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\run-mcp-server.ps1
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\run-mcp-server.ps1 -Restart
 #>
 [CmdletBinding()]
-param([switch] $Restart, [string] $Profile, [switch] $Check)
+param([switch] $Restart, [string] $Profile, [switch] $Check, [switch] $Update)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\RuntimeLaunch.ps1')
 $explicitProfile = $PSBoundParameters.ContainsKey('Profile')
 if (-not $Profile) { $Profile = Join-Path $PSScriptRoot 'DantesRoleplay.MCPServer\data\runtime-launch.json' }
 $Profile = [IO.Path]::GetFullPath($Profile)
+if ($Update) {
+    if ($Check) { throw '-Update and -Check cannot be combined.' }
+    . (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\RuntimeUpdate.ps1')
+    Update-InstalledRuntime -RepositoryRoot $PSScriptRoot -ProfilePath $Profile
+    return
+}
 . (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\FirstRun.ps1')
 Initialize-FirstRunIfNeeded -RepositoryRoot $PSScriptRoot -ProfilePath $Profile -ExplicitProfile:$explicitProfile -Check:$Check
 $fingerprint = (Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash

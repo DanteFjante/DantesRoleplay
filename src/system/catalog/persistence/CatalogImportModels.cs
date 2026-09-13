@@ -52,8 +52,24 @@ public enum CatalogForce
     Database
 }
 
+/// <summary>Limits which catalog-owned records an import may mutate.</summary>
+public enum CatalogImportScope
+{
+    /// <summary>Synchronize authored definitions and catalog fixture state.</summary>
+    All,
+
+    /// <summary>
+    /// Synchronize rules and supporting definitions while leaving every entity and relationship
+    /// in the runtime database untouched. This is the update-safe scope for an existing game.
+    /// </summary>
+    AuthoredDefinitions
+}
+
 /// <param name="DryRun">Report the plan and write nothing — no rows, no manifest.</param>
-public sealed record CatalogImportOptions(bool DryRun = false, CatalogForce Force = CatalogForce.None);
+public sealed record CatalogImportOptions(
+    bool DryRun = false,
+    CatalogForce Force = CatalogForce.None,
+    CatalogImportScope Scope = CatalogImportScope.All);
 
 /// <param name="Detail">One sentence a person can act on, not a restatement of the enum.</param>
 public sealed record CatalogImportPlanEntry(

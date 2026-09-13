@@ -356,7 +356,7 @@ public sealed class CatalogImporter(
 
         // Before anything is written, and before the transaction — an import that cannot finish
         // should not have started.
-        if (options.Force == CatalogForce.None && plan.Conflicts.Any())
+        if (options.Force == CatalogForce.None && plan.Conflicts.Any(entry => Included(entry.Kind, options.Scope)))
         {
             return new CatalogImportResult(plan, 0, 0, 0, Aborted: true, ManifestUpdated: false);
         }
@@ -365,7 +365,7 @@ public sealed class CatalogImporter(
         // store does not enforce that on write, applying a ruleset in an order that only works
         // because nothing checks is the kind of thing that becomes load-bearing by accident.
         var applying = plan.Entries
-            .Where(e => ShouldWrite(e.Change, options.Force))
+            .Where(e => Included(e.Kind, options.Scope) && ShouldWrite(e.Change, options.Force))
             .OrderBy(e => ApplyOrder(e.Kind))
             .ThenBy(e => e.Id, StringComparer.Ordinal)
             .ToList();
@@ -813,7 +813,7 @@ public sealed class CatalogImporter(
             // Derived from ShouldWrite rather than restated, so the manifest cannot claim
             // agreement for a record the apply pass skipped.
             var agrees = entry.Change == CatalogChange.Unchanged
-                         || ShouldWrite(entry.Change, options.Force);
+                         || Included(entry.Kind, options.Scope) && ShouldWrite(entry.Change, options.Force);
 
             if (agrees && TryDescribe(contents, entry, versions, out var described))
             {
@@ -844,6 +844,10 @@ public sealed class CatalogImporter(
 
         return true;
     }
+
+    private static bool Included(CatalogRecordKind kind, CatalogImportScope scope) =>
+        scope == CatalogImportScope.All
+        || kind is not CatalogRecordKind.Entity and not CatalogRecordKind.Relationships;
 
     private static bool TryDescribe(
         CatalogContents contents,

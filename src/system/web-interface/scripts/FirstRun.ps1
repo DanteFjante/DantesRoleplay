@@ -81,6 +81,23 @@ function Copy-FirstRunCatalog {
     }
 }
 
+function New-RuntimeRelease {
+    param([string] $RepositoryRoot, [string] $Destination, [hashtable] $Toolchain)
+    $hostRoot = Join-Path $Destination 'host'
+    $sourceRoot = Join-Path $Destination 'source'
+    $packageRoot = Join-Path $Destination 'package'
+    Invoke-FirstRunCommand $Toolchain.dotnet @('publish', 'DantesRoleplay.MCPServer/DantesRoleplay.MCPServer.csproj',
+        '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false',
+        '-p:Nullable=annotations', '-p:UseSharedCompilation=false', '-m:1', '-o', $hostRoot, '--nologo') $RepositoryRoot
+    $frontend = Join-Path $RepositoryRoot 'src/system/web-interface/dnd2024'
+    Invoke-FirstRunCommand $Toolchain.npm @('ci', '--no-audit', '--no-fund') $frontend
+    Invoke-FirstRunCommand $Toolchain.npm @('run', 'build:server') $frontend
+    Invoke-FirstRunCommand $Toolchain.node @((Join-Path $RepositoryRoot 'src/system/web-interface/scripts/build-installation.mjs'),
+        '--repository', $RepositoryRoot, '--output', $packageRoot) $RepositoryRoot
+    Copy-FirstRunCatalog $RepositoryRoot $sourceRoot
+    return [pscustomobject]@{ hostRoot = $hostRoot; sourceRoot = $sourceRoot; packageRoot = $packageRoot }
+}
+
 function Stop-FirstRunProbe {
     param($Receipt)
     if (-not $Receipt) { return }
@@ -131,20 +148,12 @@ function Initialize-FirstRuntime {
         Assert-RuntimeListenerOwnership @(Get-NetTCPConnection -LocalPort 6217 -State Listen -ErrorAction SilentlyContinue) $null
         $attempt = Join-Path $data ('install-' + [Guid]::NewGuid().ToString('N'))
         [IO.Directory]::CreateDirectory($attempt) | Out-Null
-        $hostRoot = Join-Path $attempt 'host'
-        $sourceRoot = Join-Path $attempt 'source'
-        $packageRoot = Join-Path $attempt 'package'
         $runtimeRoot = Join-Path $attempt 'runtime'
         Write-Host 'First run: building the server and website. Package restore may take a few minutes.'
-        Invoke-FirstRunCommand $toolchain.dotnet @('publish', 'DantesRoleplay.MCPServer/DantesRoleplay.MCPServer.csproj',
-            '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false',
-            '-p:Nullable=annotations', '-p:UseSharedCompilation=false', '-m:1', '-o', $hostRoot, '--nologo') $RepositoryRoot
-        $frontend = Join-Path $RepositoryRoot 'src/system/web-interface/dnd2024'
-        Invoke-FirstRunCommand $toolchain.npm @('ci', '--no-audit', '--no-fund') $frontend
-        Invoke-FirstRunCommand $toolchain.npm @('run', 'build:server') $frontend
-        Invoke-FirstRunCommand $toolchain.node @((Join-Path $RepositoryRoot 'src/system/web-interface/scripts/build-installation.mjs'),
-            '--repository', $RepositoryRoot, '--output', $packageRoot) $RepositoryRoot
-        Copy-FirstRunCatalog $RepositoryRoot $sourceRoot
+        $release = New-RuntimeRelease $RepositoryRoot $attempt $toolchain
+        $hostRoot = $release.hostRoot
+        $sourceRoot = $release.sourceRoot
+        $packageRoot = $release.packageRoot
         $exe = Join-Path $hostRoot 'DantesRoleplay.MCPServer.exe'
         Write-Host 'First run: installing the catalog, starter data, and website into a new database.'
         Invoke-FirstRunCommand $exe @('--Installation:Manifest', (Join-Path $packageRoot 'installation.json'),
