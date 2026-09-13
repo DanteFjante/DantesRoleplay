@@ -187,9 +187,13 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 The matching `676182b7` Release build passed in 22.82 seconds with zero warnings/errors. The copied
 host now runs the verified framework-dependent artifact-bin graph, but fresh Validate operation
 `0369f43b7be6a483e0fb363c1bf49eb2` still persisted `unavailable` with dependency, reuse-review and
-pure-closure unavailable diagnostics. The existing read-only comparator is checking the exact
-running source/database to find the remaining failing guard. Candidate, successful review, copied
-activation 66/page 82 and live state remain unchanged. No additional provider call was made.
+pure-closure unavailable diagnostics. The exact read-only comparator ruled out stale assemblies,
+DI and receipt pins: the same proof resolves with adequate time, but cold reconstruction takes
+11.923 seconds and exceeds the capability's ten-second deadline. Correct only synchronous
+Validate/Activate to a host-owned sixty-second maximum, still clipped to permission expiry.
+Keep queued review submission, worker leases, AI budgets and receipt checks unchanged. Candidate,
+successful review, copied activation 66/page 82 and live state remain unchanged. No additional
+provider call was made.
 Evidence: preservation root `p5-evidence/candidate-scope-validation-after-cold-fix.json`.
 
 Next: recover the valid first copied review, complete the two remaining copied reviews/activations

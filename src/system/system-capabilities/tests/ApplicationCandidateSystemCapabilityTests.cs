@@ -61,7 +61,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
         Assert.Equal("grant.validate@1", call.Host.GrantReference);
         Assert.Equal(InteractionExecutionProfile.Atomic, call.Host.Profile);
         Assert.Equal(8, call.Host.Budget.MaximumOperations);
-        Assert.InRange(call.Host.Budget.DeadlineUtc, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(10));
+        Assert.InRange(call.Host.Budget.DeadlineUtc, DateTime.UtcNow.AddSeconds(45), DateTime.UtcNow.AddSeconds(60));
         Assert.Contains("\"operationId\":\"0123456789abcdef0123456789abcdef\"", result.Content,
             StringComparison.OrdinalIgnoreCase);
     }
@@ -219,6 +219,30 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             .Concat(fixture.Authoring.Recoveries.Select(value => value.Host)),
             host => Assert.Equal("grant.author@1", host.GrantReference));
         Assert.Equal("grant.activate@1", fixture.Authoring.Activations[0].Host.GrantReference);
+        Assert.All(fixture.Authoring.Writes.Select(value => value.Host)
+            .Concat(fixture.Authoring.Recoveries.Select(value => value.Host)),
+            host => Assert.InRange(host.Budget.DeadlineUtc, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(10)));
+        Assert.InRange(fixture.Authoring.Activations[0].Host.Budget.DeadlineUtc,
+            DateTime.UtcNow.AddSeconds(45), DateTime.UtcNow.AddSeconds(60));
+    }
+
+    [Fact]
+    public async Task Administrative_deadline_remains_clipped_to_the_current_grant_expiry()
+    {
+        var expiresAtUtc = DateTime.UtcNow.AddSeconds(20);
+        await using var fixture = await Fixture.CreateAsync(withGrant: true, expiresAtUtc: expiresAtUtc);
+        var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var input = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = new string('d', 32), revision = 1,
+            contentFingerprint = Hash, samples = Array.Empty<object>()
+        });
+
+        var result = await gateway.InvokeAsync(Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-expiry", "codex");
+
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(expiresAtUtc, Assert.Single(fixture.Authoring.ValidationCalls).Host.Budget.DeadlineUtc);
     }
 
     [Fact]
@@ -518,7 +542,8 @@ public sealed class ApplicationCandidateSystemCapabilityTests
         public static async Task<Fixture> CreateAsync(bool withGrant,
             StandingGrantCapability capability = StandingGrantCapability.Validate,
             IReadOnlyList<StandingGrantCapability>? capabilities = null,
-            int maximumOperations = 16)
+            int maximumOperations = 16,
+            DateTime? expiresAtUtc = null)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -538,14 +563,16 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             if (withGrant)
             {
                 foreach (var value in capabilities ?? [capability])
-                    await AddGrantAsync(db, value, maximumOperations: maximumOperations);
+                    await AddGrantAsync(db, value, maximumOperations: maximumOperations,
+                        expiresAtUtc: expiresAtUtc);
             }
             return new(connection, provider, scope, authoring);
         }
 
         internal static async Task AddGrantAsync(DantesRoleplayDbContext db,
             StandingGrantCapability capability, string? grantId = null,
-            int maximumOperations = 16)
+            int maximumOperations = 16,
+            DateTime? expiresAtUtc = null)
         {
             var name = capability.ToString().ToLowerInvariant();
             grantId ??= name;
@@ -553,7 +580,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             var grant = new StandingGrantRevision($"grant.{grantId}@1", $"grant.{grantId}", 1,
                 new string('0', 64), Principal.PrincipalId, Application, StandingGrantScope.Application, null,
                 [capability], new(StandingGrantDefinitionMode.ExactIds, [], []), [], maximumOperations,
-                DateTime.UtcNow.AddMinutes(5), false, operationId);
+                expiresAtUtc ?? DateTime.UtcNow.AddMinutes(5), false, operationId);
             grant = grant with { ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant) };
             db.Add(new Operation { Id = operationId, Timestamp = DateTime.UtcNow, Tool = "test" });
             db.Add(new StandingGrantRevisionRecord

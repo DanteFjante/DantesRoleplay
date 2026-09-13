@@ -145,7 +145,7 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
             var selection = await ApplicationCandidateCapabilityHost.CreateAsync(
                 db, applications, context.Invocation, applicationId, [capability],
                 context.RequestToken, InteractionExecutionProfile.Atomic, parsed.RequiredOperations,
-                cancellationToken, maximumDuration: TimeSpan.FromSeconds(10),
+                cancellationToken, maximumDuration: ApplicationCandidateCapabilityHost.MaximumDuration(id),
                 maximumOperations: parsed.MaximumOperations);
             if (selection.Hosts.Count == 0) return Failure(selection.Code);
 
@@ -284,12 +284,22 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
 
 internal static class ApplicationCandidateCapabilityHost
 {
+    private static readonly TimeSpan QuickOperationDuration = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan AdministrativeOperationDuration = TimeSpan.FromSeconds(60);
+
+    internal static TimeSpan MaximumDuration(string capabilityId) => capabilityId switch
+    {
+        SystemCapabilityIds.ApplicationCandidateValidate or SystemCapabilityIds.ApplicationCandidateActivate =>
+            AdministrativeOperationDuration,
+        _ => QuickOperationDuration
+    };
+
     internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         CancellationToken cancellationToken) => CreateAsync(db, applications, context, applicationId,
-            [capability], commandId, profile, 1, cancellationToken, TimeSpan.FromSeconds(10));
+            [capability], commandId, profile, 1, cancellationToken, QuickOperationDuration);
 
     internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
@@ -297,7 +307,7 @@ internal static class ApplicationCandidateCapabilityHost
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         int requiredOperations, CancellationToken cancellationToken)
         => CreateAsync(db, applications, context, applicationId, [capability], commandId,
-            profile, requiredOperations, cancellationToken, TimeSpan.FromSeconds(10));
+            profile, requiredOperations, cancellationToken, QuickOperationDuration);
 
     internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
@@ -307,7 +317,7 @@ internal static class ApplicationCandidateCapabilityHost
         Func<StandingGrantRevision, bool> eligibleGrant,
         CancellationToken cancellationToken) => CreateAsync(db, applications, context,
             applicationId, capabilities, commandId, profile, requiredOperations, cancellationToken,
-            TimeSpan.FromSeconds(10), eligibleGrant);
+            QuickOperationDuration, eligibleGrant);
 
     internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
