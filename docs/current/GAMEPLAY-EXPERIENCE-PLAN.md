@@ -115,7 +115,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, authorized for live cutover after the copied acceptance gates passed.
+Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **Live cutover on port 6217 is in progress: the new host is running, with final feature publication and acceptance pending.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, authorized for live cutover after the copied acceptance gates passed.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -290,6 +290,18 @@ Root authorized live cutover on 2026-09-13 after those gates. Preflight still sh
 live PID 25008, application 66, binding 40, page 80 and no standing grants. The sole writer will
 preserve fresh live state and publish into isolated `platform-gameplay-d0481f48-20260913-host`
 and `-source` release paths. No copied database or review receipt may replace live state.
+
+Fresh live preservation completed: online backup `dantesroleplay.db.backup-20260913T070957841Z`
+is 100,007,936 bytes, SHA-256 `4F8E16C7EBC93E43906C21B7EBA6083E85AF665278636B855FA085EC6F8A9290`,
+with a clean integrity check. The 277-record rules export and all 152 retained blob hashes
+(314,544,806 bytes) were verified, with no missing, mismatched or extra blobs. The old owned
+PID 25008 was stopped after ownership verification; isolated `d0481f48` host PID 26596 now serves
+port 6217 and completed migrations. Active application 66/page 80 remain preserved at this
+checkpoint. Owner loopback resolves DM; actual public Host/Origin resolves PlayerGroup.
+Namespace synchronization changed only `dnd2024.query`; the narrow catalog workset updated
+map anchor/visual contracts and left 277 records unchanged. Immutable map schema v2 was registered
+with the old v1 hash preserved. Same-ID component migration and live content/candidate/page
+publication are still pending. Evidence stays under the existing preservation root `p5-evidence`.
 
 Next: complete guarded live publication and final owner/public acceptance. Live publication must
 use fresh live candidates, reviews and version checks, not copied
