@@ -261,8 +261,18 @@ matching Tools/runtime, package, schema and page bundle. Compare those paths to 
 verify the fresh active-page CAS and reviewed bundle hash before applying. Record exact live
 grant revisions/fingerprints for all publication operations, with expiry covering their deadlines.
 
-Next: verify and activate the first copied candidate, complete the two remaining copied reviews/activations
-and final public checks, then authorize the sole writer to take fresh live preservation and
+The first two copied queries are now active. Scope validation `773f5327085349b4e92c84c73c37a435`
+inspected valid with no generic runtime report; activation `f23f7d020e4bf5b02fe61671dc4e5b9a`
+and its replay matched exactly. Paginated scope received `extendExisting` from one real Sol
+attempt (`task.3ae37426781f4097ce5c3cf20756cb80`), validated as
+`51659bcb92fb7b1d748e9303025855b4`, and activated as `de19edf5f13091024e79d2b287fdf17c`.
+Copied application activation is 68, fingerprint
+`65ABC34D2FCD13C2331DCCEC529F92E9A8CDE289BD8C5D8A17034B4EAA732D9A`.
+Dream candidate `9c295fe16fbb71c233c4a0e6de5feb0c` revision 1 has been submitted through normal
+review admission as `task.f7ed8baaadc625cf7d1167a5f4ff0a10`; no live write has occurred.
+
+Next: complete the copied dream review/activation, compatible state rebind and final public
+checks, then authorize the sole writer to take fresh live preservation and
 publish. Live publication must use fresh live candidates, reviews and version checks, not copied
 database or review receipts; three additional bounded live reviews are authorized. Verify live
 DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5
