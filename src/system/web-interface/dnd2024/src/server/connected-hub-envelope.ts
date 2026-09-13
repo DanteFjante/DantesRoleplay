@@ -353,10 +353,13 @@ function resolvedMapBase(
   if (!value.mapVisual || typeof value.mapVisual.imageUrl !== "string") return null;
   try {
     const parsed = new URL(value.mapVisual.imageUrl, "http://media.invalid");
-    if (!value.mapVisual.imageUrl.startsWith("/api/applications/") ||
-        parsed.origin !== "http://media.invalid" || parsed.hash ||
-        !/^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/entities\/[^/?#\\\s]+\/media\/[^/?#\\\s]+\/content$/u.test(parsed.pathname) ||
-        !(parsed.search === "" || /^\?perspective=(?:player|dm)$/u.test(parsed.search))) return null;
+    if (!value.mapVisual.imageUrl.startsWith("/api/") ||
+        parsed.origin !== "http://media.invalid" || parsed.hash) return null;
+    const projectionMedia = /^\/api\/read-model-media\/[a-f0-9]{64}\/content$/u.test(parsed.pathname)
+      && parsed.search === "";
+    const entityMedia = /^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/entities\/[^/?#\\\s]+\/media\/[^/?#\\\s]+\/content$/u.test(parsed.pathname)
+      && (parsed.search === "" || /^\?perspective=(?:player|dm)$/u.test(parsed.search));
+    if (!projectionMedia && !entityMedia) return null;
   } catch { return null; }
   const dimensions = Number.isInteger(value.mapVisual.width) && value.mapVisual.width! > 0 &&
     Number.isInteger(value.mapVisual.height) && value.mapVisual.height! > 0

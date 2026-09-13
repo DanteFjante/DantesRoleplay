@@ -1218,6 +1218,24 @@ test("permission-bound live map URLs keep their approved perspective and reject 
   assert.equal(absolute.world.maps.find((map) => map.id === absolute.world.rootMapId)?.baseState, "unavailable");
 });
 
+test("live maps accept projection-bound image tickets and reject malformed or altered tickets", () => {
+  const ticket = "/api/read-model-media/" + "a".repeat(64) + "/content";
+  for (const imageUrl of [ticket, `${ticket}?perspective=dm`, `${ticket}#map`,
+    ticket.replace("a".repeat(64), "a".repeat(63)),
+    `https://example.com${ticket}`, `http://media.invalid${ticket}`, `//media.invalid${ticket}`]) {
+    const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+      audience: { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
+      locationDirectoryAudience: "player",
+      locationDirectory: [{ id: "location.world", name: "World atlas", containerId: "world.thalorien",
+        mapVisualState: "ready", mapVisual: { imageUrl, alt: "World atlas", width: 1000, height: 800 } }],
+    }));
+    const map = envelope.world.maps.find((map) => map.id === envelope.world.rootMapId);
+    assert.equal(map.baseState, imageUrl === ticket ? "ready" : "unavailable", imageUrl);
+    assert.deepEqual(map.base, imageUrl === ticket
+      ? { imageUrl: ticket, alt: "World atlas", width: 1000, height: 800 } : null);
+  }
+});
+
 test("uses exact live containment for cropped Region map membership", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },

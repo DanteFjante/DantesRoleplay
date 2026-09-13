@@ -1,0 +1,736 @@
+{
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "entities": [
+    {
+      "entityId": "location.caldris.atlas.lantern-sea",
+      "name": "Lantern Sea",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "The sea between Eredane and Solasca. Coastal passages and open-water sailings require vessels, working harbours and suitable conditions; the sea is not a road.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 570,
+            "y": 560
+          },
+          "revision": 2
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "typeVersion": 2,
+          "schemaHash": "096846284D7D198FAD231F32CDB301FA7C498836E67D986CE42231F6420E5D1A",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lantern Sea fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lantern-sea.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Lantern Sea fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/lantern-sea.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          },
+          "revision": 3
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross",
+      "name": "Tidecross",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Tidecross fills the long island at the southern mouth of the Lantern Sea. One of the most common stops on journeys between Eredane and Solasca, it lives by pilotage, fresh water, repairs, cargo exchange and beds for people waiting on wind or passage. Several thousand permanent residents share steep streets with a shifting population of sailors, merchants, pilgrims and deck passengers. Merchant ships anchor beyond the quays; harbour ferries carry people and goods ashore. Fishing families still work the inner basin at dawn. The Common Quay charter promises one published tariff and a hearing to crews from either continent. Wealthy warehouse factors now want priority berths, while ferrymen and fishers defend the water stairs their grandparents built.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 645,
+            "y": 755
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "typeVersion": 2,
+          "schemaHash": "096846284D7D198FAD231F32CDB301FA7C498836E67D986CE42231F6420E5D1A",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tidecross island harbour town: dense old streets, market square, fishing basin, merchant quays, ferry landings, shipyard and beacon.",
+                "caption": "A principal port of call between Eredane and Solasca. Interactive markers identify its districts and landmarks.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/tidecross/tidecross-harbour.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tidecross island harbour town: dense old streets, market square, fishing basin, merchant quays, ferry landings, shipyard and beacon.",
+                "caption": "A principal port of call between Eredane and Solasca. Interactive markers identify its districts and landmarks.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/tidecross/tidecross-harbour.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              }
+            }
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.common-quay",
+      "name": "The Common Quay",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The port's working heart: laden sailing ships, cranes, customs tables and bonded warehouses crowd a stone waterfront. Harbourmaster Mara Venn chalks berth assignments on a board that anyone may inspect. Grain from Eredane passes sacks of Solascan spices; porters sort cargo by vessel marks rather than language. The quay charter requires the same published dues for both coasts. Its newest argument is whether paying for a longer berth means owning the steps beside it.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 650,
+            "y": 540
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.tide-market",
+      "name": "Tide Market",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A crowded square of canvas stalls, hot fish broth, sailcloth, fruit, second-hand boots and money changers. Trading peaks whenever the harbour ferries unload, rather than at a fixed hour. Market caller Nessa Reed repeats sailing notices in both coasts' trading tongues and collects unclaimed messages at her stall. A ship's bell at the fountain is rung only when a missing vessel returns; tourists who ring it for luck are made to buy supper for its former crew.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 454,
+            "y": 492
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.old-town",
+      "name": "The Salt Steps",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The oldest quarter climbs above the port in narrow stairs, tiled roofs and shared courtyards. Many houses have a ground-floor room rented by the tide to passengers without an inn bed. Door lintels carry little carved boats for family members at sea. Long-established fishing households and recent arrivals share communal ovens; the rising price of lodging has made every empty room a neighbourhood argument.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 386,
+            "y": 384
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.north-ferry",
+      "name": "North Ferry Stairs",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The arrival landing for harbour ferries and tenders meeting ships on the Eredane side of the roadstead. Ticket sheds, luggage scales and covered benches surround the water stairs. Ferrymaster Oren Bell keeps a separate place in each boat for people travelling to find work. These are local harbour crossings; onward passage between continents depends on a seaworthy vessel, a berth and weather, not an hourly ferry timetable.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 688,
+            "y": 307
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.south-ferry",
+      "name": "South Ferry Stairs",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Wide timber piers handle tenders from Solasca-bound and arriving merchant ships. Porters wheel handcarts between awnings, animal pens and the baggage shed. A brass tally counts passengers ashore and aboard so a late sailing cannot quietly abandon a child or servant. At dusk musicians play for tips while stewards call vessel names over the noise. Fog can leave this whole quarter full of stranded travellers for days.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 785,
+            "y": 664
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.fishing-basin",
+      "name": "Netters' Basin",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A sheltered basin reserved for the island's fishing boats, with low jetties, net lofts and a morning catch auction. Fishwife Sella Marr sells soup before she sells fish and knows which crews have returned short-handed. The fishing families supplied the first pilots and still claim rescue takes precedence over cargo work. They fear a proposed warehouse extension will swallow their last all-tide slip.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 620,
+            "y": 610
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.shipyard",
+      "name": "The Keel Gardens",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "Slipways and open sheds occupy the southern shore. Ribs of unfinished boats stand beside hauled-out merchant hulls; caulkers, rope makers and sail menders work by daylight and tide. Master shipwright Ilyan Sore insists repairs are priced before a ship is opened. Long crossings make even a modest repair yard essential: broken spars, sprung planks and fouled rudders bring travellers here who never planned to stop. Apprentices call each new keel a tree planted toward the sea.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 490,
+            "y": 796
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.exchange-hall",
+      "name": "The Two Shores Exchange",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A long waterfront hall holds cargo brokers, interpreters, money changers and the Common Quay court. Its public scales and copied tariff protect crews unfamiliar with local measures. Merchants settle ordinary disagreements here before their vessels sail. The upper gallery is lined with names of rescuers from both continents; a proposal to sell priority docking rights has divided the elected harbour wardens.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 613,
+            "y": 381
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.lantern-inn",
+      "name": "The Waiting Lantern",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "interior",
+            "status": "active",
+            "summary": "A broad inn beside Tide Market offers common bunks, family rooms, stew and a locked baggage cellar. Its notice wall lists ships seeking passengers or hands, missing luggage and letters waiting for collection. Host Tavin Pell keeps a few beds for crews whose vessels are detained or lost. The common room is the town's living timetable: pilots, cooks and passengers often know a departure has changed before a clerk does.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 471,
+            "y": 544
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.mariners-shrine",
+      "name": "The Mariners' House",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A modest shrine and shelter near the northern path welcomes mariners of different customs. Its keeper tends a memorial book, spare blankets and a kitchen supported by harbour subscriptions. Families leave a length of knotted cord while someone is away; safe arrivals untie one knot and help serve a meal. The institution grew from a rescue shelter, and its doors stay open even during trade disputes.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 556,
+            "y": 210
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.old-signal-tower",
+      "name": "The First Watch",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The roofless signal tower on the northern headland predates the great quays. From here the first pilots watched for sails and guided ships to shelter using baskets of fire. Storm damage ended its working life when the new beacon was built. Children dare one another to climb its worn stairs, but retired pilots still come here to watch the weather and remember the night the lower harbour flooded.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 465,
+            "y": 59
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "location.caldris.tidecross.harbour-beacon",
+      "name": "The Returning Light",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "typeVersion": 1,
+          "schemaHash": "B03F39181BBD5388B0C6AD2C4CBE12B1DECF1BCD51ECCCC7D0E6FF05AAD49421",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The active lighthouse stands on the outer breakwater above a bell rung in fog. Its keepers mark channels, warn of changes in the shoals and coordinate boats going to ships in trouble. The light is funded by every cleared cargo and cannot be extinguished over unpaid dues under the charter. This is Tidecross's harbour light, distinct from the older Halfway Light in Morrow Strait.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "typeVersion": 1,
+          "schemaHash": "9B1538328AE54367194C8D0F672304AEBC4273FBEC6B90F937465143755A0282",
+          "value": {
+            "x": 913,
+            "y": 484
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "fact.caldris.tidecross.crossing-stop",
+      "name": "A Port Between Two Continents",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "typeVersion": 1,
+          "schemaHash": "C8ABABB69052A2A6FDEC56073956E84C50FB6C1BA40206EE0A0C82D1FF081E88",
+          "value": {
+            "status": "active",
+            "summary": "Tidecross is one of the most frequently used ports of call between Eredane and Solasca. Ships replenish water and provisions, exchange cargo, hire pilots and repair damage here. Some sailings transfer passengers to another vessel; many simply wait for a useful wind. Ocean passages still take days and depend on route and season. Small harbour ferries shuttle between shore, outer anchorages and neighbouring islets; they are not a shortcut that turns the crossing into a river journey.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "typeVersion": 1,
+          "schemaHash": "71220538DB8983F3BD444158461A64287FC8EB387F47A2B29B661DB618D7B9EB",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "fact.caldris.tidecross.quay-charter",
+      "name": "The Common Quay Promise",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "typeVersion": 1,
+          "schemaHash": "C8ABABB69052A2A6FDEC56073956E84C50FB6C1BA40206EE0A0C82D1FF081E88",
+          "value": {
+            "status": "active",
+            "summary": "The Common Quay charter guarantees crews from either continent the same published tariff, access to fresh water and a hearing before goods are seized. A council of harbour wardens answers to fishers, ferrymen, shipwrights, householders and warehouse factors. It makes Tidecross useful to rivals who will not trust each other's home ports. Neutral business is hard work: the wardens hear disputes every market day, and everyone watches who receives the next berth.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "typeVersion": 1,
+          "schemaHash": "71220538DB8983F3BD444158461A64287FC8EB387F47A2B29B661DB618D7B9EB",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "fact.caldris.tidecross.daily-life",
+      "name": "A Town That Lives by Arrivals",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "typeVersion": 1,
+          "schemaHash": "C8ABABB69052A2A6FDEC56073956E84C50FB6C1BA40206EE0A0C82D1FF081E88",
+          "value": {
+            "status": "active",
+            "summary": "The fishing auction starts before dawn, the market swells after each tender, and inn kitchens keep pots warm long after dark. Porters carry mixed cargoes through streets full of accents, sea chests and children sent to meet returning relatives. Fresh water comes from rain cisterns and supply vessels; wasteful captains pay more. During prolonged bad weather lodging spills into halls and private rooms, while the Mariners' House feeds stranded crews.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "typeVersion": 1,
+          "schemaHash": "71220538DB8983F3BD444158461A64287FC8EB387F47A2B29B661DB618D7B9EB",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "fact.caldris.tidecross.returning-bell",
+      "name": "The Bell for the Missing",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "typeVersion": 1,
+          "schemaHash": "C8ABABB69052A2A6FDEC56073956E84C50FB6C1BA40206EE0A0C82D1FF081E88",
+          "value": {
+            "status": "active",
+            "summary": "Tide Market's old ship bell is reserved for a vessel thought lost that finally comes home. Its first ringing followed the storm remembered as the Night of Open Doors, when islanders housed strangers from both continents without asking who would pay. Families still prepare a shared meal when the bell sounds. The custom is affectionate and practical: a returned crew may have lost wages, possessions and friends even when its ship survives.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "typeVersion": 1,
+          "schemaHash": "71220538DB8983F3BD444158461A64287FC8EB387F47A2B29B661DB618D7B9EB",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "fact.caldris.tidecross.present-pressure",
+      "name": "Who Owns the Water Stairs?",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "typeVersion": 1,
+          "schemaHash": "C8ABABB69052A2A6FDEC56073956E84C50FB6C1BA40206EE0A0C82D1FF081E88",
+          "value": {
+            "status": "active",
+            "summary": "Tidecross's prosperity is pressing against its charter. Warehouse factors propose guaranteed priority berths to pay for a new quay; fishers fear losing Netters' Basin, and ferrymen fear that ordinary passengers will be priced off the landing steps. The wardens have announced public hearings, not a settled decision. Missing tariff copies, an overbooked sailing or a damaged water shipment can turn an ordinary day into work for a party willing to listen.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          },
+          "revision": 1
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "typeVersion": 1,
+          "schemaHash": "71220538DB8983F3BD444158461A64287FC8EB387F47A2B29B661DB618D7B9EB",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.first-pilots",
+      "name": "Fishing Stairs Become a Harbour",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "typeVersion": 1,
+          "schemaHash": "BA9045B4360105168A745B958A9EA27401A5F120575D5DA66F3E85B95907E9C7",
+          "value": {
+            "status": "active",
+            "title": "Fishing Stairs Become a Harbour",
+            "summary": "Fishing families began guiding passing vessels into the island's sheltered eastern water. Their landing stairs became a place to buy fresh fish, water and local pilotage. Travellers waiting on the crossing rented rooms above net stores; the settlement that became Tidecross grew around this everyday work.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -95000000,
+            "precision": "era",
+            "dateLabel": "The early harbour generations",
+            "visibility": "public"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.common-quay",
+      "name": "The Common Quay Charter",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "typeVersion": 1,
+          "schemaHash": "BA9045B4360105168A745B958A9EA27401A5F120575D5DA66F3E85B95907E9C7",
+          "value": {
+            "status": "active",
+            "title": "The Common Quay Charter",
+            "summary": "Growing traffic brought rival toll demands and seizures that threatened the island's livelihood. Harbour households and traders agreed a published common tariff and a local hearing for crews from either shore. New stone quays and bonded stores followed, establishing Tidecross as a regular stop rather than merely a refuge in bad weather.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -63000000,
+            "precision": "era",
+            "dateLabel": "The great quay-building era",
+            "visibility": "public"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.open-doors",
+      "name": "The Night of Open Doors",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "typeVersion": 1,
+          "schemaHash": "BA9045B4360105168A745B958A9EA27401A5F120575D5DA66F3E85B95907E9C7",
+          "value": {
+            "status": "active",
+            "title": "The Night of Open Doors",
+            "summary": "A violent storm drove ships from both continents into shelter and flooded the lower harbour. Islanders opened houses and workshops to stranded crews. Ferrymen and fishers worked rescue boats together. The shared meal and returning-bell custom remember those who came home and those who did not; afterwards the town built the stronger breakwater and Returning Light.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -26000000,
+            "precision": "era",
+            "dateLabel": "The generation of the great harbour storm",
+            "visibility": "public"
+          },
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.ferry-stairs",
+      "name": "The Two Ferry Stairs Open",
+      "revision": 1,
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "typeVersion": 1,
+          "schemaHash": "BA9045B4360105168A745B958A9EA27401A5F120575D5DA66F3E85B95907E9C7",
+          "value": {
+            "status": "active",
+            "title": "The Two Ferry Stairs Open",
+            "summary": "Dedicated north and south ferry stairs separated passenger boats from the busiest cargo quays. Reliable harbour transfers, interpreters, lodging and repairs strengthened Tidecross's place on the continental crossing. The increase in trade also raised rents and intensified the unresolved struggle over priority berths and the fishing basin.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -6307200,
+            "precision": "era",
+            "dateLabel": "The recent harbour expansion",
+            "visibility": "public"
+          },
+          "revision": 1
+        }
+      ]
+    }
+  ],
+  "missing": []
+}
