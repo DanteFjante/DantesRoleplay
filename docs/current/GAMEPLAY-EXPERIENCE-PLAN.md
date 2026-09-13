@@ -115,16 +115,16 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **Live cutover on port 6217 is in progress: the new host is running, with final feature publication and acceptance pending.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, authorized for live cutover after the copied acceptance gates passed.
+Updated 2026-09-13. **P0–P5 are accepted and live on port 6217**, with production source `d0481f48` integrated on master. Application activation 69, state binding 43 and page 81 passed final public/owner browser and MCP checks after the second restart. The release-only grant is revoked and the review queue is empty. The rehearsal server is stopped; post-delivery generated-output compression is the only remaining cleanup work; P6 roads remain an optional follow-up.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
-| P0 Preservation | Complete: exact live records, previous artwork, database backup and immutable blob copy retained | Fresh backup/export and version checks immediately before live writes |
-| P1 Audience | Truthful nonprivileged PlayerGroup, protected DM preview, server filtering, cache reset and authorized media tickets integrated | Rehearsal and live public/owner browser checks |
-| P2 Maps | Existing 0..1000 north-up frame and overlays extended to active site/interior map owners; copied overlays and pan/zoom passed | Live verification; rename remains outside the existing mutation contract |
-| P3 Starting area | Eight maps, three illustrations, fourteen child locations, three reused clues, two new unrevealed clues and one complete future situation integrated | Typed import, location-gallery attachment and live projections |
-| P4 Memory | Private journals, migration, real Codex capture, replay/retry/disconnect and source-pinned INNER derivation integrated | Matching release helper and usable linked-session setup; final MCP checks |
-| P5 Delivery | Combined build, website, regression corrections and protocol checks passed; matching release built and copied DB migrated successfully | Copied cutover, guarded live publication and second restart |
+| P0 Preservation | Complete: fresh live backup/export, component byte witnesses and exact asset baseline retained | Passed |
+| P1 Audience | Truthful nonprivileged PlayerGroup, protected DM, server filtering, cache reset and authorized media tickets live | Public/owner access and denial checks passed |
+| P2 Maps | Data-backed overlays, consistent parent/detail frames, zoom and keyboard pan live | Passed; rename remains outside the existing mutation contract |
+| P3 Starting area | Eight maps, three illustrations, fourteen child locations, two new unrevealed clues and a future situation published | Copied full visual matrix and live representative checks passed |
+| P4 Memory | Private journals, capture, replay/retry/disconnect and source-pinned INNER derivation delivered; matching helper/manuals verified | Passed; capture stays unconnected until a real gameplay task is linked |
+| P5 Delivery | Live host/source/Tools/page, migrations, three fresh reviews, permission cleanup and two restarts verified | Accepted; post-delivery disk cleanup is separate |
 | P6 Roads | Optional documented follow-up | No implementation or scheduled automation in this release |
 
 ### Ownership
@@ -174,7 +174,7 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 
 - Current production source: `d0481f48`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
 - Root final affected checks: 37 passed and two deliberately retired protocol skips. After the last capture-only correction, 18 capture checks passed and disposable catalog validation passed 620 records with seven existing warnings. A transient test-compiler access violation cleared on one retry; no test failure remains. The full-suite evidence above remains the broad regression run.
-- Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
+- Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF7`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
 - Copied browser checks passed all eight real maps, with marker counts 3/6/8/9/15/5/4/5; three 1536×1024 galleries; the same map canvas under zoom and keyboard pan; Player scope/gallery reset; and absence of DM blocks in Player. Stable fresh loads showed no stale-view banner or API/page errors. Fourteen added child locations and exact query-to-overlay IDs, labels and anchors demonstrate data-backed overlays. The existing mutation owner rejected the proposed rename in dry-run with `ENTITY_RENAME_UNSUPPORTED`; no mutation or bypass followed, and a new rename API is excluded from this release.
 - Actual retained-data diagnosis found the first query closure rejected an omitted query input schema paired with an explicit empty-object projection schema. `0654cbb0` aligns review with existing runtime behavior: omitted query input is fixed `{}`, which the projection schema must accept. Explicit input contracts still require exact equality and cannot change through this grammar. The complete gateway publication regression and negative cases passed; query review grammar/evidence is now v3. No source-basis reset or legacy activation bypass was needed.
 - Copied candidate `de8bf6583dd37be5fa076bfde6a69b80` revision 2 kept the exact same query bytes and used reason `mediaOwnerReference`. Its real Sol task `task.70c0a337867bf72946204351e5796267` completed with an inconclusive judgment because retrieval supplied no existing-query alternative. Revision 3 used `scanning map`, which retrieved the predecessor but failed to explain the extension, and received `reuseExisting`. Neither receipt was validated or activated. Exactly two paid calls used 24,338 and 29,418 tokens; an earlier lease expired before dispatch and was not a paid call. Further wording experiments are stopped. Fix the review owner to supply the canonical predecessor and preserve the complete meaningful change reason before another call.
@@ -313,10 +313,25 @@ Additional focused regression coverage for the shared receipt reader passed 2/2 
 Debug graph: workflow publication/replay and stateful publication/execution/replay. No additional
 build or provider call was used for those checks.
 
-Next: complete guarded live publication and final owner/public acceptance. Live publication must
-use fresh live candidates, reviews and version checks, not copied
-database or review receipts; three additional bounded live reviews are authorized. Verify live
-DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5
-complete. Human setup instructions for explicitly linked gameplay capture are in
+Final live acceptance is complete. All three fresh live reviews completed in one attempt each;
+validation, activation and exact retries passed. Live activation 69 is
+`69421896F570E2C6D34EB06FC6E460EAEEE04396C497433CA716E35618FD084C`, binding 43 is
+`7C49F32E65FF3D435CA675AFBC0735FB830FA35E6E81EDCB644548939B6FD6F2`, and page 81 content is
+`390FA0244C541ADCFB376A40B513DBAD85F050FB9BFDF20425B24B983EC80B33`. The saved launch profile
+hash is `9F9123664C5D606DD320A9AD9106E6F54B6F5BAB162CF516E617D4CC4C22C911`; the final live host
+is PID 9112. The three-origin readiness and manual hashes stayed stable across the second owned
+restart, and the separate release grant was revoked after replay/inspection. No unfinished review
+task or unsettled provider reservation remains.
+
+Live browser checks passed public Player image issuance/redemption and secret/raw/forged access
+denials, town and inn overlays with zoom/pan, Player cache clearing, Green & Wood, and a sixty-second
+stable owner session. Evidence: `.tmp/gameplay-browser/public-security-live.json`,
+`live-focused-presentation.json` and `final-live-stability.json`. All eight maps and three galleries
+were already checked in the byte-identical copied bundle. Live MCP orientation, intent-directed
+manual retrieval, active dream procedure, protected unconfigured memory state and matching Tools
+capture help also passed; evidence is `p5-evidence/live-final-manual-context-proof.json` under the
+preservation root. Detailed recovery/profile witnesses are in [local deployment](upgrade/06-local-deployment.md).
+
+Human setup instructions for explicitly linked gameplay capture are in
 [OPERATIONS.md](OPERATIONS.md#link-a-gameplay-task-to-conversation-memory); live capture remains
 unconnected until an actual gameplay task is selected.
