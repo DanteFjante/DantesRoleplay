@@ -18,7 +18,8 @@ internal sealed class ApplicationCandidateReviewedStatefulUpdateReader(
     {
         try
         {
-            foreach (var receipt in await receipts.ReadAsync(host, candidate, cancellationToken))
+            foreach (var receipt in await receipts.ReadAsync(host, candidate,
+                ApplicationCandidateStatefulReviewClosureReader.GrammarVersion, cancellationToken))
             {
                 if (receipt.Authority.ReviewClosure is not ApplicationCandidateStatefulReviewClosureEvidence closure
                     || !ApplicationCandidateReviewedPureUpdateReader.JudgmentSupports(

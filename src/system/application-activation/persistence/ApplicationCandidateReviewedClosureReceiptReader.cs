@@ -25,7 +25,7 @@ internal sealed class ApplicationCandidateReviewedClosureReceiptReader(
     SystemTaskApplicationValidationGate validationGate)
 {
     internal async Task<IReadOnlyList<ApplicationCandidateReviewedClosureReceipt>> ReadAsync(
-        InteractionInvocationHost host, ApplicationCandidateReference candidate,
+        InteractionInvocationHost host, ApplicationCandidateReference candidate, string expectedGrammar,
         CancellationToken cancellationToken = default)
     {
         if (db.Database.CurrentTransaction?.GetDbTransaction() is not SqliteTransaction transaction
@@ -33,7 +33,9 @@ internal sealed class ApplicationCandidateReviewedClosureReceiptReader(
         var readHost = InteractionInvocationHost.ForApplication(host.Principal, host.ApplicationRevision,
             host.GrantReference, host.CommandId, InteractionExecutionProfile.ReadOnly, host.Budget, host.ParentCommandId);
         var authority = await validationGate.CheckAsync(readHost, candidate, true,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken, prepareRuntimeContext: false);
+        if (authority.Failure is not null || authority.ReviewClosure?.Grammar != expectedGrammar) return [];
+        authority = await validationGate.BindRuntimeReviewAsync(readHost, authority, cancellationToken);
         if (SystemTaskApplicationValidationGate.ExecutionPrerequisite(authority) is not null
             || authority.Selection is null || authority.ReviewClosure is null
             || authority.ReviewInput is null) return [];

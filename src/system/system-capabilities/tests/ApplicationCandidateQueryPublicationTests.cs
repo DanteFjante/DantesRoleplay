@@ -171,10 +171,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             var coldReviews = new SystemTaskApplicationValidationService(db, coldGate, TimeProvider.System);
             var coldReviewed = new ApplicationCandidateReviewedQueryUpdateReader(
                 db, setup.Applications, setup.Activation, setup.Resolver, coldGate);
+            var coldReviewedProcedure = new ApplicationCandidateReviewedProcedureUpdateReader(
+                db, setup.Applications, setup.Activation, setup.Resolver, coldGate);
             var coldAuthoring = new SqliteApplicationAuthoringService(db, setup.Applications,
                 setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
                 new OperationLog(db), preparation: null, coldManuals, reviewedPureUpdates: null,
-                reviewedQueryUpdates: coldReviewed);
+                reviewedProcedureUpdates: coldReviewedProcedure, reviewedQueryUpdates: coldReviewed);
             var coldGateway = new ApplicationCandidateCapabilityGateway(
                 CandidateCatalog(db, setup, coldAuthoring, coldReviews));
 

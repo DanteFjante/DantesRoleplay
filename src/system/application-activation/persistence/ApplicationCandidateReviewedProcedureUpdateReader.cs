@@ -25,7 +25,8 @@ internal sealed class ApplicationCandidateReviewedProcedureUpdateReader(
         try
         {
             var receipts = await new ApplicationCandidateReviewedClosureReceiptReader(
-                db, applications, validationGate).ReadAsync(host, candidate, cancellationToken);
+                db, applications, validationGate).ReadAsync(host, candidate,
+                    ApplicationCandidateProcedureClosureReader.GrammarVersion, cancellationToken);
             foreach (var receipt in receipts)
             {
                 if (receipt.Authority.ReviewClosure

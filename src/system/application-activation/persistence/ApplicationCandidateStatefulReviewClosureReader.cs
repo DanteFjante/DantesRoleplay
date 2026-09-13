@@ -16,7 +16,8 @@ internal sealed class ApplicationCandidateStatefulReviewClosureReader(
     IActivatedApplicationEvidenceReader evidence, IStandingGrantTargetResolver targets,
     IPublicApplicationCatalogProvider catalogs) : IApplicationCandidateReviewClosureReader
 {
-    public string Grammar => "stateful-atomic-mechanic-v1";
+    internal const string GrammarVersion = "stateful-atomic-mechanic-v1";
+    public string Grammar => GrammarVersion;
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate,

@@ -16,7 +16,8 @@ internal sealed class ApplicationCandidateReviewedWorkflowUpdateReader(
         InteractionInvocationHost host, ApplicationCandidateReference candidate,
         CancellationToken cancellationToken = default)
     {
-        foreach (var receipt in await reviews.ReadAsync(host, candidate, cancellationToken))
+        foreach (var receipt in await reviews.ReadAsync(host, candidate,
+            ApplicationCandidateWorkflowReviewClosureReader.GrammarVersion, cancellationToken))
         {
             if (receipt.Authority.ReviewClosure is not ApplicationCandidateWorkflowReviewClosureEvidence closure
                 || closure.Grammar != ApplicationCandidateWorkflowReviewClosureReader.GrammarVersion
