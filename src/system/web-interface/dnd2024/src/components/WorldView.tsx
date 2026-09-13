@@ -101,6 +101,15 @@ export function WorldView({
   onQueryChange: (query: string) => void;
   resetKey?: string;
 }) {
+  const selectedPeople = new Map((selectedLocation?.people ?? []).map((person) => [person.id, person]));
+  for (const person of world.people) {
+    selectedPeople.delete(person.id);
+    if (person.location.id === selectedLocation?.id) {
+      const { location: _location, ...details } = person;
+      selectedPeople.set(person.id, details);
+    }
+  }
+  const locationWithPeople = selectedLocation ? { ...selectedLocation, people: [...selectedPeople.values()] } : null;
   return (
     <div className="world-view">
       <WorldSectionNavigation activeSection={section} onSelect={onSectionChange} />
@@ -210,7 +219,7 @@ export function WorldView({
               selectedLocationId={selectedLocation?.id ?? ""}
             />
             <LocationWorkspace
-              location={selectedLocation}
+              location={locationWithPeople}
               onSectionChange={onLocationSectionChange}
               perspective={perspective}
               section={locationSection}

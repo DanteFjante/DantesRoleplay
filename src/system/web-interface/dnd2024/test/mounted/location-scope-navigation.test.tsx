@@ -486,6 +486,8 @@ test("a People location link walks unopened parents before reading Bramblebridge
     assert.equal(mounted.container.querySelector(".location-browser__error"), null);
     assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /Bramblebridge15 of 15/);
     assert.match(mounted.container.textContent!, /Bramblebridge Place 14/);
+    assert.equal(mounted.container.querySelector('.location-people-grid [data-record-id="person.tibb"] h3')?.textContent, "Tibb");
+    assert.doesNotMatch(mounted.container.querySelector(".location-people")!.textContent!, /No one is currently listed/);
     for (const entry of expected) assert.ok(window.location.hash.includes(encodeURIComponent(entry.id)));
   } finally { await mounted.cleanup(); }
 });
