@@ -115,13 +115,13 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `c9005393`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
+Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
 | P0 Preservation | Complete: exact live records, previous artwork, database backup and immutable blob copy retained | Fresh backup/export and version checks immediately before live writes |
 | P1 Audience | Truthful nonprivileged PlayerGroup, protected DM preview, server filtering, cache reset and authorized media tickets integrated | Rehearsal and live public/owner browser checks |
-| P2 Maps | Existing 0..1000 north-up frame and overlays extended to active site/interior map owners | Published overlay, pan/zoom and data-only rename checks |
+| P2 Maps | Existing 0..1000 north-up frame and overlays extended to active site/interior map owners; copied overlays and pan/zoom passed | Live verification; rename remains outside the existing mutation contract |
 | P3 Starting area | Eight maps, three illustrations, fourteen child locations, three reused clues, two new unrevealed clues and one complete future situation integrated | Typed import, location-gallery attachment and live projections |
 | P4 Memory | Private journals, migration, real Codex capture, replay/retry/disconnect and source-pinned INNER derivation integrated | Matching release helper and usable linked-session setup; final MCP checks |
 | P5 Delivery | Combined build, website, regression corrections and protocol checks passed; matching release built and copied DB migrated successfully | Copied cutover, guarded live publication and second restart |
@@ -172,7 +172,7 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 
 ### Final copied release checkpoint
 
-- Current production source: `c9005393`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
+- Current production source: `d0481f48`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
 - Root final affected checks: 37 passed and two deliberately retired protocol skips. After the last capture-only correction, 18 capture checks passed and disposable catalog validation passed 620 records with seven existing warnings. A transient test-compiler access violation cleared on one retry; no test failure remains. The full-suite evidence above remains the broad regression run.
 - Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
 - Copied browser checks passed all eight real maps, with marker counts 3/6/8/9/15/5/4/5; three 1536×1024 galleries; the same map canvas under zoom and keyboard pan; Player scope/gallery reset; and absence of DM blocks in Player. Stable fresh loads showed no stale-view banner or API/page errors. Fourteen added child locations and exact query-to-overlay IDs, labels and anchors demonstrate data-backed overlays. The existing mutation owner rejected the proposed rename in dry-run with `ENTITY_RENAME_UNSUPPORTED`; no mutation or bypass followed, and a new rename API is excluded from this release.
@@ -250,6 +250,16 @@ operation unchanged and create a fresh validation using the existing review, wit
 The strengthened cold gateway regression reproduced the invalid Inspect result before the fix and
 now passes Validate, Inspect, validation replay, activation and activation replay with both readers
 and generic preparation enabled. Affected query, procedure and dream publication checks passed 3/3.
+The matching `d0481f48` Release build passed in 21.14 seconds with zero warnings/errors; evidence is
+`.tmp/gameplay-dataaccess-release-proof.log`. Final graph hashes: DataAccess
+`5D27E4951AA143FDFDD16C7D906906B960E74DEF0F5002341AA45550F9F62BDB`, domain
+`5AD036A9737F84BBC33B8424162797FD40ED412AC517A29915CB4619F132D542`, LocalAI
+`CC796265B1ECD57BE27D7EED64C2BA9CAB165DA24A49EDF4CF752B6D5BFA5F11`.
+
+Live execution must override every rehearsal operator default explicitly: URL, database, blobs,
+matching Tools/runtime, package, schema and page bundle. Compare those paths to the saved profile;
+verify the fresh active-page CAS and reviewed bundle hash before applying. Record exact live
+grant revisions/fingerprints for all publication operations, with expiry covering their deadlines.
 
 Next: verify and activate the first copied candidate, complete the two remaining copied reviews/activations
 and final public checks, then authorize the sole writer to take fresh live preservation and
